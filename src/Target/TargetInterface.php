@@ -2,13 +2,12 @@
 
 namespace Drutiny\Target;
 use Drutiny\Annotation\Metadata;
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 
 /**
  * Definition of a Target.
  */
-interface TargetInterface {
-
-  public function __construct($target_data);
+interface TargetInterface extends ContainerAwareInterface {
 
   /**
    * Parse the target data passed in.

@@ -34,7 +34,7 @@ class DrushDriver {
    */
   protected $target;
 
-  public function __construct(TargetInterface $target, $drush_bin, $options = [], $alias = '@self')
+  public function __construct(TargetInterface $target, $drush_bin = '/usr/local/bin/drush', $options = [], $alias = '@self')
   {
     $this->drushBin = $drush_bin;
     $this->target  = $target;

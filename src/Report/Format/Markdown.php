@@ -25,11 +25,14 @@ class Markdown extends JSON {
    */
   protected $template = 'page';
 
-  public function __construct($options)
+  public function __construct()
   {
-    parent::__construct($options);
+    parent::__construct();
     $this->setFormat('markdown');
+  }
 
+  public function setOptions(array $options = [])
+  {
     $this->setTemplate(isset($options['template']) ? $options['template'] : 'page');
 
     if (!isset($options['content'])) {

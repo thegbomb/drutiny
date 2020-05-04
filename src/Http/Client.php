@@ -2,90 +2,58 @@
 
 namespace Drutiny\Http;
 
-use Drutiny\Container;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\HandlerStack;
-use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
 use Kevinrob\GuzzleCache\CacheMiddleware;
-use Psr\Http\Message\RequestInterface;
 use Kevinrob\GuzzleCache\Storage\Psr6CacheStorage;
 use Kevinrob\GuzzleCache\Strategy\PrivateCacheStrategy;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter as Cache;
+use Psr\Http\Message\RequestInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Output\OutputInterface;
-use Drutiny\Credential\CredentialsUnavailableException;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class Client extends GuzzleClient {
-  public function __construct(array $config = [])
+class Client {
+  use ContainerAwareTrait;
+
+  protected $cache;
+
+  public function __construct(ContainerInterface $container, FilesystemAdapter $cache)
   {
+    $this->setContainer($container);
+    $this->cache = $cache;
+  }
+
+  /**
+   * Factory method to create a new guzzle client instance.
+   */
+  public function create(array $config = []) {
     if (!isset($config['handler'])) {
         $config['handler'] = HandlerStack::create();
     }
 
-    $this->processHandler($config['handler']);
-
-
-    parent::__construct($config);
-  }
-
-  public static function processHandler(HandlerStack &$handler)
-  {
-    // Deal with Authorization headers (401 Responses).
-    $handler->push(Middleware::mapRequest(function (RequestInterface $request) {
-      $uri = (string) $request->getUri();
-      $host = parse_url($uri, PHP_URL_HOST);
-
-      try {
-        $creds = Container::credentialManager('http_auth');
-      }
-      catch (CredentialsUnavailableException $e) {
-        return $request;
-      }
-
-      if (isset($creds[$host])) {
-        $credential = $creds[$host]['username'] . ':' . $creds[$host]['password'];
-        return $request->withHeader('Authorization', 'Basic ' . base64_encode($credential));
-      }
-
-      return $request;
-    }), 'authorization');
-
-    // Provide a default User-Agent.
-    $handler->push(Middleware::mapRequest(function (RequestInterface $request) {
-      try {
-        $http = Container::credentialManager('http');
-      }
-      catch (CredentialsUnavailableException $e) {
-        return $request;
-      }
-
-      return $request->withHeader('User-Agent', $http['user_agent']);
-    }), 'user_agent');
-
-    $handler->unshift(cache_middleware(), 'cache');
-
-    $message_format = __CLASS__ . " HTTP Request\n\n{req_headers}\n\n{res_headers}";
-    if (Container::getVerbosity() <= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-      $message_format = __CLASS__ . " {code} {phrase} {uri} {error}";
+    foreach ($this->container->findTaggedServiceIds('http.middleware') as $id => $service) {
+      $service = $this->container->get($id);
+      $config['handler']->push(Middleware::mapRequest(function (RequestInterface $request) use ($service) {
+        return $service->handle($request);
+      }), $id);
     }
 
-    // Logging HTTP Requests.
-    $logger = Middleware::log(
-      Container::getLogger(),
-      new MessageFormatter($message_format)
-    );
+    $config['handler']->unshift(cache_middleware($this->cache), 'cache');
+    // $config['handler']->after('cache', $this->container->get('logger'), 'logger');
 
-    $handler->after('cache', $logger, 'logger');
+    return new GuzzleClient($config);
   }
 }
 
-function cache_middleware()
+function cache_middleware($cache)
 {
   static $middleware;
   if ($middleware) {
     return $middleware;
   }
-  $storage = new Psr6CacheStorage(Container::cache('http'));
+  $storage = new Psr6CacheStorage($cache);
   $middleware = new CacheMiddleware(new PrivateCacheStrategy($storage));
   return $middleware;
 }

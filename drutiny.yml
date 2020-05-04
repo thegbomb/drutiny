@@ -1,0 +1,174 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
+parameters:
+  cache.directory: ~/.drutiny/cache
+  cache.ttl: 0
+  config.local: ~/.drutiny/config.yml
+  config.credentials: ~/.drutiny/.credentials.yml
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        public: true
+
+    _instanceof:
+      Symfony\Component\Console\Command\Command:
+        tags: [command]
+
+      Drutiny\ProfileSource\ProfileSourceInterface:
+        tags: [profile.source]
+
+      Drutiny\PolicySource\PolicySourceInterface:
+        tags: [policy.source]
+
+      Drutiny\Report\FormatInterface:
+        tags: [format]
+
+    cache.array:
+        class: Symfony\Component\Cache\Adapter\ArrayAdapter
+        arguments: ['%cache.ttl%']
+        calls:
+          - [setLogger, ['@logger']]
+
+    cache.filesystem:
+        class: Symfony\Component\Cache\Adapter\FilesystemAdapter
+        arguments: [drutiny, '%cache.ttl%', '%cache.directory%']
+        calls:
+          - [setLogger, ['@logger']]
+
+    yaml:
+      class: Symfony\Component\Yaml\Yaml
+
+    config:
+      class: Drutiny\ImmuntableConfig
+      arguments: ['@=service("yaml").parseFile("%config.local%")']
+      autowire: false
+
+    commands:
+        namespace: Drutiny\Console\Command\
+        resource: 'src/Console/Command/*'
+
+    credentials:
+      class: Array
+      factory: [Symfony\Component\Yaml\Yaml, parseFile]
+      arguments: ['%config.credentials%']
+
+    domain_list.yaml:
+        tags: [domain_list]
+        class: Drutiny\DomainList\DomainListYamlFile
+
+    format.factory:
+      class: Drutiny\Report\FormatFactory
+
+    http.client:
+      class: Drutiny\Http\Client
+
+    http.middleware:
+      namespace: Drutiny\Http\Middleware\
+      resource: 'src/Http/Middleware/*'
+      arguments: ['@service_container', '@config']
+      tags: [http.middleware]
+
+    Symfony\Component\Console\Logger\ConsoleLogger:
+      arguments:
+        - '@output'
+
+    logger:
+        alias: Symfony\Component\Console\Logger\ConsoleLogger
+
+    output:
+      class: Symfony\Component\Console\Output\ConsoleOutput
+      arguments:
+        - '@=service("verbosity").get()'
+
+    policy.factory:
+      class: 'Drutiny\PolicyFactory'
+      arguments: ['@service_container', '@cache.filesystem']
+
+    policy.sources:
+      namespace: Drutiny\PolicySource\
+      resource: 'src/PolicySource/*'
+      tags: [policy.source]
+
+    profile.factory:
+      class: 'Drutiny\ProfileFactory'
+      arguments: ['@service_container', '@cache.filesystem']
+
+    profile.sources:
+      namespace: Drutiny\ProfileSource\
+      resource: 'src/ProfileSource/*'
+      tags: [profile.source]
+
+    sandbox:
+      class: Drutiny\Sandbox\Sandbox
+
+    target.factory:
+      class: Drutiny\Target\TargetFactory
+      arguments: ["@service_container"]
+
+    target.drush:
+      tags: [target]
+      factory: ['Drutiny\Target\DrushTarget', 'create']
+      class: Drutiny\Target\DrushTarget
+
+    target.none:
+      tags: [target]
+      class: Drutiny\Target\TargetNone
+
+    process.manager:
+      class: Drutiny\Process\ProcessManager
+      calls:
+        - [setLogger, ['@logger']]
+        - [setCache, ['@cache.array']]
+
+    verbosity:
+        class: Drutiny\Console\Verbosity
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    Drutiny\:
+        resource: 'src/*'
+        exclude:
+          - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
+          - src/Console/Application.php
+          - src/*/*Exception.php
+          - src/Report/*
+          - src/Sandbox/Sandbox.php
+          - src/ExpressionLanguage.php
+
+    Drutiny\Report\Format\:
+      resource: src/Report/Format/*
+      exclude: src/Report/Format/Menu/*
+
+    Drutiny\Target\TargetInterface:
+      alias: 'target.drush'
+
+    Drutiny\Process\ProcessManager:
+      alias: 'process.manager'
+
+    Symfony\Contracts\Cache\CacheInterface:
+      alias: 'cache.array'
+
+    Symfony\Component\Console\Output\OutputInterface:
+      alias: output
+
+    Symfony\Component\Cache\Adapter\FilesystemAdapter:
+      alias: cache.filesystem
+
+    finder:
+      class: Symfony\Component\Finder\Finder
+
+    Symfony\Component\Finder\Finder:
+      alias: finder
+    # controllers are imported separately to make sure services can be injected
+    # as action arguments even if you don't extend any base controller class
+    # App\Controller\:
+    #     resource: '../src/Controller'
+    #     tags: ['controller.service_arguments']
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones

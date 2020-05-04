@@ -4,9 +4,22 @@ namespace Drutiny\PolicySource;
 
 use Drutiny\Api;
 use Drutiny\Policy;
-use Drutiny\Container;
+use Drutiny\Policy\Dependency;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
+use Symfony\Contracts\Cache\CacheInterface;
 
 class DrutinyGitHubIO implements PolicySourceInterface {
+  use ContainerAwareTrait;
+
+  protected $cache;
+  protected $api;
+
+  public function __construct(ContainerInterface $container, CacheInterface $cache, Api $api) {
+    $this->setContainer($container);
+    $this->cache = $cache;
+    $this->api = $api;
+  }
 
   /**
    * {@inheritdoc}
@@ -21,10 +34,10 @@ class DrutinyGitHubIO implements PolicySourceInterface {
    */
   public function getList()
   {
-    $api = new Api();
     $list = [];
-    foreach ($api->getPolicyList() as $listedPolicy) {
+    foreach ($this->api->getPolicyList() as $listedPolicy) {
       $listedPolicy['filepath'] = Api::BaseUrl . $listedPolicy['_links']['self']['href'];
+      $listedPolicy['class'] = preg_replace('/^\\\/', '', $listedPolicy['class']);
       $list[$listedPolicy['name']] = $listedPolicy;
     }
     return $list;
@@ -35,26 +48,36 @@ class DrutinyGitHubIO implements PolicySourceInterface {
    */
   public function load(array $definition)
   {
-    $cache = Container::cache('drutiny.github.io.policy');
-    $item  = $cache->getItem($definition['signature']);
+    $cid = 'drutiny.github.io.policy.'.$definition['signature'];
 
-    if ($item->isHit()) {
-      Container::getLogger()->info("Cache hit for {$definition['name']} from " . $this->getName());
-      return new Policy($item->get());
+    $data = $this->cache->get($cid, function ($item) use ($definition) {
+      $item->expiresAt(new \DateTime('+1 month'));
+
+      $endpoint = str_replace(parse_url(Api::BaseUrl, PHP_URL_PATH), '', $definition['_links']['self']['href']);
+      $policyData = json_decode($this->api->getClient()->get($endpoint)->getBody(), TRUE);
+      $policyData['filepath'] = $definition['_links']['self']['href'];
+
+      return $policyData;
+    });
+
+    if (isset($data['depends'])) {
+      foreach ($data['depends'] as &$dependency) {
+        $dependency = !is_string($dependency) ? $dependency : [
+          'expression' => sprintf("policy('%s') == 'success'", $dependency),
+          'on_fail' => Dependency::ON_FAIL_REPORT_ONLY
+        ];
+      }
     }
-    Container::getLogger()->info("Fetching {$definition['name']} from {Api::BaseUrl}");
 
-    $endpoint = str_replace(parse_url(Api::BaseUrl, PHP_URL_PATH), '', $definition['_links']['self']['href']);
-    $policyData = json_decode(Api::getClient()->get($endpoint)->getBody(), TRUE);
-    $policyData['filepath'] = $definition['_links']['self']['href'];
+    $data['uuid'] = $data['signature'];
+    unset($data['signature'], $data['filepath']);
 
-    $item->set($policyData)
-         // The cache ID (signature) is a hash that changes when the policy
-         // metadata changes so we can cache this as long as we like.
-         ->expiresAt(new \DateTime('+1 month'));
-    $cache->save($item);
+    // Workaround to remove leading \.
+    $data['class'] = preg_replace('/^\\\/', '', $data['class']);
 
-    return new Policy($policyData);
+    $policy = new Policy;
+    $policy->setProperties($data);
+    return $policy;
   }
 
   /**

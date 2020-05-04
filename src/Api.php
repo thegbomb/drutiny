@@ -3,15 +3,22 @@
 namespace Drutiny;
 
 use Drutiny\Http\Client;
-use Drutiny\Container;
 use GuzzleHttp\Exception\ConnectException;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 
 class Api {
   const BaseUrl = 'https://drutiny.github.io/api/v2/en/';
+  protected $httpFactory;
+  protected $logger;
 
-  public static function getClient()
+  public function __construct(Client $http_factory, ConsoleLogger $logger) {
+    $this->httpFactory = $http_factory;
+    $this->logger = $logger;
+  }
+
+  public function getClient()
   {
-    return new Client([
+    return $this->httpFactory->create([
       'base_uri' => self::BaseUrl,
       'headers' => [
         'User-Agent' => 'drutiny/2.2.x',
@@ -31,7 +38,7 @@ class Api {
       return json_decode($this->getClient()->get('policy/index.json')->getBody(), TRUE);
     }
     catch (ConnectException $e) {
-      Container::getLogger()->warning($e->getMessage());
+      $this->logger->warning($e->getMessage());
       return [];
     }
   }
@@ -42,7 +49,7 @@ class Api {
       return json_decode($this->getClient()->get('profile/index.json')->getBody(), TRUE);
     }
     catch (ConnectException $e) {
-      Container::getLogger()->warning($e->getMessage());
+      $this->logger->warning($e->getMessage());
       return [];
     }
   }

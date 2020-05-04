@@ -2,151 +2,92 @@
 
 namespace Drutiny;
 
-use Drutiny\Container;
+use Drutiny\Config\PolicyConfiguration;
 use Drutiny\Policy\Dependency;
-use Drutiny\Policy\ValidationException;
-use Drutiny\PolicySource\PolicySource;
-use RomaricDrigon\MetaYaml\Exception\NodeValidatorException;
-use RomaricDrigon\MetaYaml\MetaYaml;
-use Fiasco\MetaYaml\SchemaElement;
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Config\Definition\Processor;
 
-/**
- * A Drutiny policy.
- *
- * @see policy.schema.yml
- */
-class Policy extends Policy\PolicyBase {
-  use \Drutiny\Policy\ContentSeverityTrait;
-  use \Drutiny\Policy\ParameterizedContentTrait {
-    getParameterDefaults as public useTraitgetParameterDefaults;
-  }
+class Policy {
+  const SEVERITY_LOW = 1;
+  const SEVERITY_NORMAL = 2;
+  const SEVERITY_HIGH = 4;
+  const SEVERITY_CRITICAL = 8;
+
+  protected $properties = [];
+  protected $remediable = FALSE;
+  protected $dependencies = [];
+  protected $severityCode;
 
   /**
-   * @var string A written recommendation of what remediation to take if the policy fails.
+   * @array list of object attributes that may be passed through the renderer.
    */
-  protected $remediation;
+  protected $renderableProperties = [
+    'title',
+    'name',
+    'description',
+    'remediation',
+    'success',
+    'warning',
+    'failure'
+  ];
 
-  /**
-   * @var string A written failure message template. May contain tokens.
-   */
-  protected $failure;
-
-  /**
-   * @var string A written success message. May contain tokens.
-   */
-  protected $success;
-
-  /**
-   * @var string A written warning message. May contain tokens.
-   */
-  protected $warning;
-
-  /**
-   * @var array An array of dependencies.
-   */
-  protected $depends = [];
-
-  /**
-   * @var boolean Determine if a policy is remediable.
-   */
-  protected $remediable;
-
-  /**
-   * @var array of compatibility checks.
-   */
-  protected $compatibility = [];
-
-  /**
-   * @var array Chart metadata.
-   */
-  protected $chart = [];
-
-  /**
-   * @string Absolute location of the YAML policy file.
-   */
-  protected $filepath;
-
-  public static function load($name)
+  public function getProperty($property)
   {
-    return PolicySource::loadPolicyByName($name);
-  }
-
-  public function export()
-  {
-    return array_filter([
-      'title' => $this->title,
-      'name' => $this->name,
-      'class' => $this->class,
-      'description' => $this->description,
-      'type' => $this->type,
-      'tags' => $this->tags,
-      'success' => $this->success,
-      'failure' => $this->failure,
-      'warning' => $this->warning,
-      'remediation' => $this->remediation,
-      'severity' => $this->getSeverityName(),
-      'parameters' => $this->parameters,
-      'depends' => array_map(function (Dependency $d) {
-        return $d->export();
-       }, $this->depends),
-      'chart' => $this->chart
-    ]);
+    return $this->properties[$property] ?? NULL;
   }
 
   /**
-   * Retrieve a property value and token replacement.
-   *
-   * @param $property
-   * @param array $replacements
-   * @return string
-   * @throws \Exception
+   * Set policy property.
    */
-  public function __construct(array $info) {
+  public function setProperty($property, $value) {
+    return $this->setProperties([$property => $value]);
+  }
 
-    try {
-      $schema = new MetaYaml(Yaml::parseFile(__DIR__ . '/policy.schema.yml'));
-      $schema->validate($info);
+  public function setProperties(array $new_properties = []) {
+    $data = $this->properties;
+
+    foreach ($new_properties as $property => $value) {
+      $data[$property] = $value;
     }
-    catch (NodeValidatorException $e) {
-      throw new ValidationException($info, $e);
+
+    $processor = new Processor();
+    $configuration = new PolicyConfiguration();
+
+    $policyData = $processor->processConfiguration(
+      $configuration,
+      ['policy' => $data]
+    );
+
+    foreach ($policyData as $property => $value) {
+      $this->properties[$property] = $value;
     }
 
-    $severity = isset($info['severity']) ? $info['severity'] : self::SEVERITY_NORMAL;
-    $this->setSeverity($severity);
-
-    parent::__construct($info);
-
-    // Data type policies do not have a severity.
-    if ($this->type == 'data') {
-      $severity = self::SEVERITY_NONE;
+    if (isset($properties['class'])) {
+      $reflect = new \ReflectionClass($policyData['class']);
+      $this->remediable = $reflect->implementsInterface('\Drutiny\RemediableInterface');
     }
-    $this->renderableProperties[] = 'remediation';
-    $this->renderableProperties[] = 'success';
-    $this->renderableProperties[] = 'failure';
-    $this->renderableProperties[] = 'warning';
 
-    $reflect = new \ReflectionClass($this->class);
-    $this->remediable = $reflect->implementsInterface('\Drutiny\RemediableInterface');
+    if (isset($properties['depends'])) {
+      $builder = function ($depends) {
+        return new Dependency($depends['expression'], $depends['on_fail']);
+      };
+      $this->dependencies = array_map($builder, $policyData['depends']);
+    }
 
-    $dependencies = isset($info['depends']) ? $info['depends'] : [];
-    $this->depends = [];
-
-    foreach ($dependencies as $depends) {
-      // Backwards compatibility
-      if (is_string($depends)) {
-        $depends = [
-          'on_fail' => Dependency::ON_FAIL_REPORT_ONLY,
-          'expression' => sprintf("policy('%s') == 'success'", $depends)
-        ];
+    // Map a severity value to its respective security code.
+    if (isset($new_properties['severity'])) {
+      switch ($policyData['severity']) {
+        case 'low':
+          $this->severityCode = Policy::SEVERITY_LOW; break;
+        case 'normal':
+          $this->severityCode = Policy::SEVERITY_LOW; break;
+        case 'high':
+          $this->severityCode = Policy::SEVERITY_LOW; break;
+        case 'critical':
+          $this->severityCode = Policy::SEVERITY_LOW; break;
       }
-      if (!isset($depends['on_fail'])) {
-        $depends['on_fail'] = Dependency::ON_FAIL_DEFAULT;
-      }
-      $this->depends[] = new Dependency($depends['expression'], $depends['on_fail']);
     }
+
+    return $this;
   }
 
   /**
@@ -154,62 +95,41 @@ class Policy extends Policy\PolicyBase {
    */
   public function getDepends()
   {
-    return $this->depends;
+    return $this->dependencies;
   }
 
-  /**
-   * Override ParameterizedContentTrait::getParameterDefaults.
-   */
-  public function getParameterDefaults()
+  public function setSeverity($severity)
   {
-      $defaults = $this->useTraitgetParameterDefaults();
-
-      $audit = (new Registry)->getAuditMedtadata($this->class);
-
-      // Validation. Look for parameters specificed by the policy and not the
-      // audit.
-      foreach (array_keys($defaults) as $name) {
-        if (!isset($audit->params[$name])) {
-          Container::getLogger()->warning(strtr('Policy :name documents parameter ":param" not documented by :class.', [
-            ':name' => $this->name,
-            ':param' => $name,
-            ':class' => $this->class,
-          ]));
-        }
-      }
-
-      foreach ($audit->params as $param) {
-        if (!isset($defaults[$param->name])) {
-          $defaults[$param->name] = isset($param->default) ? $param->default : null;
-        }
-      }
-
-      $defaults['_chart'] = array_map(function ($chart) {
-        $chart += $chart + [
-          'type' => 'bar',
-          'hide-table' => false,
-          'stacked' => false,
-          'series' => [],
-          'series-labels' => [],
-          'labels' => [],
-          'title' => ''
-        ];
-
-        $el = [];
-        foreach ($chart as $attr => $value) {
-          $value = is_array($value) ? implode(',', $value) : $value;
-          $el[] = $attr . '="' . $value . '"';
-        }
-
-        return '[[[' . implode(' ', $el) . ']]]';
-      }, $this->chart);
-
-      return $defaults;
+    return $this->setProperty('severity', $severity);
   }
 
-  public static function getSchema()
+  public function getSeverity()
   {
-    $schema = Yaml::parseFile(__DIR__ . '/policy.schema.yml');
-    return new SchemaElement($schema['root']);
+    return $this->severityCode;
+  }
+
+  public function getSeverityName()
+  {
+    return $this->properties['severity'];
+  }
+
+  public function getParameter($key)
+  {
+    if (!isset($this->properties['parameters'][$key])) {
+      throw new \Exception("$key is not an available parameter on policy {$this->properties['name']}.");
+    }
+    return $this->properties['parameters'][$key];
+  }
+
+  public function addParameter($key, $value)
+  {
+    $parameters = $this->properties['parameters'] ?? [];
+    $parameters[$key] = $value;
+    return $this->setProperty('parameters', $parameters);
+  }
+
+  public function export()
+  {
+    return $this->properties;
   }
 }

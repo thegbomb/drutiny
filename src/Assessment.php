@@ -6,25 +6,32 @@ use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
 use Drutiny\Target\TargetInterface;
 use Drutiny\Sandbox\Sandbox;
+use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
 
 class Assessment {
-  use \Drutiny\Policy\ContentSeverityTrait;
 
   /**
    * @var string URI
    */
   protected $uri;
-
-  /**
-   * @var array of AuditResponse objects
-   */
   protected $results = [];
-
   protected $successful = TRUE;
+  protected $severityCode = 1;
+  protected $logger;
+  protected $container;
 
-  public function __construct($uri = 'default')
+  public function __construct(ConsoleLogger $logger, ContainerInterface $container)
+  {
+    $this->logger = $logger;
+    $this->container = $container;
+  }
+
+  public function setUri($uri = 'default')
   {
     $this->uri = $uri;
+    return $this;
   }
 
   /**
@@ -45,30 +52,36 @@ class Assessment {
       return $policy instanceof Policy;
     });
 
-    $log = Container::getLogger();
-    $is_progress_bar = $log instanceof ProgressBar;
+    $is_progress_bar = $this->logger instanceof ProgressBar;
 
     foreach ($policies as $policy) {
       if ($is_progress_bar) {
-        $log->setTopic($this->uri . '][' . $policy->get('title'));
+        $this->logger->setTopic($this->uri . '][' . $policy->get('title'));
       }
 
-      $log->info("Assessing policy...");
+      $this->logger->info("Assessing policy...");
 
       // Setup the sandbox to run the assessment.
-      $sandbox = new Sandbox($target, $policy, $this);
-      $sandbox->setReportingPeriod($start, $end);
+      $sandbox = $this->container
+        ->get('sandbox')
+        ->create($target, $policy)
+        ->setReportingPeriod($start, $end);
 
       $response = $sandbox->run();
 
+      // Omit irrelevant AuditResponses.
+      if (!$response->isIrrelevant()) {
+        $this->setPolicyResult($response);
+      }
+
       // Attempt remediation.
       if ($remediate && !$response->isSuccessful()) {
-        $log->info("\xE2\x9A\xA0 Remediating " . $policy->get('title'));
-        $response = $sandbox->remediate();
+        $this->logger->info("\xE2\x9A\xA0 Remediating " . $policy->get('title'));
+        $this->setPolicyResult($sandbox->remediate());
       }
 
       if ($is_progress_bar) {
-        $log->advance();
+        $this->logger->advance();
       }
     }
 
@@ -84,7 +97,7 @@ class Assessment {
    */
   public function setPolicyResult(AuditResponse $response)
   {
-    $this->results[$response->getPolicy()->get('name')] = $response;
+    $this->results[$response->getPolicy()->getProperty('name')] = $response;
 
     // Set the overall success state of the Assessment. Considered
     // a success if all policies pass.
@@ -94,9 +107,14 @@ class Assessment {
     // is higher than the current severity of the assessment, then increase
     // the severity of the overall assessment.
     $severity = $response->getPolicy()->getSeverity();
-    if (!$response->isSuccessful() && ($this->severity < $severity)) {
-      $this->setSeverity($severity);
+    if (!$response->isSuccessful() && ($this->severityCode < $severity)) {
+      $this->severityCode = $severity;
     }
+  }
+
+  public function getSeverityCode():int
+  {
+    return $this->severityCode;
   }
 
   /**

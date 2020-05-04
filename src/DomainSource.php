@@ -3,33 +3,65 @@
 namespace Drutiny;
 
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 use Drutiny\DomainList\DomainListRegistry;
 use Drutiny\Target\Registry as TargetRegistry;
 
 class DomainSource {
+  use ContainerAwareTrait;
 
-  public static function loadFromInput(InputInterface $input)
+  protected $cache;
+
+  public function __construct(ContainerInterface $container, CacheInterface $cache) {
+    $this->setContainer($container);
+    $this->cache = $cache;
+  }
+
+  public function getSources()
   {
-    if (!$source = $input->getOption('domain-source')) {
-      return FALSE;
-    }
+    return $this->cache->get('domain_list.sources', function ($item) {
+      $sources = [];
+      foreach ($this->container->findTaggedServiceIds('domain_list') as $id => $info) {
+        list($ns, $driver) = explode('.', $id, 2);
+        $sources[$driver] = $this->container->get($id)->getOptionsDefinitions();
+      }
+      return $sources;
+    });
+  }
 
-    $options = [];
+  public function getDomains($source, array $options = []): array
+  {
+    return $this->container
+      ->get("domain_list.$source")
+      ->getDomains($options);
+  }
+
+  public function loadFromInput(InputInterface $input)
+  {
+    $sources = [];
     foreach ($input->getOptions() as $name => $value) {
-      if (strpos($name, 'domain-source-' . $source) === FALSE) {
+      if (strpos($name, 'domain-source-') === FALSE) {
         continue;
       }
-      $options[str_replace('domain-source-' . $source . '-', '', $name)] = $value;
+      list($source, $name) = explode('-', str_replace('domain-source-', '', $name), 2);
+      $sources[$source][$name] = $value;
     }
-    $domain_loader = DomainListRegistry::loadFromInput($source, $options);
 
-    $target = TargetRegistry::loadTarget($input->getArgument('target'));
+    $domains = [];
+
+    foreach ($sources as $source => $options) {
+      $domains += $this->container
+        ->get("domain_list.$source")
+        ->getDomains($options);
+    }
 
     $whitelist = $input->getOption('domain-source-whitelist');
     $blacklist = $input->getOption('domain-source-blacklist');
 
     // Filter domains by whitelist and blacklist.
-    $filter = function ($domain) use ($whitelist, $blacklist) {
+    return array_filter($domains, function ($domain) use ($whitelist, $blacklist) {
       // Whitelist priority.
       if (!empty($whitelist)) {
         foreach ($whitelist as $regex) {
@@ -48,13 +80,7 @@ class DomainSource {
         }
       }
       return TRUE;
-    };
-
-    $domains = $domain_loader->getDomains($target, $filter);
-
-    // Filter the domains a second time incase the domain loader didn't use
-    // the filter.
-    return array_filter($domains, $filter);
+    });
   }
 }
 

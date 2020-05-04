@@ -124,7 +124,7 @@ class Profile {
 
     if (isset($info['format'])) {
       foreach ($info['format'] as $format => $options) {
-        $profile->addFormatOptions(Format::create($format, $options));
+        $profile->addFormatOptions($format, $options);
       }
     }
 
@@ -134,19 +134,18 @@ class Profile {
   /**
    * Add a FormatOptions to the profile.
    */
-  public function addFormatOptions(Format $options)
+  public function addFormatOptions($format, $options)
   {
-    $this->format[$options->getFormat()] = $options;
+    $this->format[$format] = $options;
     return $this;
   }
 
   /**
-   * Add a FormatOptions to the profile.
+   * Get a FormatOptions to the profile.
    */
-  public function getFormatOption($format, $options = [])
+  public function getFormatOptions($format)
   {
-    $format = isset($this->format[$format]) ?  $this->format[$format] : Format::create($format, $options);
-    return $format;
+    return $this->format[$format] ?? [];
   }
 
   /**

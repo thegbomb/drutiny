@@ -5,6 +5,8 @@ namespace Drutiny;
 use Symfony\Component\Console\Helper\ProgressBar as SymfonyProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Drutiny\Container;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;
@@ -13,36 +15,22 @@ use Psr\Log\LogLevel;
  * LoggerInterface wrapper around the Symfony ProgressBar.
  */
 Class ProgressBar extends AbstractLogger {
+  use ContainerAwareTrait;
 
-  /**
-   * Whether the progress bar is rendering or not.
-   */
   protected $status = TRUE;
-
-  /**
-   * @var \Symfony\Component\Console\Helper\ProgressBar.
-   */
   protected $bar;
-
-  /**
-   * @var string.
-   */
   protected $topic;
-
-  /**
-   * @var Symfony\Component\Console\Output\OutputInterface.
-   */
   protected $output;
-
-  /**
-   * @var int
-   */
+  protected $logger;
+  /* @var int */
   protected $steps;
 
-  public function __construct(OutputInterface $output, $steps)
+  public function __construct(ContainerInterface $container, OutputInterface $output, ConsoleLogger $logger)
   {
+    $this->setContainer($container);
     $this->output = $output;
-    $this->steps  = $steps;
+    $this->logger = $logger;
+    $this->steps  = 0;
   }
 
   public function start()
@@ -64,7 +52,7 @@ Class ProgressBar extends AbstractLogger {
       $this->bar = $progress;
 
       if ($this->status) {
-        Container::setLogger($this);
+        $this->container->set('logger', $this);
       }
     }
 
@@ -87,7 +75,7 @@ Class ProgressBar extends AbstractLogger {
     if ($this->status) {
       $this->status = FALSE;
       !empty($this->bar) && $this->bar()->finish();
-      Container::setLogger(new ConsoleLogger($this->output));
+      $this->container->set('logger', new ConsoleLogger($this->output));
     }
     return $this;
   }

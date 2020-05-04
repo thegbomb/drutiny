@@ -3,28 +3,33 @@
 namespace Drutiny\DomainList;
 
 use Symfony\Component\Yaml\Yaml;
-use Drutiny\Target\Target;
-use Drutiny\Annotation\Param;
+
 /**
- * @Param(
- *   name = "filepath",
- *   description = "Filepath to the YAML file containing the domains.",
- * )
+ * Load domain lists from a yaml file.
+ *
+ * YAML file should use this schema:
+ * domains:
+ *   - mysite.com
+ *   - example.com
  */
-class DomainListYamlFile implements DomainListInterface {
+class DomainListYamlFile extends AbstractDomainList {
 
   protected $filepath;
 
-  public function __construct(array $metadata)
+  /**
+   * {@inheritdoc}
+   */
+  public function configure()
   {
-    $this->filepath = $metadata['filepath'];
+    $this->addOption('filepath', 'Filepath to the YAML file containing the domains');
   }
 
   /**
    * @return array list of domains.
    */
-  public function getDomains(Target $target, callable $filter)
+  public function getDomains(array $options = [])
   {
-    return Yaml::parseFile($this->filepath);
+    $config = Yaml::parseFile($options['filepath']);
+    return $config['domains'];
   }
 }

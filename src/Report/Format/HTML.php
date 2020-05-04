@@ -15,14 +15,17 @@ use Symfony\Component\Yaml\Yaml;
 class HTML extends Markdown {
 
 
-  public function __construct($options)
+  public function __construct()
+  {
+    parent::__construct();
+    $this->setFormat('html');
+  }
+
+  public function setOptions(array $options = [])
   {
     if (!isset($options['content'])) {
       $options['content'] = Yaml::parseFile(dirname(__DIR__) . '/templates/content/profile.html.yml');
     }
-
-    parent::__construct($options);
-    $this->setFormat('html');
   }
 
   protected function preprocessResult(Profile $profile, Target $target, Assessment $assessment)

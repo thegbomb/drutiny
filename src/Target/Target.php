@@ -11,14 +11,9 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
  * Basic function of a Target.
  */
 abstract class Target implements TargetInterface {
+  use \Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
   private $uri = FALSE;
-
-  public final function __construct($target_data)
-  {
-    // Store target data to be used later when the sandbox is loaded.
-    $this->parse($target_data);
-  }
 
   /**
    *

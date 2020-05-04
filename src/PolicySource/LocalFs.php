@@ -8,8 +8,18 @@ use Drutiny\Config;
 use Drutiny\Container;
 use Drutiny\Policy;
 use Symfony\Component\Yaml\Yaml;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Component\Finder\Finder;
 
 class LocalFs implements PolicySourceInterface {
+  protected $cache;
+  protected $finder;
+
+  public function __construct(CacheInterface $cache, Finder $finder)
+  {
+    $this->cache = $cache;
+    $this->finder = $finder->files()->in('.');
+  }
 
   /**
    * {@inheritdoc}
@@ -24,22 +34,16 @@ class LocalFs implements PolicySourceInterface {
    */
   public function getList()
   {
-    $cache = Container::cache($this->getName())->getItem('list');
-    if ($cache->isHit()) {
-      return $cache->get();
-    }
-    $finder = Config::getFinder()->name('*.policy.yml');
-
-    $list = [];
-    foreach ($finder as $file) {
-      $policy = Yaml::parse($file->getContents());
-      $policy['filepath'] = $file->getPathname();
-      $list[$policy['name']] = $policy;
-    }
-    Container::cache($this->getName())->save(
-      $cache->set($list)->expiresAfter(3600)
-    );
-    return $list;
+    return $this->cache->get('localfs.policies', function ($item) {
+      $finder = $this->finder->name('*.policy.yml');
+      $list = [];
+      foreach ($finder as $file) {
+        $policy = Yaml::parse($file->getContents());
+        $policy['filepath'] = $file->getPathname();
+        $list[$policy['name']] = $policy;
+      }
+      return $list;
+    });
   }
 
   /**
@@ -47,7 +51,8 @@ class LocalFs implements PolicySourceInterface {
    */
   public function load(array $definition)
   {
-    return new Policy($definition);
+    $policy = new Policy();
+    return $policy->setProperties($definition);
   }
 
   /**

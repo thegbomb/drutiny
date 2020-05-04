@@ -3,9 +3,9 @@
 namespace Drutiny\Profile;
 
 use Drutiny\Policy;
+use Drutiny\PolicyFactory;
 
 class PolicyDefinition {
-  use \Drutiny\Policy\ContentSeverityTrait;
 
   /**
    * Name of the poilcy.
@@ -36,6 +36,13 @@ class PolicyDefinition {
   protected $parameters = [];
 
   /**
+   * Severity of policy as defined by the profile.
+   *
+   * @var string
+   */
+  protected $severity = 'normal';
+
+  /**
    * Build a PolicyDefinition from Profile input.
    *
    * @var $name string
@@ -51,20 +58,9 @@ class PolicyDefinition {
       $policyDefinition->setParameters($definition['parameters']);
     }
 
-    // Load a policy to get defaults.
-    $policy = Policy::load($name);
-
     if (isset($definition['severity'])) {
       $policyDefinition->setSeverity($definition['severity']);
     }
-    else {
-      $policyDefinition->setSeverity($policy->getSeverity());
-    }
-
-    // Track policies that are depended on.
-    // foreach ((array) $policy->get('depends') as $name) {
-    //   $policyDefinition->setDependencyPolicyName($name);
-    // }
 
     return $policyDefinition;
   }
@@ -111,16 +107,16 @@ class PolicyDefinition {
   /**
    * Get the policy for the profile.
    */
-  public function getPolicy()
+  public function getPolicy(PolicyFactory $factory)
   {
-    $policy = Policy::load($this->getName());
+
+    $policy = $factory->loadPolicyByName($this->getName());
     if ($this->getSeverity() !== NULL) {
       $policy->setSeverity($this->getSeverity());
     }
 
     foreach ($this->parameters as $param => $value) {
-      $info = ['default' => $value];
-      $policy->addParameter($param, $info);
+      $policy->addParameter($param, $value);
     }
     return $policy;
   }
@@ -148,6 +144,15 @@ class PolicyDefinition {
       'parameters' => $this->parameters,
       'severity' => $this->severity
     ]);
+  }
+
+  public function setSeverity($severity) {
+    $this->severity = $severity;
+    return $this;
+  }
+
+  public function getSeverity() {
+    return $this->severity;
   }
 }
 

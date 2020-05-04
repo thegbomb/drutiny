@@ -3,7 +3,7 @@
 namespace Drutiny\Target;
 
 use Drutiny\Driver\Exec;
-use Drutiny\Container;
+use Drutiny\Process\ProcessManager;
 
 /**
  * @Drutiny\Annotation\Target(
@@ -15,6 +15,21 @@ class DrushTarget extends Target implements DrushTargetInterface, DrushExecutabl
 
   protected $alias;
 
+  protected $processManager;
+
+  public function __construct(ProcessManager $process_manager)
+  {
+    $this->processManager = $process_manager;
+  }
+
+  /**
+   * @param ProcessManager $process_manager
+   */
+  public static function create(ProcessManager $process_manager)
+  {
+    return new static($process_manager);
+  }
+
   /**
    * @inheritdoc
    * Implements Target::parse().
@@ -22,12 +37,9 @@ class DrushTarget extends Target implements DrushTargetInterface, DrushExecutabl
   public function parse($target_data) {
     $this->alias = $target_data;
 
-    // Get some information from the local site-alias.
-    $proc = new Exec();
-    $data = $proc->exec('drush sa @alias --format=json', [
-      '@alias' => $target_data,
-    ]);
-    $options = json_decode($data, TRUE);
+    $output = $this->processManager->exec(['drush', 'sa', $target_data, '--format=json']);
+
+    $options = json_decode($output, TRUE);
 
     $key = str_replace('@', '', $target_data);
     $this->options = isset($options[$key]) ? $options[$key] : array_shift($options);
@@ -86,7 +98,7 @@ class DrushTarget extends Target implements DrushTargetInterface, DrushExecutabl
     if (isset($this->options['remote-host'])) {
       $args['%docroot%'] = $this->options['root'];
       $command = strtr($command, $args);
-      Container::getLogger()->info(__CLASS__ . ": base64 encoding command: $command");
+      //Container::getLogger()->info(__CLASS__ . ": base64 encoding command: $command");
       $command = base64_encode($command);
       $command = "echo $command | base64 --decode | sh";
 

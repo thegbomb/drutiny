@@ -81,7 +81,7 @@ class AuditResponse {
    *   The policy name.
    */
   public function getName() {
-    return $this->policy->get('name', $this->tokens);
+    return $this->policy->getProperty('name');
   }
 
   /**
@@ -91,7 +91,7 @@ class AuditResponse {
    *   The checks title.
    */
   public function getTitle() {
-    return $this->policy->get('title', $this->tokens);
+    return $this->policy->getProperty('title');
   }
 
   /**
@@ -101,7 +101,7 @@ class AuditResponse {
    *   Translated description.
    */
   public function getDescription() {
-    return $this->policy->get('description', $this->tokens);
+    return $this->policy->getProperty('description');
   }
 
   /**
@@ -143,7 +143,7 @@ class AuditResponse {
    *   Translated description.
    */
   public function getRemediation() {
-    return $this->policy->has('remediation') ? $this->policy->get('remediation', $this->tokens) : '';
+    return $this->policy->getProperty('remediation');
   }
 
   /**
@@ -153,7 +153,7 @@ class AuditResponse {
    *   Translated description.
    */
   public function getFailure() {
-    return $this->policy->has('failure') ? $this->policy->get('failure', $this->tokens) : '';
+    return $this->policy->getProperty('failure');
   }
 
   /**
@@ -163,7 +163,7 @@ class AuditResponse {
    *   Translated description.
    */
   public function getSuccess() {
-    return $this->policy->get('success', $this->tokens);
+    return $this->policy->getProperty('success');
   }
 
   /**
@@ -173,7 +173,7 @@ class AuditResponse {
    *   Translated description.
    */
   public function getWarning() {
-    return $this->hasWarning() ? $this->policy->get('warning', $this->tokens) : '';
+    return $this->policy->getProperty('warning');
   }
 
   /**

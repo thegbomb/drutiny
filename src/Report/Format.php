@@ -7,10 +7,8 @@ use Drutiny\Profile;
 use Drutiny\Target\Target;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
-use Drutiny\Config;
-use Drutiny\Container;
 
-abstract class Format {
+abstract class Format implements FormatInterface {
 
   /**
    * The format the object applies to.
@@ -26,9 +24,14 @@ abstract class Format {
    */
   protected $output;
 
-  public function __construct($options = [])
+  public function __construct()
   {
-    $this->output = new BufferedOutput(Container::getVerbosity(), TRUE);
+    $this->output = new BufferedOutput(drutiny()->get('verbosity')->get(), TRUE);
+  }
+
+  public function setOptions(array $options = [])
+  {
+
   }
 
   public static function create($format, $options = [])
@@ -136,6 +139,10 @@ abstract class Format {
   public function getOutput()
   {
     return $this->output;
+  }
+
+  public function getName() {
+    return $this->format;
   }
 }
 

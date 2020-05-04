@@ -5,16 +5,13 @@ namespace Drutiny\Sandbox;
 use Drutiny\Audit;
 use Drutiny\AuditInterface;
 use Drutiny\AuditResponse\AuditResponse;
-use Drutiny\Cache;
-use Drutiny\Config;
-use Drutiny\Container;
 use Drutiny\Driver\Exec;
 use Drutiny\Policy;
-use Drutiny\Assessment;
 use Drutiny\RemediableInterface;
-use Drutiny\Target\Target;
+use Drutiny\Target\TargetInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Run check in an isolated environment.
@@ -23,25 +20,15 @@ class Sandbox {
   use ParameterTrait;
   use ReportingPeriodTrait;
 
-  /**
-   * @var \Drutiny\Target\Target
-   */
   protected $target;
-
-  /**
-   * @var \Drutiny\Audit
-   */
   protected $audit;
-
-  /**
-   * @var \Drutiny\Policy
-   */
   protected $policy;
+  protected $container;
 
-  /**
-   * @var \Drutiny\Assessment
-   */
-  protected $assessment;
+  public function __construct(ContainerInterface $container)
+  {
+    $this->container = $container;
+  }
 
   /**
    * Create a new Sandbox.
@@ -52,26 +39,38 @@ class Sandbox {
    *
    * @throws \Exception
    */
-  public function __construct(Target $target, Policy $policy, Assessment $assessment = NULL)
+  public function create(TargetInterface $target, Policy $policy)
   {
-
-    $this->target = $target;
-
-    $class = $policy->get('class');
-    $audit = new $class($this);
-    if (!$audit instanceof AuditInterface) {
-      throw new \InvalidArgumentException("$class is not a valid Audit class.");
-    }
-    $this->audit = $audit;
-    $this->policy = $policy;
-
     // Default reporting period is last 24 hours to the nearest hour.
     $start = new \DateTime(date('Y-m-d H:i:s', strtotime('-24 hours')));
     $end   = clone $start;
     $end->add(new \DateInterval('PT24H'));
-    $this->setReportingPeriod($start, $end);
 
-    $this->assessment = isset($assessment) ? $assessment : new Assessment();
+    $audit = $this->container->get($policy->getProperty('class'));
+    $sandbox = new static($this->container);
+
+    return $sandbox->setTarget($target)
+      ->setPolicy($policy)
+      ->setAudit($audit)
+      ->setReportingPeriod($start, $end);
+  }
+
+  public function setTarget(TargetInterface $target)
+  {
+    $this->target = $target;
+    return $this;
+  }
+
+  public function setPolicy(Policy $policy)
+  {
+    $this->policy = $policy;
+    return $this;
+  }
+
+  public function setAudit(AuditInterface $audit)
+  {
+    $this->audit = $audit;
+    return $this;
   }
 
   /**
@@ -80,18 +79,18 @@ class Sandbox {
   public function run()
   {
     $response = new AuditResponse($this->getPolicy());
-    $watchdog = Container::getLogger();
+    $watchdog = $this->container->get('logger');
 
-    $watchdog->info('Auditing ' . $this->getPolicy()->get('name'));
+    $watchdog->info('Auditing ' . $this->policy->getProperty('name'));
     try {
       // Ensure policy dependencies are met.
-      foreach ($this->getPolicy()->getDepends() as $dependency) {
+      foreach ($this->policy->getDepends() as $dependency) {
         // Throws DependencyException if dependency is not met.
         $dependency->execute($this);
       }
 
       // Run the audit over the policy.
-      $outcome = $this->getAuditor()->execute($this);
+      $outcome = $this->audit->execute($this);
 
       // Log the parameters output.
       $watchdog->debug("Tokens:\n" . Yaml::dump($this->getParameterTokens(), 4));
@@ -110,17 +109,13 @@ class Sandbox {
     }
     catch (\Exception $e) {
       $message = $e->getMessage();
-      if (Container::getVerbosity() > OutputInterface::VERBOSITY_NORMAL) {
+      if ($this->container->get('verbosity')->get() > OutputInterface::VERBOSITY_NORMAL) {
         $message .= PHP_EOL . $e->getTraceAsString();
       }
       $this->setParameter('exception', $message);
       $response->set(Audit::ERROR, $this->getParameterTokens());
     }
 
-    // Omit irrelevant AuditResponses.
-    if (!$response->isIrrelevant()) {
-      $this->getAssessment()->setPolicyResult($response);
-    }
     return $response;
   }
 
@@ -146,7 +141,6 @@ class Sandbox {
       $this->setParameter('exception', $e->getMessage());
       $response->set(Audit::ERROR, $this->getParameterTokens());
     }
-    $this->getAssessment()->setPolicyResult($response);
     return $response;
   }
 
@@ -166,11 +160,6 @@ class Sandbox {
     return $this->policy;
   }
 
-  public function getAssessment()
-  {
-    return $this->assessment;
-  }
-
   /**
    *
    */
@@ -180,54 +169,10 @@ class Sandbox {
   }
 
   /**
-   * A wrapper function for traits to use.
-   */
-  public function sandbox()
-  {
-    return $this;
-  }
-
-  /**
-   * @param $method
-   * @param $args
-   * @return mixed
-   * @throws \ErrorException
-   */
-  public function __call($method, $args)
-  {
-    $config = Config::get('Driver');
-    if (!isset($config[$method])) {
-      throw new \ErrorException("Unknown method $method on " . get_class($this));
-    }
-    array_unshift($args, $this);
-    return call_user_func_array($config[$method], $args);
-  }
-
-  /**
    * Pull the logger from the Container.
    */
   public function logger()
   {
-    return Container::getLogger();
+    return $this->container->get('logger');
   }
-
-  /**
-   * Execute a command against the Target.
-   * @deprecated
-   */
-  public function exec()
-  {
-    $args = func_get_args();
-    return call_user_func_array([$this->target, 'exec'], $args);
-  }
-
-  /**
-   * Execute a local command.
-   */
-   public function localExec()
-   {
-     $args = func_get_args();
-     $driver = new Exec();
-     return call_user_func_array([$driver, 'exec'], $args);
-   }
 }

@@ -31,7 +31,7 @@ class Exec {
       return $output;
     }
 
-    $process = new Process($command);
+    $process = new Process([$command]);
     $process->setTimeout(600);
 
     $watchdog->info(__CLASS__ . ': ' . $command);

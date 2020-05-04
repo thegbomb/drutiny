@@ -22,7 +22,7 @@ trait ParameterTrait {
 
     $defaults = $this->sandbox()
       ->getPolicy()
-      ->getParameterDefaults();
+      ->getProperty('parameters');
 
     if (isset($defaults[$key])) {
       $default_value = $defaults[$key];
@@ -60,7 +60,7 @@ trait ParameterTrait {
    *
    */
   public function getParameterTokens() {
-    $tokens = $this->getPolicy()->getParameterDefaults();
+    $tokens = $this->getPolicy()->getProperty('parameters');
     foreach ($this->params as $key => $value) {
       $tokens[$key] = $value;
     }

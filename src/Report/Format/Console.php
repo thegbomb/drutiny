@@ -17,8 +17,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class Console extends Format {
 
-  public function __construct($options) {
-    parent::__construct($options);
+  public function __construct() {
+    parent::__construct();
     $this->setFormat('console');
   }
 

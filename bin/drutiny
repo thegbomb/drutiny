@@ -1,29 +1,41 @@
 #!/usr/bin/env php
 <?php
 
-use Symfony\Component\Console\Application;
-use Drutiny\CommandDiscovery;
-use Doctrine\Common\Annotations\AnnotationRegistry;
+use Drutiny\Kernel;
+use Drutiny\Console\Application;
+// use Symfony\Component\ErrorHandler\Debug;
 
-$timezone = 'UTC';
-
-// Set the timezone to the local OS if supported.
-if (file_exists('/etc/localtime')) {
-  $systemZoneName = readlink('/etc/localtime');
-  if (strpos($systemZoneName, 'zoneinfo') !== FALSE) {
-    $timezone = substr($systemZoneName, strpos($systemZoneName, 'zoneinfo') + 9);
-  }
+if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
+    echo 'Warning: The console should be invoked via the CLI version of PHP, not the '.PHP_SAPI.' SAPI'.PHP_EOL;
 }
 
-date_default_timezone_set($timezone);
+set_time_limit(0);
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+// use Symfony\Component\Console\Application;
+// use Drutiny\CommandDiscovery;
+// use Doctrine\Common\Annotations\AnnotationRegistry;
+//
+// $timezone = 'UTC';
+//
+// // Set the timezone to the local OS if supported.
+// if (file_exists('/etc/localtime')) {
+//   $systemZoneName = readlink('/etc/localtime');
+//   if (strpos($systemZoneName, 'zoneinfo') !== FALSE) {
+//     $timezone = substr($systemZoneName, strpos($systemZoneName, 'zoneinfo') + 9);
+//   }
+// }
+//
+// date_default_timezone_set($timezone);
 
 const DRUTINY_LIB = '.';
 
 /**
  * @var ClassLoader $loader
  */
-$loader = require 'vendor/autoload.php';
-AnnotationRegistry::registerLoader([$loader, 'loadClass']);
+//$loader = require 'vendor/autoload.php';
+//AnnotationRegistry::registerLoader([$loader, 'loadClass']);
 
 $version_filename = dirname(__DIR__) . '/VERSION';
 if (file_exists($version_filename)) {
@@ -33,6 +45,12 @@ else {
   $version = exec(sprintf('git -C %s branch', dirname(__DIR__))) . '-dev';
 }
 
-$application = new Application('Drutiny', $version);
-$application->addCommands(CommandDiscovery::findCommands());
+$kernel = new Kernel('production', FALSE);
+
+function drutiny() {
+  global $kernel;
+  return $kernel->getContainer();
+}
+
+$application = new Application($kernel, $version);
 $application->run();

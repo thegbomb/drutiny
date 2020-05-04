@@ -2,8 +2,6 @@
 
 namespace Drutiny\PolicySource;
 
-use Drutiny\Policy;
-
 /**
  * Provide policies for Drutiny to use.
  */
