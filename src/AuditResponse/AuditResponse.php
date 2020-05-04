@@ -43,7 +43,7 @@ class AuditResponse
   /**
    * Set the state of the response.
    */
-    public function set($state = null, array $tokens)
+    public function set($state = null)
     {
         switch (true) {
             case ($state === Audit::SUCCESS):
@@ -74,7 +74,12 @@ class AuditResponse
         }
 
         $this->state = $state;
+        return $this;
+    }
+
+    public function setTokens(array $tokens = []) {
         $this->tokens = $tokens;
+        return $this;
     }
 
   /**

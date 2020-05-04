@@ -164,6 +164,14 @@ class Sandbox
         return $this->target;
     }
 
+   /**
+    * An alias to access the get method on the container.
+    */
+    public function get($id)
+    {
+      return $this->container->get($id);
+    }
+
   /**
    * Pull the logger from the Container.
    */

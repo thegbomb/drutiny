@@ -16,17 +16,31 @@ services:
         public: true
 
     _instanceof:
+      # Any symfony commands found can be loaded in as drutiny commands.
+      # Drutiny uses the "command" tag to load commands into the Console
+      # Application.
       Symfony\Component\Console\Command\Command:
         tags: [command]
 
+      # Drutiny pulls any class tagged as "profile.source" as a source to load
+      # profiles from.
       Drutiny\ProfileSource\ProfileSourceInterface:
         tags: [profile.source]
 
+      # Drutiny pulls any class tagged as "policy.source" as a source to load
+      # policies from.
       Drutiny\PolicySource\PolicySourceInterface:
         tags: [policy.source]
 
+      # Drutiny pulls any class tagged as "format" as a source to load
+      # reporting formats from (e.g. json, html, markdown, etc).
       Drutiny\Report\FormatInterface:
         tags: [format]
+
+      # Drutiny pulls any class tagged as "domain_list" as a source to load
+      # Domain Lists of a target from.
+      Drutiny\DomainList\DomainListInterface:
+        tags: [domain_list]
 
     cache.array:
         class: Symfony\Component\Cache\Adapter\ArrayAdapter
@@ -42,88 +56,76 @@ services:
 
     yaml:
       class: Symfony\Component\Yaml\Yaml
+      public: false
 
+    # Parse a local config file to use as config overrides for the local
+    # instance of drutiny.
     config:
       class: Drutiny\ImmuntableConfig
       arguments: ['@=service("yaml").parseFile("%config.local%")']
       autowire: false
 
-    commands:
-        namespace: Drutiny\Console\Command\
-        resource: 'src/Console/Command/*'
-
-    credentials:
-      class: Array
-      factory: [Symfony\Component\Yaml\Yaml, parseFile]
-      arguments: ['%config.credentials%']
-
+    # DomainList provider using YAML files.
+    # This is manually mentioned to associate the name "yaml" with the
+    # DomainListInterface provider.
     domain_list.yaml:
-        tags: [domain_list]
         class: Drutiny\DomainList\DomainListYamlFile
 
+    # A factory class for producing a reporting format instance.
     format.factory:
       class: Drutiny\Report\FormatFactory
 
+    # The Drutiny Guzzle HTTP factory.
     http.client:
       class: Drutiny\Http\Client
 
+    # Middleware used in the Drutiny Guzzle HTTP client is tagged with the
+    # tag "http.middleware".
     http.middleware:
       namespace: Drutiny\Http\Middleware\
       resource: 'src/Http/Middleware/*'
       arguments: ['@service_container', '@config']
       tags: [http.middleware]
 
+    # Default logger echoes logs out to the console.
+    logger:
+      alias: Symfony\Component\Console\Logger\ConsoleLogger
+
     Symfony\Component\Console\Logger\ConsoleLogger:
       arguments:
         - '@output'
 
-    logger:
-        alias: Symfony\Component\Console\Logger\ConsoleLogger
-
+    # Default output class echoes out to the console.
     output:
       class: Symfony\Component\Console\Output\ConsoleOutput
       arguments:
         - '@=service("verbosity").get()'
 
+    # Factory for loading policies from their sources.
     policy.factory:
       class: 'Drutiny\PolicyFactory'
       arguments: ['@service_container', '@cache.filesystem']
 
-    policy.sources:
-      namespace: Drutiny\PolicySource\
-      resource: 'src/PolicySource/*'
-      tags: [policy.source]
-
+    # Factory for loading profiles from their sources.
     profile.factory:
       class: 'Drutiny\ProfileFactory'
       arguments: ['@service_container', '@cache.filesystem']
-
-    profile.sources:
-      namespace: Drutiny\ProfileSource\
-      resource: 'src/ProfileSource/*'
-      tags: [profile.source]
 
     sandbox:
       class: Drutiny\Sandbox\Sandbox
 
     target.factory:
       class: Drutiny\Target\TargetFactory
-      arguments: ["@service_container"]
 
     target.drush:
-      tags: [target]
       factory: ['Drutiny\Target\DrushTarget', 'create']
       class: Drutiny\Target\DrushTarget
 
     target.none:
-      tags: [target]
       class: Drutiny\Target\TargetNone
 
     process.manager:
       class: Drutiny\Process\ProcessManager
-      calls:
-        - [setLogger, ['@logger']]
-        - [setCache, ['@cache.array']]
 
     verbosity:
         class: Drutiny\Console\Verbosity
@@ -136,19 +138,12 @@ services:
           - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
           - src/Console/Application.php
           - src/*/*Exception.php
-          - src/Report/*
           - src/Sandbox/Sandbox.php
           - src/ExpressionLanguage.php
-
-    Drutiny\Report\Format\:
-      resource: src/Report/Format/*
-      exclude: src/Report/Format/Menu/*
+          - src/Report/Format/Menu/*
 
     Drutiny\Target\TargetInterface:
       alias: 'target.drush'
-
-    Drutiny\Process\ProcessManager:
-      alias: 'process.manager'
 
     Symfony\Contracts\Cache\CacheInterface:
       alias: 'cache.array'
@@ -164,11 +159,6 @@ services:
 
     Symfony\Component\Finder\Finder:
       alias: finder
-    # controllers are imported separately to make sure services can be injected
-    # as action arguments even if you don't extend any base controller class
-    # App\Controller\:
-    #     resource: '../src/Controller'
-    #     tags: ['controller.service_arguments']
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    Psr\Log\LoggerInterface:
+      alias: logger

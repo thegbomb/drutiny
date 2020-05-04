@@ -5,9 +5,9 @@ namespace Drutiny\Process;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Contracts\Cache\CacheInterface;
-use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerTrait;
+use Psr\Log\LoggerInterface;
 
 class ProcessManager
 {
@@ -17,9 +17,10 @@ class ProcessManager
     protected $process;
     protected $cache;
 
-    public function setCache(CacheInterface $cache)
+    public function __construct(CacheInterface $cache, LoggerInterface $logger)
     {
         $this->cache = $cache;
+        $this->setLogger($logger);
     }
 
   /**
