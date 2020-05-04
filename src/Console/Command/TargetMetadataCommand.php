@@ -13,31 +13,33 @@ use Drutiny\Target\Registry as TargetRegistry;
 /**
  *
  */
-class TargetMetadataCommand extends Command {
+class TargetMetadataCommand extends Command
+{
 
   /**
    * @inheritdoc
    */
-  protected function configure() {
-    $this
-      ->setName('target:metadata')
-      ->setDescription('Display metatdata about a target.')
-      ->addArgument(
-        'target',
-        InputArgument::REQUIRED,
-        'A target reference.'
-      );
-  }
+    protected function configure()
+    {
+        $this
+        ->setName('target:metadata')
+        ->setDescription('Display metatdata about a target.')
+        ->addArgument(
+            'target',
+            InputArgument::REQUIRED,
+            'A target reference.'
+        );
+    }
 
   /**
    * @inheritdoc
    */
-  protected function execute(InputInterface $input, OutputInterface $output) {
-    $io = new SymfonyStyle($input, $output);
-    $target = TargetRegistry::loadTarget($input->getArgument('target'));
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $io = new SymfonyStyle($input, $output);
+        $target = TargetRegistry::loadTarget($input->getArgument('target'));
 
 
-    $output->writeln('<comment>' . Yaml::dump($target->getMetadata()) . '</>');
-  }
-
+        $output->writeln('<comment>' . Yaml::dump($target->getMetadata()) . '</>');
+    }
 }

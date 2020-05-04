@@ -19,16 +19,14 @@ use Drutiny\Annotation\Token;
  *  type = "string"
  * )
  */
-class HttpHeaderNotExists extends HttpHeaderExists {
+class HttpHeaderNotExists extends HttpHeaderExists
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
-    return !parent::audit($sandbox);
-  }
+    public function audit(Sandbox $sandbox)
+    {
+        return !parent::audit($sandbox);
+    }
 }
-
-
- ?>

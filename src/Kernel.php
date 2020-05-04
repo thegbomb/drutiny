@@ -24,22 +24,22 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 class Kernel
 {
 
-  private const CONFIG_EXTS = '.{php,yaml,yml}';
+    private const CONFIG_EXTS = '.{php,yaml,yml}';
 
-  private $container;
+    private $container;
 
-  public function getContainer()
-  {
-    if (!$this->container) {
-      return $this->initializeContainer();
+    public function getContainer()
+    {
+        if (!$this->container) {
+            return $this->initializeContainer();
+        }
+        return $this->container;
     }
-    return $this->container;
-  }
 
-  public function getProjectDir(): string
-  {
-      return \dirname(__DIR__);
-  }
+    public function getProjectDir(): string
+    {
+        return \dirname(__DIR__);
+    }
 
   /**
    * Initializes the service container.
@@ -47,12 +47,12 @@ class Kernel
    * The cached version of the service container is used when fresh, otherwise the
    * container is built.
    */
-  protected function initializeContainer()
-  {
-    $this->container = $this->buildContainer();
-    $this->container->compile();
-    return $this->container;
-  }
+    protected function initializeContainer()
+    {
+        $this->container = $this->buildContainer();
+        $this->container->compile();
+        return $this->container;
+    }
 
   /**
      * Builds the service container.
@@ -63,14 +63,14 @@ class Kernel
      */
     protected function buildContainer()
     {
-      $container = new ContainerBuilder();
-      $container->addObjectResource($this);
+        $container = new ContainerBuilder();
+        $container->addObjectResource($this);
 
-      $loader = $this->getContainerLoader($container);
+        $loader = $this->getContainerLoader($container);
 
-      $loader->load($this->getProjectDir().'/{drutiny}'.self::CONFIG_EXTS, 'glob');
-      $loader->load($this->getProjectDir().'/vendor/*/{drutiny}'.self::CONFIG_EXTS, 'glob');
-      return $container;
+        $loader->load($this->getProjectDir().'/{drutiny}'.self::CONFIG_EXTS, 'glob');
+        $loader->load($this->getProjectDir().'/vendor/*/{drutiny}'.self::CONFIG_EXTS, 'glob');
+        return $container;
     }
 
   /**

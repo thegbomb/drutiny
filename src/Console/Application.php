@@ -144,7 +144,7 @@ class Application extends BaseApplication
         $container = $this->kernel->getContainer();
         $container->findTags();
         foreach ($container->findTaggedServiceIds('command') as $id => $definition) {
-          $this->add($container->get($id));
+            $this->add($container->get($id));
         }
     }
 

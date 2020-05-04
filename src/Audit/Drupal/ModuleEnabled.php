@@ -16,31 +16,31 @@ use Drutiny\Annotation\Param;
  *  type = "string"
  * )
  */
-class ModuleEnabled extends Audit implements RemediableInterface {
+class ModuleEnabled extends Audit implements RemediableInterface
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
+    public function audit(Sandbox $sandbox)
+    {
 
-    $module = $sandbox->getParameter('module');
-    $info = $sandbox->drush(['format' => 'json'])->pmList();
+        $module = $sandbox->getParameter('module');
+        $info = $sandbox->drush(['format' => 'json'])->pmList();
 
-    if (!isset($info[$module])) {
-      return FALSE;
+        if (!isset($info[$module])) {
+            return false;
+        }
+
+        $status = strtolower($info[$module]['status']);
+
+        return ($status == 'enabled');
     }
 
-    $status = strtolower($info[$module]['status']);
-
-    return ($status == 'enabled');
-  }
-
-  public function remediate(Sandbox $sandbox)
-  {
-    $module = $sandbox->getParameter('module');
-    $sandbox->drush()->en($module, '-y');
-    return $this->audit($sandbox);
-  }
-
+    public function remediate(Sandbox $sandbox)
+    {
+        $module = $sandbox->getParameter('module');
+        $sandbox->drush()->en($module, '-y');
+        return $this->audit($sandbox);
+    }
 }

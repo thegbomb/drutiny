@@ -13,18 +13,17 @@ use Composer\Semver\Comparator;
  * description = "Use composer SemVer (semantic versioning) to evaluate if the first argument is greater than (gt) the second argument."
  * )
  */
-class SemverGtExpressionFunction implements ExpressionFunctionInterface {
-  static public function compile(Sandbox $sandbox)
-  {
-    list($sandbox, $v1, $v2) = func_get_args();
-    return sprintf('%s > %s', $v1, $v2);
-  }
+class SemverGtExpressionFunction implements ExpressionFunctionInterface
+{
+    public static function compile(Sandbox $sandbox)
+    {
+        list($sandbox, $v1, $v2) = func_get_args();
+        return sprintf('%s > %s', $v1, $v2);
+    }
 
-  static public function evaluate(Sandbox $sandbox)
-  {
-    list($sandbox, $v1, $v2) = func_get_args();
-    return Comparator::greaterThan($v1, $v2);
-  }
+    public static function evaluate(Sandbox $sandbox)
+    {
+        list($sandbox, $v1, $v2) = func_get_args();
+        return Comparator::greaterThan($v1, $v2);
+    }
 }
-
- ?>

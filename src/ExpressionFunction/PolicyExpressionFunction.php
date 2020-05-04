@@ -17,34 +17,32 @@ use Doctrine\Common\Annotations\AnnotationReader;
  * description = "Returns the AuditReponse type of an audited policy."
  * )
  */
-class PolicyExpressionFunction implements ExpressionFunctionInterface {
-  static public function compile(Sandbox $sandbox)
-  {
-    list($sandbox, $name, ) = func_get_args();
+class PolicyExpressionFunction implements ExpressionFunctionInterface
+{
+    public static function compile(Sandbox $sandbox)
+    {
+        list($sandbox, $name, ) = func_get_args();
 
-    return sprintf('Policy(%s)', $name);
-  }
-
-  static public function evaluate(Sandbox $sandbox)
-  {
-    list($sandbox, $name, ) = func_get_args();
-
-    try {
-      $response = $sandbox->getAssessment()->getPolicyResult($name);
+        return sprintf('Policy(%s)', $name);
     }
-    catch (NoAuditResponseFoundException $e) {
-      Container::getLogger()->info("Running policy " . $e->getPolicyName() . " audit inside dependency expression.");
-      $policy = PolicySource::loadPolicyByName($e->getPolicyName());
-      $box = new Sandbox($sandbox->getTarget(), $policy);
-      $box->setReportingPeriodStart($sandbox->getReportingPeriodStart());
-      $box->setReportingPeriodEnd($sandbox->getReportingPeriodEnd());
-      $response = $box->run();
 
-      // Omit policy from assessment.
+    public static function evaluate(Sandbox $sandbox)
+    {
+        list($sandbox, $name, ) = func_get_args();
+
+        try {
+            $response = $sandbox->getAssessment()->getPolicyResult($name);
+        } catch (NoAuditResponseFoundException $e) {
+            Container::getLogger()->info("Running policy " . $e->getPolicyName() . " audit inside dependency expression.");
+            $policy = PolicySource::loadPolicyByName($e->getPolicyName());
+            $box = new Sandbox($sandbox->getTarget(), $policy);
+            $box->setReportingPeriodStart($sandbox->getReportingPeriodStart());
+            $box->setReportingPeriodEnd($sandbox->getReportingPeriodEnd());
+            $response = $box->run();
+
+          // Omit policy from assessment.
+        }
+        Container::getLogger()->debug(sprintf('Policy(%s) returned "%s".', $name, $response->getType()));
+        return $response->getType();
     }
-    Container::getLogger()->debug(sprintf('Policy(%s) returned "%s".', $name, $response->getType()));
-    return $response->getType();
-  }
 }
-
- ?>

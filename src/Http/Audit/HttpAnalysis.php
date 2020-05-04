@@ -40,53 +40,51 @@ use Drutiny\Annotation\Param;
  *  description = "An options array passed to the Guzzle client request method."
  * )
  */
-class HttpAnalysis extends AbstractAnalysis {
-  use HttpTrait;
+class HttpAnalysis extends AbstractAnalysis
+{
+    use HttpTrait;
 
-  protected function gather(Sandbox $sandbox)
-  {
-    $use_cache = $sandbox->getParameter('use_cache', FALSE);
-    // For checking caching functionality, add a listener
-    // to pre-warm the origin.
-    if ($sandbox->setParameter('send_warming_request', FALSE)) {
-      $sandbox->setParameter('use_cache', FALSE);
-      $response = $this->getHttpResponse($sandbox);
-      $sandbox->setParameter('cold_headers', $this->gatherHeaders($response));
-    }
-
-    $sandbox->setParameter('use_cache', $use_cache);
-    $response = $this->getHttpResponse($sandbox);
-
-    // Maintain for backwards compatibility.
-    $sandbox->setParameter('headers', $this->gatherHeaders($response));
-
-    $sandbox->setParameter('res_headers', $response->getHeaders());
-  }
-
-  protected function gatherHeaders(ResponseInterface $response)
-  {
-    $headers = [];
-
-    foreach ($response->getHeaders() as $name => $values) {
-      foreach ($values as $value) {
-        $directives = array_map('trim', explode(',', $value));
-        foreach ($directives as $directive) {
-          list($flag, $flag_value) = strpos($directive, '=') ? explode('=', $directive) : [$directive, NULL];
-
-          $headers[strtolower($name)][strtolower($flag)] = is_null($flag_value) ?: $flag_value;
+    protected function gather(Sandbox $sandbox)
+    {
+        $use_cache = $sandbox->getParameter('use_cache', false);
+      // For checking caching functionality, add a listener
+      // to pre-warm the origin.
+        if ($sandbox->setParameter('send_warming_request', false)) {
+            $sandbox->setParameter('use_cache', false);
+            $response = $this->getHttpResponse($sandbox);
+            $sandbox->setParameter('cold_headers', $this->gatherHeaders($response));
         }
-      }
+
+        $sandbox->setParameter('use_cache', $use_cache);
+        $response = $this->getHttpResponse($sandbox);
+
+      // Maintain for backwards compatibility.
+        $sandbox->setParameter('headers', $this->gatherHeaders($response));
+
+        $sandbox->setParameter('res_headers', $response->getHeaders());
     }
 
-    foreach ($headers as $name => $values) {
-      if (count($values) == 1 && current($values) === TRUE) {
-        $headers[$name] = key($values);
-      }
-    }
+    protected function gatherHeaders(ResponseInterface $response)
+    {
+        $headers = [];
 
-    return $headers;
-  }
+        foreach ($response->getHeaders() as $name => $values) {
+            foreach ($values as $value) {
+                $directives = array_map('trim', explode(',', $value));
+                foreach ($directives as $directive) {
+                    list($flag, $flag_value) = strpos($directive, '=') ? explode('=', $directive) : [$directive, null];
+
+                    $headers[strtolower($name)][strtolower($flag)] = is_null($flag_value) ?: $flag_value;
+                }
+            }
+        }
+
+        foreach ($headers as $name => $values) {
+            if (count($values) == 1 && current($values) === true) {
+                $headers[$name] = key($values);
+            }
+        }
+
+        return $headers;
+    }
 }
-
-
- ?>

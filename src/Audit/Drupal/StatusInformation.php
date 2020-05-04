@@ -14,16 +14,17 @@ use Drutiny\Annotation\Token;
  *  description = "The status object returned by drush."
  * )
  */
-class StatusInformation extends Audit {
+class StatusInformation extends Audit
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox) {
-    $stat = $sandbox->drush(['format' => 'json'])->status();
-    $sandbox->setParameter('status', $stat);
+    public function audit(Sandbox $sandbox)
+    {
+        $stat = $sandbox->drush(['format' => 'json'])->status();
+        $sandbox->setParameter('status', $stat);
 
-    return Audit::NOTICE;
-  }
-
+        return Audit::NOTICE;
+    }
 }

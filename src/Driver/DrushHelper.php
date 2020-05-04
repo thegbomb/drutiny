@@ -5,14 +5,15 @@ namespace Drutiny\Driver;
 /**
  *
  */
-class DrushHelper {
+class DrushHelper
+{
 
-  protected $drush;
+    protected $drush;
 
-  public function __construct(DrushDriver $drush)
-  {
-    $this->drush = $drush;
-  }
+    public function __construct(DrushDriver $drush)
+    {
+        $this->drush = $drush;
+    }
 
   /**
    * Function like the Drupal 7 variable_get function.
@@ -22,13 +23,12 @@ class DrushHelper {
    * @param mixed $default
    *   The value to return if the variable is not set.
    */
-  public function variable_get($name, $default = NULL)
-  {
-    $vars = $this->drush->setDrushOptions(['format' => 'json'])->variableGet();
-    if (!isset($vars[$name])) {
-      return $default;
+    public function variable_get($name, $default = null)
+    {
+        $vars = $this->drush->setDrushOptions(['format' => 'json'])->variableGet();
+        if (!isset($vars[$name])) {
+            return $default;
+        }
+        return $vars[$name];
     }
-    return $vars[$name];
-  }
-
 }

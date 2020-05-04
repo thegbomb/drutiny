@@ -71,7 +71,7 @@ EOF
         $io->text('The following classes & interfaces can be used as type-hints when autowiring:');
 
         $hasAlias = [];
-        $all = TRUE;
+        $all = true;
         $previousId = '-';
         $serviceIdsNb = 0;
         foreach ($serviceIds as $serviceId) {

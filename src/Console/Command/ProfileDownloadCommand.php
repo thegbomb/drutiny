@@ -14,39 +14,41 @@ use Drutiny\Profile;
 /**
  *
  */
-class ProfileDownloadCommand extends Command {
+class ProfileDownloadCommand extends Command
+{
 
   /**
    * @inheritdoc
    */
-  protected function configure() {
-    $this
-      ->setName('profile:download')
-      ->setDescription('Download a remote profile locally.')
-      ->addArgument(
-        'profile',
-        InputArgument::REQUIRED,
-        'The name of the profile to download.'
-      )
-      ->addArgument(
-        'source',
-        InputArgument::OPTIONAL,
-        'The source to download the profile from.'
-      );
-  }
+    protected function configure()
+    {
+        $this
+        ->setName('profile:download')
+        ->setDescription('Download a remote profile locally.')
+        ->addArgument(
+            'profile',
+            InputArgument::REQUIRED,
+            'The name of the profile to download.'
+        )
+        ->addArgument(
+            'source',
+            InputArgument::OPTIONAL,
+            'The source to download the profile from.'
+        );
+    }
 
   /**
    * @inheritdoc
    */
-  protected function execute(InputInterface $input, OutputInterface $output) {
-    $render = new SymfonyStyle($input, $output);
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $render = new SymfonyStyle($input, $output);
 
-    $profile = ProfileSource::loadProfileByName($name = $input->getArgument('profile'));
+        $profile = ProfileSource::loadProfileByName($name = $input->getArgument('profile'));
 
-    $output = Yaml::dump($profile->dump());
-    $filename = "$name.profile.yml";
-    file_put_contents($filename, $output);
-    $render->success("$filename written.");
-  }
-
+        $output = Yaml::dump($profile->dump());
+        $filename = "$name.profile.yml";
+        file_put_contents($filename, $output);
+        $render->success("$filename written.");
+    }
 }

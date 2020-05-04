@@ -7,13 +7,15 @@ namespace Drutiny\Target;
  *  name = "none"
  * )
  */
-class TargetNone extends Target {
+class TargetNone extends Target
+{
 
   /**
    * Set a default URI.
    */
-  public function parse($target_data) {
-    $this->setUri('http://default/');
-    return $this;
-  }
+    public function parse($target_data)
+    {
+        $this->setUri('http://default/');
+        return $this;
+    }
 }

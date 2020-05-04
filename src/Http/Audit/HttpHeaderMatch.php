@@ -18,21 +18,19 @@ use Drutiny\Annotation\Param;
  *  type = "string"
  * )
  */
-class HttpHeaderMatch extends Http {
+class HttpHeaderMatch extends Http
+{
 
-  public function audit(Sandbox $sandbox)
-  {
-    $value = $sandbox->getParameter('header_value');
-    $res = $this->getHttpResponse($sandbox);
-    $header = $sandbox->getParameter('header');
+    public function audit(Sandbox $sandbox)
+    {
+        $value = $sandbox->getParameter('header_value');
+        $res = $this->getHttpResponse($sandbox);
+        $header = $sandbox->getParameter('header');
 
-    if (!$res->hasHeader($header)) {
-      return FALSE;
+        if (!$res->hasHeader($header)) {
+            return false;
+        }
+        $headers = $res->getHeader($header);
+        return $value == $headers[0];
     }
-    $headers = $res->getHeader($header);
-    return $value == $headers[0];
-  }
 }
-
-
- ?>

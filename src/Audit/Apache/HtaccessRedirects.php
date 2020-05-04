@@ -24,26 +24,27 @@ use Drutiny\Annotation\Token;
  *  default = 10
  * )
  */
-class HtaccessRedirects extends Audit {
+class HtaccessRedirects extends Audit
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox) {
+    public function audit(Sandbox $sandbox)
+    {
 
-    $patterns = array(
-      'RedirectPermanent',
-      'Redirect(Match)?.*?(301|permanent) *$',
-      'RewriteRule.*\[.*R=(301|permanent).*\] *$',
-    );
-    $regex = '^ *(' . implode('|', $patterns) . ')';
-    $command = "grep -Ei '${regex}' %docroot%/.htaccess | wc -l";
+        $patterns = array(
+        'RedirectPermanent',
+        'Redirect(Match)?.*?(301|permanent) *$',
+        'RewriteRule.*\[.*R=(301|permanent).*\] *$',
+        );
+        $regex = '^ *(' . implode('|', $patterns) . ')';
+        $command = "grep -Ei '${regex}' %docroot%/.htaccess | wc -l";
 
-    $total_redirects = (int) $sandbox->exec($command);
+        $total_redirects = (int) $sandbox->exec($command);
 
-    $sandbox->setParameter('total_redirects', $total_redirects);
+        $sandbox->setParameter('total_redirects', $total_redirects);
 
-    return $total_redirects < $sandbox->getParameter('max_redirects', 10);
-  }
-
+        return $total_redirects < $sandbox->getParameter('max_redirects', 10);
+    }
 }

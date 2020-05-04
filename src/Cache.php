@@ -8,38 +8,42 @@ use Symfony\Component\Cache\CacheItem;
  * @deprecated
  * A static cache handler.
  */
-class Cache {
+class Cache
+{
 
-  static protected $cache = [];
+    protected static $cache = [];
 
-  static public function set($bin, $cid, $value) {
-    Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
-    $pool = Container::cache($bin);
-    $item = $pool->getItem($cid);
-    $item->set($value)
-      ->expiresAt(new \DateTime('+1 hour'));
-    $pool->save($item);
-    return TRUE;
-  }
+    public static function set($bin, $cid, $value)
+    {
+        Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
+        $pool = Container::cache($bin);
+        $item = $pool->getItem($cid);
+        $item->set($value)
+        ->expiresAt(new \DateTime('+1 hour'));
+        $pool->save($item);
+        return true;
+    }
 
-  static public function get($bin, $cid) {
-    Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
-    $pool = Container::cache($bin);
-    return $pool->getItem($cid)->get();
-  }
+    public static function get($bin, $cid)
+    {
+        Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
+        $pool = Container::cache($bin);
+        return $pool->getItem($cid)->get();
+    }
 
-  static public function purge($bin = NULL) {
-    Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
-    $pool = Container::cache($bin);
-    $pool->clear();
-    return TRUE;
-  }
+    public static function purge($bin = null)
+    {
+        Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
+        $pool = Container::cache($bin);
+        $pool->clear();
+        return true;
+    }
 
-  static public function delete($bin, $cid) {
-    Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
-    $pool = Container::cache($bin);
-    $pool->deleteItem($cid);
-    return TRUE;
-  }
-
+    public static function delete($bin, $cid)
+    {
+        Container::getLogger()->warning('Drutiny\Cache class is deprecated. Please use Drutiny\Container::cache() instead.');
+        $pool = Container::cache($bin);
+        $pool->deleteItem($cid);
+        return true;
+    }
 }

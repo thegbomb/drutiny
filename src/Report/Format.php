@@ -8,88 +8,86 @@ use Drutiny\Target\Target;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-abstract class Format implements FormatInterface {
+abstract class Format implements FormatInterface
+{
 
   /**
    * The format the object applies to.
    *
    * @var string
    */
-  protected $format = 'unknown';
+    protected $format = 'unknown';
 
   /**
    * The output object.
    *
    * @var Symfony\Component\Console\Output\BufferedOutput
    */
-  protected $output;
+    protected $output;
 
-  public function __construct()
-  {
-    $this->output = new BufferedOutput(drutiny()->get('verbosity')->get(), TRUE);
-  }
-
-  public function setOptions(array $options = [])
-  {
-
-  }
-
-  public static function create($format, $options = [])
-  {
-    $formats = Config::get('Format');
-    if (!isset($formats[$format])) {
-      throw new \InvalidArgumentException("Reporting format '$format' is not supported.");
+    public function __construct()
+    {
+        $this->output = new BufferedOutput(drutiny()->get('verbosity')->get(), true);
     }
-    return new $formats[$format]($options);
-  }
+
+    public function setOptions(array $options = [])
+    {
+    }
+
+    public static function create($format, $options = [])
+    {
+        $formats = Config::get('Format');
+        if (!isset($formats[$format])) {
+            throw new \InvalidArgumentException("Reporting format '$format' is not supported.");
+        }
+        return new $formats[$format]($options);
+    }
 
   /**
    * Get the profile title.
    */
-  public function getFormat()
-  {
-    return $this->format;
-  }
+    public function getFormat()
+    {
+        return $this->format;
+    }
 
   /**
    * Set the title of the profile.
    */
-  protected function setFormat($format)
-  {
-    $this->format = $format;
-    return $this;
-  }
-
-  final public function render(Profile $profile, Target $target, array $results)
-  {
-    $filepaths = [];
-
-    if (count($results) == 1) {
-      $result = reset($results);
-      // @var array
-      $variables = $this->preprocessResult($profile, $target, $result);
-
-      // @var string
-      $renderedOutput = $this->renderResult($variables);
-    }
-    else {
-
-      // @var array
-      $variables = $this->preprocessMultiResult($profile, $target, $results);
-
-      // @var string
-      $renderedOutput = $this->renderMultiResult($variables);
+    protected function setFormat($format)
+    {
+        $this->format = $format;
+        return $this;
     }
 
-    $this->getOutput()->write($renderedOutput, FALSE);
-    return $this->getOutput();
-  }
+    final public function render(Profile $profile, Target $target, array $results)
+    {
+        $filepaths = [];
 
-  abstract protected function preprocessResult(Profile $profile, Target $target, Assessment $assessment);
-  abstract protected function preprocessMultiResult(Profile $profile, Target $target, array $results);
+        if (count($results) == 1) {
+            $result = reset($results);
+          // @var array
+            $variables = $this->preprocessResult($profile, $target, $result);
 
-  abstract protected function renderResult(array $variables);
-  abstract protected function renderMultiResult(array $variables);
+          // @var string
+            $renderedOutput = $this->renderResult($variables);
+        } else {
+          // @var array
+            $variables = $this->preprocessMultiResult($profile, $target, $results);
+
+          // @var string
+            $renderedOutput = $this->renderMultiResult($variables);
+        }
+
+        $this->getOutput()->write($renderedOutput, false);
+        return $this->getOutput();
+    }
+
+    abstract protected function preprocessResult(Profile $profile, Target $target, Assessment $assessment);
+    abstract protected function preprocessMultiResult(Profile $profile, Target $target, array $results);
+
+    abstract protected function renderResult(array $variables);
+    abstract protected function renderMultiResult(array $variables);
 
   /**
    * Render an HTML template.
@@ -101,49 +99,49 @@ abstract class Format implements FormatInterface {
    *
    * @return string
    */
-  public function renderTemplate($tpl, array $render) {
-    $registry = new \Drutiny\Registry();
-    $loader = new \Twig_Loader_Filesystem($registry->templateDirs());
-    $twig = new \Twig_Environment($loader, array(
-      'cache' => sys_get_temp_dir() . '/drutiny/cache',
-      'auto_reload' => TRUE,
-      // 'debug' => true,
-    ));
-    // $twig->addExtension(new \Twig_Extension_Debug());
+    public function renderTemplate($tpl, array $render)
+    {
+        $registry = new \Drutiny\Registry();
+        $loader = new \Twig_Loader_Filesystem($registry->templateDirs());
+        $twig = new \Twig_Environment($loader, array(
+        'cache' => sys_get_temp_dir() . '/drutiny/cache',
+        'auto_reload' => true,
+        // 'debug' => true,
+        ));
+      // $twig->addExtension(new \Twig_Extension_Debug());
 
-    // Filter to sort arrays by a property.
-    $twig->addFilter(new \Twig_SimpleFilter('psort', function (array $array, array $args = []) {
-        $property = reset($args);
+      // Filter to sort arrays by a property.
+        $twig->addFilter(new \Twig_SimpleFilter('psort', function (array $array, array $args = []) {
+            $property = reset($args);
 
-        usort($array, function ($a, $b) use ($property) {
-          if ($a[$property] == $b[$property]) {
-            return 0;
-          }
-          $index = [$a[$property], $b[$property]];
-          sort($index);
-          return $index[0] == $a[$property] ? 1 : -1;
-        });
+            usort($array, function ($a, $b) use ($property) {
+                if ($a[$property] == $b[$property]) {
+                    return 0;
+                }
+                $index = [$a[$property], $b[$property]];
+                sort($index);
+                return $index[0] == $a[$property] ? 1 : -1;
+            });
 
-        return $array;
-    },
-    ['is_variadic' => true]));
+            return $array;
+        },
+        ['is_variadic' => true]));
 
-    $template = $twig->load($tpl . '.' . $this->getFormat() . '.twig');
-    $contents = $template->render($render);
-    return $contents;
-  }
+        $template = $twig->load($tpl . '.' . $this->getFormat() . '.twig');
+        $contents = $template->render($render);
+        return $contents;
+    }
 
   /**
    * Get the profile title.
    */
-  public function getOutput()
-  {
-    return $this->output;
-  }
+    public function getOutput()
+    {
+        return $this->output;
+    }
 
-  public function getName() {
-    return $this->format;
-  }
+    public function getName()
+    {
+        return $this->format;
+    }
 }
-
- ?>

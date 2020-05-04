@@ -7,16 +7,16 @@ use Drutiny\Sandbox\Sandbox;
 /**
  *
  */
-interface AuditInterface {
+interface AuditInterface
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox);
+    public function audit(Sandbox $sandbox);
 
   /**
    *
    */
-  public function execute(Sandbox $sandbox);
-
+    public function execute(Sandbox $sandbox);
 }

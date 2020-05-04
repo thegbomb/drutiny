@@ -23,26 +23,25 @@ use Drutiny\Annotation\Token;
  *  default = {}
  * )
  */
-class SampleAudit extends Audit {
+class SampleAudit extends Audit
+{
 
-  protected function requireContext(Sandbox $sandbox)
-  {
-    // TODO: Check for pre-conditions of audits in here or remove.
-    // Return TRUE if pre-conditions are meet, otherwise FALSE.
-    // Any protected function prefixed with "require" will be run and must return
-    // TRUE for the audit method to be fired.
-    return TRUE;
-  }
+    protected function requireContext(Sandbox $sandbox)
+    {
+      // TODO: Check for pre-conditions of audits in here or remove.
+      // Return TRUE if pre-conditions are meet, otherwise FALSE.
+      // Any protected function prefixed with "require" will be run and must return
+      // TRUE for the audit method to be fired.
+        return true;
+    }
 
-  public function audit(Sandbox $sandbox)
-  {
-    // Example usage of Parameters and Tokens.
-    // See annotations in class doc block.
-    $foo = $sandbox->getParameter('foo');
-    $sandbox->setParameter('data', [$foo]);
-    // TODO: Write audit.
-    throw new \Exception("Audit needs to be created.");
-  }
+    public function audit(Sandbox $sandbox)
+    {
+      // Example usage of Parameters and Tokens.
+      // See annotations in class doc block.
+        $foo = $sandbox->getParameter('foo');
+        $sandbox->setParameter('data', [$foo]);
+      // TODO: Write audit.
+        throw new \Exception("Audit needs to be created.");
+    }
 }
-
- ?>

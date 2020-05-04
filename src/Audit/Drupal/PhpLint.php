@@ -23,22 +23,23 @@ use Drutiny\Annotation\Token;
  *  default = {}
  * )
  */
-class PhpLint extends Audit {
+class PhpLint extends Audit
+{
 
   /**
    * @inheritdoc
    */
-  public function audit(Sandbox $sandbox) {
-    // find src/ -name \*.php -exec php -l {} \; 2>&1 | grep 'PHP Parse error:'
-    $path = $sandbox->getParameter('path', '%root');
-    $stat = $sandbox->drush(['format' => 'json'])->status();
+    public function audit(Sandbox $sandbox)
+    {
+      // find src/ -name \*.php -exec php -l {} \; 2>&1 | grep 'PHP Parse error:'
+        $path = $sandbox->getParameter('path', '%root');
+        $stat = $sandbox->drush(['format' => 'json'])->status();
 
-    $path = strtr($path, $stat['%paths']);
+        $path = strtr($path, $stat['%paths']);
 
-    $errors = $sandbox->exec("find $path -name \*.php -exec php -l {} \; 2>&1 | grep 'PHP Parse error:' || true");
-    $errors = array_filter(explode(PHP_EOL, $errors));
-    $sandbox->setParameter('errors', $errors);
-    return count($errors) == 0;
-  }
-
+        $errors = $sandbox->exec("find $path -name \*.php -exec php -l {} \; 2>&1 | grep 'PHP Parse error:' || true");
+        $errors = array_filter(explode(PHP_EOL, $errors));
+        $sandbox->setParameter('errors', $errors);
+        return count($errors) == 0;
+    }
 }

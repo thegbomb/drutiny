@@ -9,17 +9,18 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerTrait;
 
-class ProcessManager {
-  use LoggerAwareTrait;
-  use LoggerTrait;
+class ProcessManager
+{
+    use LoggerAwareTrait;
+    use LoggerTrait;
 
-  protected $process;
-  protected $cache;
+    protected $process;
+    protected $cache;
 
-  public function setCache(CacheInterface $cache)
-  {
-    $this->cache = $cache;
-  }
+    public function setCache(CacheInterface $cache)
+    {
+        $this->cache = $cache;
+    }
 
   /**
    * @param array          $command The command to run and its arguments listed as separate entries
@@ -30,27 +31,25 @@ class ProcessManager {
    *
    * @throws LogicException When proc_open is not installed
    */
-  public function exec(array $command, string $cwd = null, array $env = null, $input = null, ?float $timeout = 60)
-  {
-    $this->info(__CLASS__ . ': Running process: ' . implode(' ', $command));
-    $process = new Process($command, $cwd, $env, $input, $timeout);
-    $process->setTimeout(600);
-    $process->run();
-    if (!$process->isSuccessful()) {
-      throw new ProcessFailedException($process);
+    public function exec(array $command, string $cwd = null, array $env = null, $input = null, ?float $timeout = 60)
+    {
+        $this->info(__CLASS__ . ': Running process: ' . implode(' ', $command));
+        $process = new Process($command, $cwd, $env, $input, $timeout);
+        $process->setTimeout(600);
+        $process->run();
+        if (!$process->isSuccessful()) {
+            throw new ProcessFailedException($process);
+        }
+        $output = $process->getOutput();
+        $this->debug(__CLASS__ . ': output: ' . $output);
+        return $output;
     }
-    $output = $process->getOutput();
-    $this->debug(__CLASS__ . ': output: ' . $output);
-    return $output;
-  }
 
   /**
    * {@inherit}
    */
-  public function log($level, $message, array $context = array())
-  {
-    $this->logger->log($level, $message, $context);
-  }
+    public function log($level, $message, array $context = array())
+    {
+        $this->logger->log($level, $message, $context);
+    }
 }
-
- ?>

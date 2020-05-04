@@ -47,73 +47,74 @@ use Drutiny\Annotation\Token;
  *   default = {}
  * )
  */
-class CodeScan extends Audit {
+class CodeScan extends Audit
+{
 
   /**
    * @inheritdoc
    */
-  public function audit(Sandbox $sandbox) {
-    $directory = $sandbox->getParameter('directory', '%root');
-    $stat = $sandbox->drush(['format' => 'json'])->status();
+    public function audit(Sandbox $sandbox)
+    {
+        $directory = $sandbox->getParameter('directory', '%root');
+        $stat = $sandbox->drush(['format' => 'json'])->status();
 
-    $directory =  strtr($directory, $stat['%paths']);
+        $directory =  strtr($directory, $stat['%paths']);
 
-    $command = ['find', $directory, '-type f'];
+        $command = ['find', $directory, '-type f'];
 
-    $types = $sandbox->getParameter('filetypes', []);
+        $types = $sandbox->getParameter('filetypes', []);
 
-    if (!empty($types)) {
-      $conditions = [];
-      foreach ($types as $type) {
-        $conditions[] = '-iname "*.' . $type . '"';
-      }
-      $command[] = '\( ' . implode(' -or ', $conditions) . ' \)';
+        if (!empty($types)) {
+            $conditions = [];
+            foreach ($types as $type) {
+                $conditions[] = '-iname "*.' . $type . '"';
+            }
+            $command[] = '\( ' . implode(' -or ', $conditions) . ' \)';
+        }
+
+        foreach ($sandbox->getParameter('exclude', []) as $filepath) {
+            $filepath = strtr($filepath, $stat['%paths']);
+            $command[] = "! -path '$filepath'";
+        }
+
+        $command[] = '| (xargs grep -nE';
+        $command[] = '"' . implode('|', $sandbox->getParameter('patterns', [])) . '" || exit 0)';
+
+        $whitelist = $sandbox->getParameter('whitelist', []);
+        if (!empty($whitelist)) {
+            $command[] = "| (grep -vE '" . implode('|', $whitelist) . "' || exit 0)";
+        }
+
+
+        $command = implode(' ', $command);
+        $sandbox->logger()->info('[' . __CLASS__ . '] ' . $command);
+        $output = $sandbox->exec($command);
+
+        if (empty($output)) {
+            return true;
+        }
+
+        $matches = array_filter(explode(PHP_EOL, $output));
+        $matches = array_map(function ($line) {
+            list($filepath, $line_number, $code) = explode(':', $line, 3);
+            return [
+            'file' => $filepath,
+            'line' => $line_number,
+            'code' => trim($code),
+            'basename' => basename($filepath)
+            ];
+        }, $matches);
+
+        $results = [
+        'found' => count($matches),
+        'findings' => $matches,
+        'filepaths' => array_values(array_unique(array_map(function ($match) use ($stat) {
+            return str_replace($stat['%paths']['%root'], '', $match['file']);
+        }, $matches)))
+        ];
+
+        $sandbox->setParameter('results', $results);
+
+        return empty($matches);
     }
-
-    foreach ($sandbox->getParameter('exclude', []) as $filepath) {
-      $filepath = strtr($filepath, $stat['%paths']);
-      $command[] = "! -path '$filepath'";
-    }
-
-    $command[] = '| (xargs grep -nE';
-    $command[] = '"' . implode('|', $sandbox->getParameter('patterns', [])) . '" || exit 0)';
-
-    $whitelist = $sandbox->getParameter('whitelist', []);
-    if (!empty($whitelist)) {
-      $command[] = "| (grep -vE '" . implode('|', $whitelist) . "' || exit 0)";
-    }
-
-
-    $command = implode(' ', $command);
-    $sandbox->logger()->info('[' . __CLASS__ . '] ' . $command);
-    $output = $sandbox->exec($command);
-
-    if (empty($output)) {
-      return TRUE;
-    }
-
-    $matches = array_filter(explode(PHP_EOL, $output));
-    $matches = array_map(function ($line) {
-      list($filepath, $line_number, $code) = explode(':', $line, 3);
-      return [
-        'file' => $filepath,
-        'line' => $line_number,
-        'code' => trim($code),
-        'basename' => basename($filepath)
-      ];
-    }, $matches);
-
-    $results = [
-      'found' => count($matches),
-      'findings' => $matches,
-      'filepaths' => array_values(array_unique(array_map(function ($match) use ($stat) {
-        return str_replace($stat['%paths']['%root'], '', $match['file']);
-      }, $matches)))
-    ];
-
-    $sandbox->setParameter('results', $results);
-
-    return empty($matches);
-  }
-
 }

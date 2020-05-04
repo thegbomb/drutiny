@@ -5,4 +5,6 @@ namespace Drutiny;
 /**
  *
  */
-class AuditValidationException extends \Exception {}
+class AuditValidationException extends \Exception
+{
+}

@@ -2,4 +2,6 @@
 
 namespace Drutiny\Policy;
 
-class UnknownPolicyException extends \RuntimeException {}
+class UnknownPolicyException extends \RuntimeException
+{
+}

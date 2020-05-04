@@ -14,18 +14,16 @@ use Drutiny\Annotation\Param;
  *  default = 200
  * )
  */
-class HttpStatusCode extends Http {
+class HttpStatusCode extends Http
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
-    $status_code = $sandbox->getParameter('status_code', 200);
-    $res = $this->getHttpResponse($sandbox);
-    return $status_code == $res->getStatusCode();
-  }
+    public function audit(Sandbox $sandbox)
+    {
+        $status_code = $sandbox->getParameter('status_code', 200);
+        $res = $this->getHttpResponse($sandbox);
+        return $status_code == $res->getStatusCode();
+    }
 }
-
-
- ?>

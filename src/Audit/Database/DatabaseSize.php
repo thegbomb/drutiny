@@ -31,39 +31,40 @@ use Drutiny\Annotation\Token;
  *  type = "integer"
  * )
  */
-class DatabaseSize extends Audit {
+class DatabaseSize extends Audit
+{
 
   /**
    * {@inheritdoc}
    */
-  public function audit(Sandbox $sandbox) {
-    $stat = $sandbox->drush(['format' => 'json'])
-      ->status();
+    public function audit(Sandbox $sandbox)
+    {
+        $stat = $sandbox->drush(['format' => 'json'])
+        ->status();
 
-    $name = $stat['db-name'];
-    $sql = "SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) 'DB Size in MB'
+        $name = $stat['db-name'];
+        $sql = "SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) 'DB Size in MB'
             FROM information_schema.tables
             WHERE table_schema='{$name}'
             GROUP BY table_schema;";
 
-    $resultLines = $sandbox->drush()->sqlq($sql);
-    $resultLines = array_filter($resultLines, function($line) {
-      return $line !== 'DB Size in MB';
-    });
-    $size = (float) reset($resultLines);
+        $resultLines = $sandbox->drush()->sqlq($sql);
+        $resultLines = array_filter($resultLines, function ($line) {
+            return $line !== 'DB Size in MB';
+        });
+        $size = (float) reset($resultLines);
 
-    $sandbox->setParameter('db', $name)
+        $sandbox->setParameter('db', $name)
             ->setParameter('size', $size);
 
-    if ($sandbox->getParameter('max_size') < $size) {
-      return FALSE;
+        if ($sandbox->getParameter('max_size') < $size) {
+            return false;
+        }
+
+        if ($sandbox->getParameter('warning_size') < $size) {
+            return Audit::WARNING;
+        }
+
+        return true;
     }
-
-    if ($sandbox->getParameter('warning_size') < $size) {
-      return Audit::WARNING;
-    }
-
-    return TRUE;
-  }
-
 }

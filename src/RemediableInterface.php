@@ -7,7 +7,8 @@ use Drutiny\Sandbox\Sandbox;
 /**
  *
  */
-interface RemediableInterface extends AuditInterface {
+interface RemediableInterface extends AuditInterface
+{
 
   /**
    * Attempt to remediate the check after it has failed.
@@ -15,6 +16,5 @@ interface RemediableInterface extends AuditInterface {
    * @param Sandbox $sandbox
    * @return bool
    */
-  public function remediate(Sandbox $sandbox);
-
+    public function remediate(Sandbox $sandbox);
 }

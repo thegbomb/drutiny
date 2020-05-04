@@ -26,28 +26,25 @@ use Psr\Http\Message\ResponseInterface;
  *  type = "string"
  * )
  */
-class HttpHeaderExists extends Http {
+class HttpHeaderExists extends Http
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
-    try {
-      $res = $this->getHttpResponse($sandbox);
-      if ($has_header = $res->hasHeader($sandbox->getParameter('header'))) {
-          $headers = $res->getHeader($sandbox->getParameter('header'));
-          $sandbox->setParameter('header_value', $headers[0]);
-      }
-      return $has_header;
+    public function audit(Sandbox $sandbox)
+    {
+        try {
+            $res = $this->getHttpResponse($sandbox);
+            if ($has_header = $res->hasHeader($sandbox->getParameter('header'))) {
+                $headers = $res->getHeader($sandbox->getParameter('header'));
+                $sandbox->setParameter('header_value', $headers[0]);
+            }
+            return $has_header;
+        } catch (RequestException $e) {
+            $sandbox->logger()->error($e->getMessage());
+            $sandbox->setParameter('request_error', $e->getMessage());
+        }
+        return false;
     }
-    catch (RequestException $e) {
-      $sandbox->logger()->error($e->getMessage());
-      $sandbox->setParameter('request_error', $e->getMessage());
-    }
-    return FALSE;
-  }
 }
-
-
- ?>

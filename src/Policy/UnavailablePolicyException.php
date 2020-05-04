@@ -2,4 +2,6 @@
 
 namespace Drutiny\Policy;
 
-class UnavailablePolicyException extends \RuntimeException {}
+class UnavailablePolicyException extends \RuntimeException
+{
+}

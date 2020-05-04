@@ -8,94 +8,95 @@ use Drutiny\AuditValidationException;
 /**
  *
  */
-abstract class Audit implements AuditInterface {
+abstract class Audit implements AuditInterface
+{
 
   /**
    * The policy successfully passed the audit.
    */
-  const SUCCESS = TRUE;
+    const SUCCESS = true;
 
   /**
    * Same as Audit::SUCCESS
    */
-  const PASS = 1;
+    const PASS = 1;
 
   /**
    * Same as Audit::FAILURE
    */
-  const FAIL = FALSE;
+    const FAIL = false;
 
   /**
    * The policy failed to pass the audit.
    */
-  const FAILURE = 0;
+    const FAILURE = 0;
 
   /**
    * An audit returned non-assertive information.
    */
-  const NOTICE = 2;
+    const NOTICE = 2;
 
   /**
    * An audit returned success with a warning.
    */
-  const WARNING = 4;
+    const WARNING = 4;
 
   /**
    * An audit returned failure with a warning.
    */
-  const WARNING_FAIL = 8;
+    const WARNING_FAIL = 8;
 
   /**
    * An audit did not complete and returned an error.
    */
-  const ERROR = 16;
+    const ERROR = 16;
 
   /**
    * An audit was not applicable to the target.
    */
-  const NOT_APPLICABLE = -1;
+    const NOT_APPLICABLE = -1;
 
   /**
    * An audit that is irrelevant to the assessment and should be omitted.
    */
-  const IRRELEVANT = -2;
+    const IRRELEVANT = -2;
 
   /**
    * @param Sandbox $sandbox
    * @return
    */
-  abstract public function audit(Sandbox $sandbox);
+    abstract public function audit(Sandbox $sandbox);
 
   /**
    * @param Sandbox $sandbox
    * @return
    * @throws \Drutiny\AuditValidationException
    */
-  final public function execute(Sandbox $sandbox) {
-    $this->validate($sandbox);
-    return $this->audit($sandbox);
-  }
+    final public function execute(Sandbox $sandbox)
+    {
+        $this->validate($sandbox);
+        return $this->audit($sandbox);
+    }
 
-  final protected function validate(Sandbox $sandbox) {
-    $reflection = new \ReflectionClass($this);
+    final protected function validate(Sandbox $sandbox)
+    {
+        $reflection = new \ReflectionClass($this);
 
-    // Call any functions that begin with "require" considered
-    // prerequisite classes.
-    $methods = $reflection->getMethods(\ReflectionMethod::IS_PROTECTED);
-    $validators = array_filter($methods, function ($method) {
-      return strpos($method->name, 'require') === 0;
-    });
+      // Call any functions that begin with "require" considered
+      // prerequisite classes.
+        $methods = $reflection->getMethods(\ReflectionMethod::IS_PROTECTED);
+        $validators = array_filter($methods, function ($method) {
+            return strpos($method->name, 'require') === 0;
+        });
 
-    try {
-      foreach ($validators as $method) {
-        if (call_user_func([$this, $method->name], $sandbox) === FALSE) {
-          throw new AuditValidationException("Validation failed: {$method->name}");
+        try {
+            foreach ($validators as $method) {
+                if (call_user_func([$this, $method->name], $sandbox) === false) {
+                    throw new AuditValidationException("Validation failed: {$method->name}");
+                }
+            }
+        } catch (\Exception $e) {
+            throw new AuditValidationException("Audit failed validation at " . $method->getDeclaringClass()->getFilename() . " [$method->name]: " . $e->getMessage());
         }
-      }
     }
-    catch (\Exception $e) {
-      throw new AuditValidationException("Audit failed validation at " . $method->getDeclaringClass()->getFilename() . " [$method->name]: " . $e->getMessage());
-    }
-  }
-
 }

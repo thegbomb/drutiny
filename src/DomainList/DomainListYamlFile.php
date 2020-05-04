@@ -12,24 +12,25 @@ use Symfony\Component\Yaml\Yaml;
  *   - mysite.com
  *   - example.com
  */
-class DomainListYamlFile extends AbstractDomainList {
+class DomainListYamlFile extends AbstractDomainList
+{
 
-  protected $filepath;
+    protected $filepath;
 
   /**
    * {@inheritdoc}
    */
-  public function configure()
-  {
-    $this->addOption('filepath', 'Filepath to the YAML file containing the domains');
-  }
+    public function configure()
+    {
+        $this->addOption('filepath', 'Filepath to the YAML file containing the domains');
+    }
 
   /**
    * @return array list of domains.
    */
-  public function getDomains(array $options = [])
-  {
-    $config = Yaml::parseFile($options['filepath']);
-    return $config['domains'];
-  }
+    public function getDomains(array $options = [])
+    {
+        $config = Yaml::parseFile($options['filepath']);
+        return $config['domains'];
+    }
 }

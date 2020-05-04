@@ -16,32 +16,34 @@ use Symfony\Component\Finder\Finder;
 /**
  *
  */
-class AuditInfoCommand extends Command {
+class AuditInfoCommand extends Command
+{
 
   /**
    * @inheritdoc
    */
-  protected function configure() {
-    $this
-      ->setName('audit:info')
-      ->setDescription('Show all php audit classes available.')
-      ->addArgument(
-        'audit',
-        InputArgument::REQUIRED,
-        'The name of the audit class to display info about.'
-      );
-  }
+    protected function configure()
+    {
+        $this
+        ->setName('audit:info')
+        ->setDescription('Show all php audit classes available.')
+        ->addArgument(
+            'audit',
+            InputArgument::REQUIRED,
+            'The name of the audit class to display info about.'
+        );
+    }
 
   /**
    * @inheritdoc
    */
-  protected function execute(InputInterface $input, OutputInterface $output) {
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
 
-    $docs = new AuditDocsGenerator();
-    $markdown = $docs->buildAuditDocumentation($input->getArgument('audit'));
+        $docs = new AuditDocsGenerator();
+        $markdown = $docs->buildAuditDocumentation($input->getArgument('audit'));
 
-    $formatted_output = Renderer::createFromMarkdown($markdown);
-    $output->writeln((string) $formatted_output);
-  }
-
+        $formatted_output = Renderer::createFromMarkdown($markdown);
+        $output->writeln((string) $formatted_output);
+    }
 }

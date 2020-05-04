@@ -11,60 +11,59 @@ use Doctrine\Common\Annotations\AnnotationReader;
 
 class DrutinyExpressionLanguageProvider implements ExpressionFunctionProviderInterface
 {
-  protected $sandbox;
+    protected $sandbox;
 
-  public function __construct(Sandbox $sandbox)
-  {
-    $this->sandbox = $sandbox;
-  }
-
-  static public function registry()
-  {
-    static $registry = [];
-    if (empty($registry)) {
-      // Build the vocabulary of expression syntax.
-      $reader = new AnnotationReader();
-      foreach (Config::get('ExpressionFunction') as $class) {
-        $reflection = new \ReflectionClass($class);
-        $is_compatible = $reflection->implementsInterface('Drutiny\ExpressionFunction\ExpressionFunctionInterface');
-        if (!$is_compatible) {
-          continue;
-        }
-        $annotation = $reader->getClassAnnotation($reflection, 'Drutiny\Annotation\ExpressionSyntax');
-        if (empty($annotation)) {
-          Container::getLogger()->warning("$class is missing @Drutiny\Annotation\ExpressionSyntax annotation.");
-          continue;
-        }
-        $registry[$annotation->name] = $class;
-      }
+    public function __construct(Sandbox $sandbox)
+    {
+        $this->sandbox = $sandbox;
     }
-    return $registry;
-  }
 
-  public function getFunctions()
-  {
-
-    $functions = [];
-
-    foreach ($this->registry() as $name => $class) {
-      $functions[] = new ExpressionFunction($name,
-      // Compile function
-      function () use ($class)
-      {
-        $args = func_get_args();
-        array_unshift($args, $this->sandbox);
-        return call_user_func_array([$class, 'compile'], $args);
-      },
-      // Evaluate function
-      function () use ($class)
-      {
-        $args = func_get_args();
-        array_shift($args);
-        array_unshift($args, $this->sandbox);
-        return call_user_func_array([$class, 'evaluate'], $args);
-      });
+    public static function registry()
+    {
+        static $registry = [];
+        if (empty($registry)) {
+          // Build the vocabulary of expression syntax.
+            $reader = new AnnotationReader();
+            foreach (Config::get('ExpressionFunction') as $class) {
+                $reflection = new \ReflectionClass($class);
+                $is_compatible = $reflection->implementsInterface('Drutiny\ExpressionFunction\ExpressionFunctionInterface');
+                if (!$is_compatible) {
+                    continue;
+                }
+                $annotation = $reader->getClassAnnotation($reflection, 'Drutiny\Annotation\ExpressionSyntax');
+                if (empty($annotation)) {
+                    Container::getLogger()->warning("$class is missing @Drutiny\Annotation\ExpressionSyntax annotation.");
+                    continue;
+                }
+                $registry[$annotation->name] = $class;
+            }
+        }
+        return $registry;
     }
-    return $functions;
-  }
+
+    public function getFunctions()
+    {
+
+        $functions = [];
+
+        foreach ($this->registry() as $name => $class) {
+            $functions[] = new ExpressionFunction(
+                $name,
+                // Compile function
+                function () use ($class) {
+                    $args = func_get_args();
+                    array_unshift($args, $this->sandbox);
+                    return call_user_func_array([$class, 'compile'], $args);
+                },
+                // Evaluate function
+                function () use ($class) {
+                    $args = func_get_args();
+                    array_shift($args);
+                    array_unshift($args, $this->sandbox);
+                    return call_user_func_array([$class, 'evaluate'], $args);
+                }
+            );
+        }
+        return $functions;
+    }
 }
- ?>

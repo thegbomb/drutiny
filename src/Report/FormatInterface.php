@@ -2,8 +2,9 @@
 
 namespace Drutiny\Report;
 
-interface FormatInterface {
+interface FormatInterface
+{
 
-  public function getName();
-  public function setOptions();
+    public function getName();
+    public function setOptions();
 }

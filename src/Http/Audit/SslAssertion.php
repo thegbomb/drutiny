@@ -34,41 +34,39 @@ use Drutiny\AuditValidationException;
  *  type = "array"
  * )
  */
-class SslAssertion extends AbstractAnalysis {
+class SslAssertion extends AbstractAnalysis
+{
 
-  protected function requireOpenSslExtension(Sandbox $sandbox)
-  {
-    return function_exists('openssl_x509_parse');
-  }
+    protected function requireOpenSslExtension(Sandbox $sandbox)
+    {
+        return function_exists('openssl_x509_parse');
+    }
 
   /**
    *
    */
-  public function gather(Sandbox $sandbox)
-  {
-    if (!$url = $sandbox->getParameter('host')) {
-      $url = $sandbox->getTarget()->uri();
+    public function gather(Sandbox $sandbox)
+    {
+        if (!$url = $sandbox->getParameter('host')) {
+            $url = $sandbox->getTarget()->uri();
+        }
+
+        $host = (strpos($url, '://') !== false) ? parse_url($url, PHP_URL_HOST) : $url;
+        $sandbox->setParameter('host', $host);
+        $port = $sandbox->getParameter('port');
+
+        $url = 'ssl://' . $host . ':' . $port;
+
+        $context = stream_context_create(["ssl" => ["capture_peer_cert" => true]]);
+        if (!$client = @stream_socket_client($url, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context)) {
+            throw new AuditValidationException("$host did not accept an SSL connection on port $port");
+        }
+
+        $cert = stream_context_get_params($client);
+        $certinfo = openssl_x509_parse($cert['options']['ssl']['peer_certificate']);
+
+        $certinfo['issued'] = date('Y-m-d H:i:s', $certinfo['validFrom_time_t']);
+
+        $sandbox->setParameter('cert', $certinfo);
     }
-
-    $host = (strpos($url, '://') !== FALSE) ? parse_url($url, PHP_URL_HOST) : $url;
-    $sandbox->setParameter('host', $host);
-    $port = $sandbox->getParameter('port');
-
-    $url = 'ssl://' . $host . ':' . $port;
-
-    $context = stream_context_create(["ssl" => ["capture_peer_cert" => true]]);
-    if (!$client = @stream_socket_client($url, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context)) {
-      throw new AuditValidationException("$host did not accept an SSL connection on port $port");
-    }
-
-    $cert = stream_context_get_params($client);
-    $certinfo = openssl_x509_parse($cert['options']['ssl']['peer_certificate']);
-
-    $certinfo['issued'] = date('Y-m-d H:i:s', $certinfo['validFrom_time_t']);
-
-    $sandbox->setParameter('cert', $certinfo);
-  }
 }
-
-
- ?>

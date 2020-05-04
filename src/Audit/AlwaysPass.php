@@ -12,12 +12,11 @@ use Drutiny\Sandbox\Sandbox;
  * auditing. As dependencies run first, this audit won't pass until all of
  * its dependencies pass first.
  */
-class AlwaysPass extends Audit {
+class AlwaysPass extends Audit
+{
 
-  public function audit(Sandbox $sandbox)
-  {
-    return TRUE;
-  }
+    public function audit(Sandbox $sandbox)
+    {
+        return true;
+    }
 }
-
- ?>

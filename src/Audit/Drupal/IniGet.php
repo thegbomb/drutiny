@@ -24,23 +24,23 @@ use Drutiny\Annotation\Param;
  *  type = "string"
  * )
  */
-class IniGet extends AbstractComparison {
+class IniGet extends AbstractComparison
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
-    $ini = $this->sandbox->drush()->evaluate(function () {
-      return ini_get_all();
-    });
-    $setting = $sandbox->getParameter('setting');
+    public function audit(Sandbox $sandbox)
+    {
+        $ini = $this->sandbox->drush()->evaluate(function () {
+            return ini_get_all();
+        });
+        $setting = $sandbox->getParameter('setting');
 
-    if (!isset($ini[$setting])) {
-      return FALSE;
+        if (!isset($ini[$setting])) {
+            return false;
+        }
+
+        return $this->compare($sandbox->getParameter('value'), $ini[$setting]['local_value'], $sandbox);
     }
-
-    return $this->compare($sandbox->getParameter('value'), $ini[$setting]['local_value'], $sandbox);
-  }
-
 }

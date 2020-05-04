@@ -5,7 +5,6 @@ namespace Drutiny\Http\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Annotation\Param;
 
-
 /**
  *
  * @Param(
@@ -19,25 +18,23 @@ use Drutiny\Annotation\Param;
  *  type = "string"
  * )
  */
-class HttpHeaderRegex extends Http {
+class HttpHeaderRegex extends Http
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
-    $regex = $sandbox->getParameter('regex');
-    $regex = "/$regex/";
-    $res = $this->getHttpResponse($sandbox);
-    $header = $sandbox->getParameter('header');
+    public function audit(Sandbox $sandbox)
+    {
+        $regex = $sandbox->getParameter('regex');
+        $regex = "/$regex/";
+        $res = $this->getHttpResponse($sandbox);
+        $header = $sandbox->getParameter('header');
 
-    if (!$res->hasHeader($header)) {
-      return FALSE;
+        if (!$res->hasHeader($header)) {
+            return false;
+        }
+        $headers = $res->getHeader($header);
+        return preg_match($regex, $headers[0]);
     }
-    $headers = $res->getHeader($header);
-    return preg_match($regex, $headers[0]);
-  }
 }
-
-
- ?>

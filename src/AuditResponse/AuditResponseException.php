@@ -2,5 +2,6 @@
 
 namespace Drutiny\AuditResponse;
 
-class AuditResponseException extends \Exception {}
- ?>
+class AuditResponseException extends \Exception
+{
+}

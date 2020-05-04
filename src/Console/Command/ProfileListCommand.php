@@ -12,43 +12,45 @@ use Drutiny\Profile;
 /**
  *
  */
-class ProfileListCommand extends Command {
+class ProfileListCommand extends Command
+{
 
   /**
    * @inheritdoc
    */
-  protected function configure() {
-    $this
-      ->setName('profile:list')
-      ->setDescription('Show all profiles available.');
-  }
+    protected function configure()
+    {
+        $this
+        ->setName('profile:list')
+        ->setDescription('Show all profiles available.');
+    }
 
   /**
    * @inheritdoc
    */
-  protected function execute(InputInterface $input, OutputInterface $output) {
-    $render = new SymfonyStyle($input, $output);
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $render = new SymfonyStyle($input, $output);
 
-    $profiles = ProfileSource::getProfileList();
+        $profiles = ProfileSource::getProfileList();
 
-    // Build array of table rows.
-    $rows = array_map(function ($profile) {
-      return [$profile['title'], $profile['name'], $profile['source']];
-    }, $profiles);
+      // Build array of table rows.
+        $rows = array_map(function ($profile) {
+            return [$profile['title'], $profile['name'], $profile['source']];
+        }, $profiles);
 
-    // Sort rows by profile name alphabetically.
-    usort($rows, function ($a, $b) {
-      if ($a[1] === $b[1]) {
-        return 0;
-      }
-      $sort = [$a[1], $b[1]];
-      sort($sort);
-      return $a[1] === $sort[0] ? -1 : 1;
-    });
+      // Sort rows by profile name alphabetically.
+        usort($rows, function ($a, $b) {
+            if ($a[1] === $b[1]) {
+                return 0;
+            }
+            $sort = [$a[1], $b[1]];
+            sort($sort);
+            return $a[1] === $sort[0] ? -1 : 1;
+        });
 
-    $render->table(['Profile', 'Name', 'Source'], $rows);
+        $render->table(['Profile', 'Name', 'Source'], $rows);
 
-    $render->note("Use drutiny profile:info to view more information about a profile.");
-  }
-
+        $render->note("Use drutiny profile:info to view more information about a profile.");
+    }
 }

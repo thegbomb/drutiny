@@ -5,7 +5,8 @@ namespace Drutiny\Sandbox;
 /**
  *
  */
-trait ReportingPeriodTrait {
+trait ReportingPeriodTrait
+{
 
     /**
      * @var DateTime The begining of the reporting period.
@@ -19,42 +20,42 @@ trait ReportingPeriodTrait {
 
     public function setReportingPeriod(\DateTimeInterface $start, \DateTimeInterface $end)
     {
-      if (isset($this->logger)) {
-        $this->logger->debug(strtr("Reporting period set @start to @end", [
-          '@start' => $start->format('Y-m-d H:i:s e'),
-          '@end' => $end->format('Y-m-d H:i:s e'),
-        ]));
-      }
-      return $this->setReportingPeriodStart($start)
+        if (isset($this->logger)) {
+            $this->logger->debug(strtr("Reporting period set @start to @end", [
+            '@start' => $start->format('Y-m-d H:i:s e'),
+            '@end' => $end->format('Y-m-d H:i:s e'),
+            ]));
+        }
+        return $this->setReportingPeriodStart($start)
                   ->setReportingPeriodEnd($end);
     }
 
     public function setReportingPeriodStart(\DateTimeInterface $start)
     {
-      $this->reportingPeriodStart = $start;
-      return $this;
+        $this->reportingPeriodStart = $start;
+        return $this;
     }
 
     public function setReportingPeriodEnd(\DateTimeInterface $end)
     {
-      $this->reportingPeriodEnd = $end;
-      return $this;
+        $this->reportingPeriodEnd = $end;
+        return $this;
     }
 
     public function getReportingPeriodStart()
     {
-      if (empty($this->reportingPeriodStart)) {
-        $this->reportingPeriodStart = new \DateTime();
-      }
-      return $this->reportingPeriodStart;
+        if (empty($this->reportingPeriodStart)) {
+            $this->reportingPeriodStart = new \DateTime();
+        }
+        return $this->reportingPeriodStart;
     }
 
     public function getReportingPeriodEnd()
     {
-      if (empty($this->reportingPeriodEnd)) {
-        $this->reportingPeriodEnd = new \DateTime();
-      }
-      return $this->reportingPeriodEnd;
+        if (empty($this->reportingPeriodEnd)) {
+            $this->reportingPeriodEnd = new \DateTime();
+        }
+        return $this->reportingPeriodEnd;
     }
 
     /**
@@ -62,14 +63,14 @@ trait ReportingPeriodTrait {
      */
     public function getReportingPeriodInterval()
     {
-      return $this->reportingPeriodEnd->diff($this->reportingPeriodStart);
+        return $this->reportingPeriodEnd->diff($this->reportingPeriodStart);
     }
 
     public function getReportingPeriodDuration()
     {
-      $interval = $this->getReportingPeriodInterval();
+        $interval = $this->getReportingPeriodInterval();
                // seconds
-      $seconds = $interval->s
+        $seconds = $interval->s
                // minutes to seconds
                + ($interval->i * 60)
                // hours to seconds
@@ -78,7 +79,7 @@ trait ReportingPeriodTrait {
                + ($interval->d * 86400)
                // years to seconds
                + ($interval->y * 31536000);
-     return $seconds;
+        return $seconds;
     }
 
     /**
@@ -86,7 +87,7 @@ trait ReportingPeriodTrait {
      */
     protected function _getReportingPeriodIntervals()
     {
-      return [
+        return [
         30, // 30 seconds
         60, // 1 minute
         120, // 2 minutes
@@ -104,7 +105,7 @@ trait ReportingPeriodTrait {
         172800, // 2 days
         432000, // 5 days
         604800, // 7 days
-      ];
+        ];
     }
 
     /**
@@ -114,29 +115,28 @@ trait ReportingPeriodTrait {
      */
     public function getReportingPeriodSteps()
     {
-      $duration = $this->getReportingPeriodDuration();
+        $duration = $this->getReportingPeriodDuration();
 
-      $steps = array_map(function ($interval) use ($duration) {
-        return (int) round($duration / $interval);
-      }, $this->_getReportingPeriodIntervals());
+        $steps = array_map(function ($interval) use ($duration) {
+            return (int) round($duration / $interval);
+        }, $this->_getReportingPeriodIntervals());
 
-      $steps = array_combine($this->_getReportingPeriodIntervals(), $steps);
+        $steps = array_combine($this->_getReportingPeriodIntervals(), $steps);
 
-      $steps = array_filter($steps, function ($step) {
-        // 60 < X > 100;
-        return $step >= 60 && $step <= 100;
-      });
+        $steps = array_filter($steps, function ($step) {
+          // 60 < X > 100;
+            return $step >= 60 && $step <= 100;
+        });
 
-      if (empty($steps)) {
-        // If the duration is less than 30mins, then set the stepping period
-        // to 30 seconds.
-        if ($duration < 1800) {
-          return 30;
+        if (empty($steps)) {
+          // If the duration is less than 30mins, then set the stepping period
+          // to 30 seconds.
+            if ($duration < 1800) {
+                return 30;
+            }
+            throw new \Exception("Could not find a number of steps suitable for reporting period.");
         }
-        throw new \Exception("Could not find a number of steps suitable for reporting period.");
-      }
 
-      return key($steps);
+        return key($steps);
     }
-
 }

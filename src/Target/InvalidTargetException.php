@@ -2,9 +2,7 @@
 
 namespace Drutiny\Target;
 
-class InvalidTargetException extends \Exception {
+class InvalidTargetException extends \Exception
+{
 
 }
-
-
- ?>

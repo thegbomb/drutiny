@@ -14,40 +14,39 @@ use Doctrine\Common\Annotations\AnnotationReader;
  * description = "Obtain a variable from the assessed target. See `target:metadata` for all available variables."
  * )
  */
-class TargetExpressionFunction implements ExpressionFunctionInterface {
-  static public function compile(Sandbox $sandbox)
-  {
-    list($sandbox, $parameter, ) = func_get_args();
+class TargetExpressionFunction implements ExpressionFunctionInterface
+{
+    public static function compile(Sandbox $sandbox)
+    {
+        list($sandbox, $parameter, ) = func_get_args();
 
-    $target = $sandbox->getTarget();
-    $metadata = $target->getMetadata();
+        $target = $sandbox->getTarget();
+        $metadata = $target->getMetadata();
 
-    $parameter = str_replace('"', '', $parameter);
+        $parameter = str_replace('"', '', $parameter);
 
-    $value = "<Target Unknown Parameter: $parameter. Available: " . implode(', ', array_keys($metadata)) . ">";
+        $value = "<Target Unknown Parameter: $parameter. Available: " . implode(', ', array_keys($metadata)) . ">";
 
-    if (isset($metadata[$parameter])) {
-      $value = call_user_func([$target, $metadata[$parameter]]);
+        if (isset($metadata[$parameter])) {
+            $value = call_user_func([$target, $metadata[$parameter]]);
+        }
+
+        return is_string($value) ? $value : $parameter;
     }
 
-    return is_string($value) ? $value : $parameter;
-  }
+    public static function evaluate(Sandbox $sandbox)
+    {
+        list($sandbox, $parameter, ) = func_get_args();
 
-  static public function evaluate(Sandbox $sandbox)
-  {
-    list($sandbox, $parameter, ) = func_get_args();
+        $target = $sandbox->getTarget();
+        $metadata = $target->getMetadata();
 
-    $target = $sandbox->getTarget();
-    $metadata = $target->getMetadata();
+        $value = "";
 
-    $value = "";
+        if (isset($metadata[$parameter])) {
+            $value = call_user_func([$target, $metadata[$parameter]]);
+        }
 
-    if (isset($metadata[$parameter])) {
-      $value = call_user_func([$target, $metadata[$parameter]]);
+        return $value;
     }
-
-    return $value;
-  }
 }
-
- ?>

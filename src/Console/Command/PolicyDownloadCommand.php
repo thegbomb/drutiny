@@ -15,45 +15,47 @@ use Drutiny\Config;
 /**
  *
  */
-class PolicyDownloadCommand extends Command {
+class PolicyDownloadCommand extends Command
+{
 
   /**
    * @inheritdoc
    */
-  protected function configure() {
-    $this
-      ->setName('policy:download')
-      ->setDescription('Download a remote policy locally.')
-      ->addArgument(
-        'policy',
-        InputArgument::REQUIRED,
-        'The name of the profile to download.'
-      )
-      ->addArgument(
-        'source',
-        InputArgument::OPTIONAL,
-        'The source to download the profile from.'
-      );
-  }
-
-  /**
-   * @inheritdoc
-   */
-  protected function execute(InputInterface $input, OutputInterface $output) {
-    $render = new SymfonyStyle($input, $output);
-    $policy = PolicySource::loadPolicyByName($name = $input->getArgument('policy'));
-
-    $name = str_replace(':', '-', $name);
-    $filename = Config::getUserDir() . "/$name.policy.yml";
-    if (file_exists($filename)) {
-      $render->error("$filename already exists. Please delete this file if you wish to download it from its source.");
-      return;
+    protected function configure()
+    {
+        $this
+        ->setName('policy:download')
+        ->setDescription('Download a remote policy locally.')
+        ->addArgument(
+            'policy',
+            InputArgument::REQUIRED,
+            'The name of the profile to download.'
+        )
+        ->addArgument(
+            'source',
+            InputArgument::OPTIONAL,
+            'The source to download the profile from.'
+        );
     }
 
-    $output = Yaml::dump($policy->export(), 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+  /**
+   * @inheritdoc
+   */
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $render = new SymfonyStyle($input, $output);
+        $policy = PolicySource::loadPolicyByName($name = $input->getArgument('policy'));
 
-    file_put_contents($filename, $output);
-    $render->success("$filename written.");
-  }
+        $name = str_replace(':', '-', $name);
+        $filename = Config::getUserDir() . "/$name.policy.yml";
+        if (file_exists($filename)) {
+            $render->error("$filename already exists. Please delete this file if you wish to download it from its source.");
+            return;
+        }
 
+        $output = Yaml::dump($policy->export(), 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+
+        file_put_contents($filename, $output);
+        $render->success("$filename written.");
+    }
 }

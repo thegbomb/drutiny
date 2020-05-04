@@ -31,55 +31,53 @@ use Drutiny\Annotation\Token;
  *  type = "string"
  * )
  */
-class SqlResultAudit extends AbstractAnalysis {
+class SqlResultAudit extends AbstractAnalysis
+{
 
   /**
    *
    */
-  public function gather(Sandbox $sandbox)
-  {
-    $query = $sandbox->getParameter('query');
-
-    $tokens = [];
-    foreach ($sandbox->getParameterTokens() as $key => $value) {
-        $tokens[':' . $key] = $value;
-    }
-    foreach ($sandbox->drush(['format' => 'json'])->status() as $key => $value) {
-      if (!is_array($value)) {
-        $tokens[':' . $key] = $value;
-      }
-      // TODO: Support array values.
-    }
-    $query = strtr($query, $tokens);
-
-    if (!preg_match_all('/^SELECT( DISTINCT)? (.*) FROM/', $query, $fields)) {
-      throw new \Exception("Could not parse fields from SQL query: $query.");
-    }
-    $fields = array_map('trim', explode(',', $fields[2][0]));
-    foreach ($fields as &$field) {
-      if ($idx = strpos($field, ' as ')) {
-        $field = substr($field, $idx + 4);
-      }
-      elseif (preg_match('/[ \(\)]/', $field)) {
-        throw new \Exception("SQL query contains an non-table field without an alias: '$field.'");
-      }
-    }
-
-    $output = $sandbox->drush()->sqlq($query);
-    $results = [];
-
-    while ($line = array_shift($output))
+    public function gather(Sandbox $sandbox)
     {
-      $values = array_map('trim', explode("\t", $line));
-      $results[] = array_combine($fields, $values);
+        $query = $sandbox->getParameter('query');
+
+        $tokens = [];
+        foreach ($sandbox->getParameterTokens() as $key => $value) {
+            $tokens[':' . $key] = $value;
+        }
+        foreach ($sandbox->drush(['format' => 'json'])->status() as $key => $value) {
+            if (!is_array($value)) {
+                $tokens[':' . $key] = $value;
+            }
+          // TODO: Support array values.
+        }
+        $query = strtr($query, $tokens);
+
+        if (!preg_match_all('/^SELECT( DISTINCT)? (.*) FROM/', $query, $fields)) {
+            throw new \Exception("Could not parse fields from SQL query: $query.");
+        }
+        $fields = array_map('trim', explode(',', $fields[2][0]));
+        foreach ($fields as &$field) {
+            if ($idx = strpos($field, ' as ')) {
+                $field = substr($field, $idx + 4);
+            } elseif (preg_match('/[ \(\)]/', $field)) {
+                throw new \Exception("SQL query contains an non-table field without an alias: '$field.'");
+            }
+        }
+
+        $output = $sandbox->drush()->sqlq($query);
+        $results = [];
+
+        while ($line = array_shift($output)) {
+            $values = array_map('trim', explode("\t", $line));
+            $results[] = array_combine($fields, $values);
+        }
+
+        $sandbox->setParameter('count', count($results));
+        $sandbox->setParameter('results', $results);
+
+        $row = array_shift($results);
+
+        $sandbox->setParameter('first_row', $row);
     }
-
-    $sandbox->setParameter('count', count($results));
-    $sandbox->setParameter('results', $results);
-
-    $row = array_shift($results);
-
-    $sandbox->setParameter('first_row', $row);
-  }
-
 }

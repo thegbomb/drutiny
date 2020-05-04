@@ -12,12 +12,11 @@ use Drutiny\Sandbox\Sandbox;
  * auditing. As dependencies run first, this audit won't pass until all of
  * its dependencies pass first.
  */
-class AlwaysWarn extends Audit {
+class AlwaysWarn extends Audit
+{
 
-  public function audit(Sandbox $sandbox)
-  {
-    return Audit::WARNING;
-  }
+    public function audit(Sandbox $sandbox)
+    {
+        return Audit::WARNING;
+    }
 }
-
- ?>
