@@ -8,6 +8,10 @@ parameters:
   cache.ttl: 0
   config.local: ~/.drutiny/config.yml
   config.credentials: ~/.drutiny/.credentials.yml
+  twig.templates: twig
+  twig.cache: false #~/.drutiny/cache/twig
+  twig.debug: true
+  twig.strict: true
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -53,6 +57,7 @@ services:
         arguments: [drutiny, '%cache.ttl%', '%cache.directory%']
         calls:
           - [setLogger, ['@logger']]
+          - [prune]
 
     yaml:
       class: Symfony\Component\Yaml\Yaml
@@ -124,6 +129,26 @@ services:
     target.none:
       class: Drutiny\Target\TargetNone
 
+    twig.loader:
+      class: Twig\Loader\FilesystemLoader
+      arguments: [ '%twig.templates%' ]
+
+    twig:
+      class: Twig\Environment
+      arguments:
+        - '@twig.loader'
+        - cache: '%twig.cache%'
+          debug: '%twig.debug%'
+          strict_variables: '%twig.strict'
+      calls:
+        - [addFilter, ['@twig.filters.array_sum']]
+        - [addExtension, ['@Twig\Extension\DebugExtension']]
+        - [addExtension, ['@Twig\Extension\StringLoaderExtension']]
+
+    twig.filters.array_sum:
+      class: Twig\TwigFilter
+      arguments: ['sum', 'array_sum']
+
     process.manager:
       class: Drutiny\Process\ProcessManager
 
@@ -162,3 +187,12 @@ services:
 
     Psr\Log\LoggerInterface:
       alias: logger
+
+    Twig\Loader\FilesystemLoader:
+      alias: 'twig.loader'
+
+    Twig\Environment:
+      alias: 'twig'
+
+    Twig\Extension\DebugExtension:
+    Twig\Extension\StringLoaderExtension:
