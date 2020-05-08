@@ -141,9 +141,12 @@ services:
           debug: '%twig.debug%'
           strict_variables: '%twig.strict'
       calls:
-        - [addFilter, ['@twig.filters.array_sum']]
         - [addExtension, ['@Twig\Extension\DebugExtension']]
         - [addExtension, ['@Twig\Extension\StringLoaderExtension']]
+        - [addExtension, ['@Twig\Extra\Markdown\MarkdownExtension']]
+        - [addExtension, ['@Twig\Extra\String\StringExtension']]
+        - [addFilter, ['@twig.filters.array_sum']]
+        - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
 
     twig.filters.array_sum:
       class: Twig\TwigFilter
@@ -196,3 +199,7 @@ services:
 
     Twig\Extension\DebugExtension:
     Twig\Extension\StringLoaderExtension:
+    Twig\Extra\Markdown\MarkdownExtension:
+    Twig\Extra\Markdown\MarkdownInterface:
+    Twig\Extra\Markdown\MarkdownRuntime:
+    Twig\Extra\String\StringExtension:

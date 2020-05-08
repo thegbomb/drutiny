@@ -36,7 +36,7 @@ abstract class AbstractReportingCommand extends Command
             'f',
             InputOption::VALUE_OPTIONAL,
             'Specify which output format to render the report (console, html, json). Defaults to console.',
-            'console'
+            'terminal'
         )
         ->addOption(
             'title',
@@ -97,8 +97,7 @@ abstract class AbstractReportingCommand extends Command
         ->get('format.factory')
         ->create($format, $profile->getFormatOptions($format));
 
-        $report = $format->render($profile, $target, $results)
-                     ->fetch();
+        $report = $format->render($profile, reset($results));
 
         if ($filepath == 'stdout') {
             $output->write($report, true);
@@ -115,11 +114,13 @@ abstract class AbstractReportingCommand extends Command
                     if (!is_dir(dirname($site_report_filepath)) && !mkdir(dirname($site_report_filepath))) {
                         continue;
                     }
-                    $report = $format->render($profile, $target, [$result])->fetch();
+                    $report = $format->render($profile, $result);
                     file_put_contents($site_report_filepath, $report);
                     $console->success('Report written to ' . $site_report_filepath);
                 }
             }
+
+            passthru("open $filepath");
         }
     }
 }

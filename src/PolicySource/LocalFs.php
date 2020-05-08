@@ -40,7 +40,7 @@ class LocalFs implements PolicySourceInterface
             $list = [];
             foreach ($finder as $file) {
                 $policy = Yaml::parse($file->getContents());
-                $policy['filepath'] = $file->getPathname();
+                $policy['uuid'] = $file->getPathname();
                 $list[$policy['name']] = $policy;
             }
             return $list;
@@ -53,6 +53,7 @@ class LocalFs implements PolicySourceInterface
     public function load(array $definition)
     {
         $policy = new Policy();
+        unset($definition['source']);
         return $policy->setProperties($definition);
     }
 

@@ -1,0 +1,92 @@
+{% block purpose %}
+## Purpose
+
+This report is designed to provide some feedback on the overall health of
+the web application by performing some deep dive analysis. The items
+surfaced in the report can help improve performance and stability.
+{% endblock %}
+{% block period %}
+## Reporting period
+
+Period | Date time
+------ | ---------
+Start | {{ assessment.reportingPeriodStart.format('Y-m-d H:i:s e') }}
+End | {{ assessment.reportingPeriodEnd.format('Y-m-d H:i:s e') }}
+{% endblock %}
+{% block recommendations %}
+{% if assessment.results|filter(r => r.isFailure) is not empty %}
+## Recommendations
+  {% for response in assessment.results|filter(r => r.isFailure) %}
+    {% with response.tokens %}
+      {{ include(template_from_string(response.policy.remediation)) | markdown_to_html }}
+    {% endwith %}
+  {% endfor %}
+{% endif %}
+{% endblock %}
+{% block findings %}
+## Findings
+
+{% include 'report/page/severity_stats.html.twig' %}
+{% endblock %}
+
+{% block summary %}
+### Issue Summary
+{% include 'report/page/summary_table.html.twig' %}
+{% endblock %}
+
+{% block failures %}
+{% if assessment.results|filter(r => r.isFailure) is not empty %}
+### Issues
+{% for response in assessment.results|filter(r => r.isFailure) %}
+  {% include 'report/policy/failure.html.twig' with {'result': response } %}
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block warnings %}
+{% if assessment.results|filter(r => r.hasWarning) is not empty %}
+### Warnings
+{% for response in assessment.results|filter(r => r.hasWarning) %}
+  {% include 'report/policy/warning.html.twig' with {'result': response } %}
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block appendix %}
+## Appendix
+
+{% if assessment.results|filter(r => r.isNotice) is not empty %}
+### Appendix - Analysis
+
+The various appendices provides more detailed data regarding the health of
+the site.
+
+  {% for response in assessment.results|filter(r => r.isNotice) %}
+    {% include 'report/policy/notice.html.twig' with {'result': response } %}
+  {% endfor %}
+{% endif %}
+
+{% if assessment.results|filter(r => r.hasError) is not empty %}
+### Appendix - Errors
+
+During the production of this report, not all report policies were able to
+be carried out due to errors encounted.
+
+  {% for response in assessment.results|filter(r => r.hasError) %}
+    {% include 'report/policy/error.html.twig' with {'result': response } %}
+  {% endfor %}
+{% endif %}
+
+### Appendix - Summary
+The below table describes all audit and analysis work completed for the
+production of this report and their associated outcomes.
+
+{% include 'report/page/appendix_table.html.twig' %}
+
+{% if assessment.results|filter(r => r.hasError) is not empty %}
+### Appendix - Successful Assessments
+{% for response in assessment.results|filter(r => r.isSuccessful) %}
+  {% include 'report/policy/success.html.twig' with {'result': response } %}
+{% endfor %}
+{% endif %}
+{% endblock %}

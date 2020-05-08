@@ -77,6 +77,15 @@ class DrutinyGitHubIO implements PolicySourceInterface
       // Workaround to remove leading \.
         $data['class'] = preg_replace('/^\\\/', '', $data['class']);
 
+        // Convert parameters to remove default key.
+        if (!empty($data['parameters'])) {
+          foreach ($data['parameters'] as &$value) {
+            if (isset($value['default'])) {
+              $value = $value['default'];
+            }
+          }
+        }
+
         $policy = new Policy;
         $policy->setProperties($data);
         return $policy;

@@ -5,15 +5,19 @@ namespace Drutiny\ProfileSource;
 use Drutiny\Api;
 use Drutiny\Profile;
 use Drutiny\Report\Format;
+use Drutiny\ProfileFactory;
+use Drutiny\Profile\PolicyDefinition;
 
 class ProfileSourceDrutinyGitHubIO implements ProfileSourceInterface
 {
 
     protected $api;
+    protected $profileFactory;
 
-    public function __construct(Api $api)
+    public function __construct(Api $api, ProfileFactory $profileFactory)
     {
         $this->api = $api;
+        $this->profileFactory = $profileFactory;
     }
 
   /**
@@ -72,14 +76,14 @@ class ProfileSourceDrutinyGitHubIO implements ProfileSourceInterface
 
         if (isset($info['include'])) {
             foreach ($info['include'] as $name) {
-                $include = ProfileSource::loadProfileByName($name);
+                $include = $this->profileFactory->loadProfileByName($name);
                 $profile->addInclude($include);
             }
         }
 
         if (isset($info['format'])) {
             foreach ($info['format'] as $format => $options) {
-                $profile->addFormatOptions(Format::create($format, $options));
+                $profile->addFormatOptions($format, $options);
             }
         }
         return $profile;

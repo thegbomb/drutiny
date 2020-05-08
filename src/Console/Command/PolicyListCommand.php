@@ -8,16 +8,25 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Drutiny\Registry;
-use Drutiny\Config;
-use Drutiny\PolicySource\PolicySource;
 use Drutiny\ProgressBar;
+use Drutiny\PolicyFactory;
 
 /**
  *
  */
 class PolicyListCommand extends Command
 {
+
+  protected $progress;
+  protected $policyFactory;
+
+
+  public function __construct(ProgressBar $progress, PolicyFactory $factory)
+  {
+      $this->progress = $progress;
+      $this->policyFactory = $factory;
+      parent::__construct();
+  }
 
   /**
    * @inheritdoc
@@ -46,11 +55,10 @@ class PolicyListCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $progress = new ProgressBar($output, 2);
-        $progress->setTopic("Loading policy data");
-        $progress->start();
-        $list = PolicySource::getPolicyList();
-        $progress->advance();
+        $this->progress->setTopic("Loading policy data");
+        $this->progress->start();
+        $list = $this->policyFactory->getPolicyList();
+        $this->progress->advance();
 
         if ($source_filter = $input->getOption('source')) {
             $list = array_filter($list, function ($policy) use ($source_filter) {
@@ -83,8 +91,10 @@ class PolicyListCommand extends Command
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $headers[] = 'URI';
         }
-        $progress->finish();
+        $this->progress->finish();
         $io->table($headers, $rows);
+        
+        return 0;
     }
 
   /**

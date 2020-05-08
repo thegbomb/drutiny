@@ -14,11 +14,8 @@ class AuditResponse
 {
 
     protected $policy;
-
     protected $state = Audit::NOT_APPLICABLE;
-
     protected $remediated = false;
-
     protected $tokens = [];
 
   /**
@@ -82,37 +79,15 @@ class AuditResponse
         return $this;
     }
 
-  /**
-   * Get the name.
-   *
-   * @return string
-   *   The policy name.
-   */
-    public function getName()
+    public function setToken($name, $value)
     {
-        return $this->policy->getProperty('name');
+      $this->tokens[$name] = $value;
+      return $this;
     }
 
-  /**
-   * Get the title.
-   *
-   * @return string
-   *   The checks title.
-   */
-    public function getTitle()
+    public function getTokens()
     {
-        return $this->policy->getProperty('title');
-    }
-
-  /**
-   * Get the description for the check performed.
-   *
-   * @return string
-   *   Translated description.
-   */
-    public function getDescription()
-    {
-        return $this->policy->getProperty('description');
+      return $this->tokens;
     }
 
   /**
@@ -140,55 +115,11 @@ class AuditResponse
         if ($this->hasWarning()) {
             return 'warning';
         }
-        $policy_type = $this->policy->get('type');
+        $policy_type = $this->policy->getProperty('type');
         if ($policy_type == 'data') {
             return 'notice';
         }
         return $this->isSuccessful() ? 'success' : 'failure';
-    }
-
-  /**
-   * Get the remediation for the check performed.
-   *
-   * @return string
-   *   Translated description.
-   */
-    public function getRemediation()
-    {
-        return $this->policy->getProperty('remediation');
-    }
-
-  /**
-   * Get the failure message for the check performed.
-   *
-   * @return string
-   *   Translated description.
-   */
-    public function getFailure()
-    {
-        return $this->policy->getProperty('failure');
-    }
-
-  /**
-   * Get the success message for the check performed.
-   *
-   * @return string
-   *   Translated description.
-   */
-    public function getSuccess()
-    {
-        return $this->policy->getProperty('success');
-    }
-
-  /**
-   * Get the warning message for the check performed.
-   *
-   * @return string
-   *   Translated description.
-   */
-    public function getWarning()
-    {
-        return $this->policy->getProperty('warning');
     }
 
   /**
@@ -197,6 +128,11 @@ class AuditResponse
     public function isSuccessful()
     {
         return $this->state === Audit::SUCCESS || $this->remediated || $this->isNotice() || $this->state === Audit::WARNING;
+    }
+
+    public function isFailure()
+    {
+      return $this->getType() == 'failure';
     }
 
   /**

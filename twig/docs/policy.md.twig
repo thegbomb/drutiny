@@ -1,0 +1,31 @@
+# {{ title }}
+
+## Severity: {{ severity }}
+{% if depends %}## Depends
+{% for dependency in depends %}- [{{ dependency.on_fail }}] {{ dependency.expression|raw }}{% endfor %}
+
+{% endif %}
+{{ description }}
+
+## Use this policy
+
+```
+drutiny policy:audit {{ name }} <target>
+```
+
+{% if parameters %}
+## Parameters
+
+Parameter | Default Value
+--------- | -----------
+{% for key in parameters|keys %}
+{{ key }} | {{ parameters[key] }}
+{% endfor %}
+{% endif %}
+
+See `drutiny audit:info {{ class }}` for more information.
+
+{% if tags %}
+## Tags
+{% for tag in tags %}- {{ tag }}{% endfor %}
+{% endif %}

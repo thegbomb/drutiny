@@ -6,8 +6,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Drutiny\Profile\ProfileSource;
-use Drutiny\Profile;
 
 /**
  *
@@ -32,7 +30,11 @@ class ProfileListCommand extends Command
     {
         $render = new SymfonyStyle($input, $output);
 
-        $profiles = ProfileSource::getProfileList();
+        $profiles = $this->getApplication()
+          ->getKernel()
+          ->getContainer()
+          ->get('profile.factory')
+          ->getProfileList();
 
       // Build array of table rows.
         $rows = array_map(function ($profile) {
@@ -52,5 +54,6 @@ class ProfileListCommand extends Command
         $render->table(['Profile', 'Name', 'Source'], $rows);
 
         $render->note("Use drutiny profile:info to view more information about a profile.");
+        return 0;
     }
 }

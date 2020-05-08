@@ -6,11 +6,13 @@ use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
 use Drutiny\Target\TargetInterface;
 use Drutiny\Sandbox\Sandbox;
+use Drutiny\Sandbox\ReportingPeriodTrait;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Assessment
 {
+  use ReportingPeriodTrait;
 
   /**
    * @var string URI
@@ -21,6 +23,9 @@ class Assessment
     protected $severityCode = 1;
     protected $logger;
     protected $container;
+    protected $statsByResult = [];
+    protected $statsBySeverity = [];
+    protected $remediable = [];
 
     public function __construct(ConsoleLogger $logger, ContainerInterface $container)
     {
@@ -48,6 +53,10 @@ class Assessment
         $start = $start ?: new \DateTime('-1 day');
         $end   = $end ?: new \DateTime();
 
+        // Record the reporting period in the assessment so we can pull it
+        // later when rendering the report.
+        $this->setReportingPeriod($start, $end);
+
         $policies = array_filter($policies, function ($policy) {
             return $policy instanceof Policy;
         });
@@ -68,6 +77,12 @@ class Assessment
             ->setReportingPeriod($start, $end);
 
             $response = $sandbox->run();
+
+            $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
+            $this->statsByResult[$response->getType()]++;
+
+            $this->statsBySeverity[$response->getSeverity()][$response->getType()] = $this->statsBySeverity[$response->getSeverity()][$response->getType()] ?? 0;
+            $this->statsBySeverity[$response->getSeverity()][$response->getType()]++;
 
           // Omit irrelevant AuditResponses.
             if (!$response->isIrrelevant()) {
@@ -110,6 +125,9 @@ class Assessment
         if (!$response->isSuccessful() && ($this->severityCode < $severity)) {
             $this->severityCode = $severity;
         }
+        if ($response->isFailure()) {
+          $this->remediable[] = $response;
+        }
     }
 
     public function getSeverityCode():int
@@ -149,6 +167,11 @@ class Assessment
         return $this->results;
     }
 
+    public function getRemediableResults()
+    {
+      $this->remediable;
+    }
+
   /**
    * Get the uri of Assessment object.
    *
@@ -157,5 +180,15 @@ class Assessment
     public function uri()
     {
         return $this->uri;
+    }
+
+    public function getStatsByResult()
+    {
+      return $this->statsByResult;
+    }
+
+    public function getStatsBySeverity()
+    {
+      return $this->statsBySeverity;
     }
 }

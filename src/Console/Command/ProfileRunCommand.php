@@ -261,8 +261,6 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         $this->report($profile, $input, $output, $target, $results);
 
-        $report = $format->render($profile, $target, $results)->fetch();
-
       // Do not use a non-zero exit code when no severity is set (Default).
         if (!$input->getOption('exit-on-severity')) {
             return;

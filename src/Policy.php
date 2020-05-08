@@ -36,6 +36,21 @@ class Policy
         return $this->properties[$property] ?? null;
     }
 
+    /**
+     * Make properties read-only attributes of object.
+     */
+    public function __get($property)
+    {
+      return $this->getProperty($property);
+    }
+
+    /**
+     * Required for __get to work in twig templates.
+     */
+    public function __isset($property)
+    {
+      return $this->getProperty($property) !== NULL;
+    }
   /**
    * Set policy property.
    */

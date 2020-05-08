@@ -1,0 +1,23 @@
+<div id="report" class="container">
+  <!-- #table_of_contents# -->
+  <!-- Example row of columns -->
+  <div class="row">
+
+    {% if sections is iterable %}
+      {% for section in sections %}
+        <section>
+        {% if section.heading is defined %}
+        <h2 class="section-title" id="section_{{ section.heading|u.snake }}">{{ section.heading }}</h2>
+        {{ section.body | raw }}
+        {% else %}
+          {{ section | raw }}
+        {% endif %}
+        </section>
+      {% endfor %}
+      {% else %}
+      {{ sections | raw }}
+    {% endif %}
+
+  </div>
+  <hr>
+</div> <!-- /container -->

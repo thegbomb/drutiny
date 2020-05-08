@@ -2,20 +2,29 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\Docs\PolicyDocsGenerator;
-use Drutiny\Policy;
+use Drutiny\PolicyFactory;
 use Fiasco\SymfonyConsoleStyleMarkdown\Renderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Drutiny\PolicySource\PolicySource;
+use Twig\Environment;
 
 /**
  *
  */
 class PolicyInfoCommand extends Command
 {
+  protected $policyFactory;
+  protected $twig;
+
+
+  public function __construct(PolicyFactory $factory, Environment $twig)
+  {
+      $this->policyFactory = $factory;
+      $this->twig = $twig;
+      parent::__construct();
+  }
 
   /**
    * @inheritdoc
@@ -37,12 +46,13 @@ class PolicyInfoCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $policy = PolicySource::loadPolicyByName($input->getArgument('policy'));
+        $policy = $this->policyFactory->loadPolicyByName($input->getArgument('policy'));
 
-        $docs = new PolicyDocsGenerator();
-        $markdown = $docs->buildPolicyDocumentation($policy);
+        $template = $this->twig->load('docs/policy.md.twig');
+        $markdown = $template->render($policy->export());
 
         $formatted_output = Renderer::createFromMarkdown($markdown);
         $output->writeln((string) $formatted_output);
+        return 0;
     }
 }

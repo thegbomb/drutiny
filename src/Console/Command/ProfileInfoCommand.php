@@ -2,19 +2,30 @@
 
 namespace Drutiny\Console\Command;
 
+use Fiasco\SymfonyConsoleStyleMarkdown\Renderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Drutiny\Profile\ProfileSource;
-use Drutiny\Profile;
+use Drutiny\ProfileFactory;
+use Twig\Environment;
 
 /**
  *
  */
 class ProfileInfoCommand extends Command
 {
+
+  protected $profileFactory;
+  protected $twig;
+
+  public function __construct(ProfileFactory $factory, Environment $twig)
+  {
+      $this->profileFactory = $factory;
+      $this->twig = $twig;
+      parent::__construct();
+  }
 
   /**
    * @inheritdoc
@@ -38,23 +49,13 @@ class ProfileInfoCommand extends Command
     {
         $render = new SymfonyStyle($input, $output);
 
-        $profile = ProfileSource::loadProfileByName($input->getArgument('profile'));
+        $profile = $this->profileFactory->loadProfileByName($input->getArgument('profile'));
 
-        $render->title($profile->getTitle());
-        $render->text($profile->getDescription());
-        $render->table([], [
-        ['Name', $profile->getName()],
-        ['Filepath', $profile->getFilepath()],
-        ]);
+        $template = $this->twig->load('docs/profile.md.twig');
+        $markdown = $template->render($profile->dump());
 
-        if ($policies = $profile->getAllPolicyDefinitions()) {
-            $render->text('Policies included:');
-            $render->listing(array_keys($policies));
-        }
-
-        if ($listing = $profile->getIncludes()) {
-            $render->text('Inherits additional policies from:');
-            $render->listing(array_keys($listing));
-        }
+        $formatted_output = Renderer::createFromMarkdown($markdown);
+        $output->writeln((string) $formatted_output);
+        return 0;
     }
 }

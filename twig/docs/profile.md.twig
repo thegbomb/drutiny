@@ -1,0 +1,26 @@
+# {{ title }}
+{{ description }}
+
+## Use this profile
+
+```
+drutiny profile:run {{ name }} <target>
+```
+
+{% if policies %}
+## Policies
+
+Policy | Severity | Overrides
+------ | -------- | ---------
+{% for key in policies|keys %}
+{{ key }} | {{ policies[key].severity }} | {{ policies[key].parameters|json_encode()|raw }}
+{% endfor %}
+{% endif %}
+
+{% if include %}
+## Inherits
+This profile inherits policies from:
+{% for profile in include %}
+- {{ profile }}
+{% endfor %}
+{% endif %}

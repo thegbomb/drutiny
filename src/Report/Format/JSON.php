@@ -4,28 +4,16 @@ namespace Drutiny\Report\Format;
 
 use Drutiny\Profile;
 use Drutiny\Report\Format;
-use Drutiny\Target\Target;
 use Drutiny\Assessment;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class JSON extends Format
 {
+    protected $format = 'json';
+    protected $data;
 
-  /**
-   * The output location or method.
-   *
-   * @var string
-   */
-    protected $output;
-
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setFormat('json');
-    }
-
-    protected function preprocessResult(Profile $profile, Target $target, Assessment $assessment)
+    protected function prepareContent(Profile $profile, Assessment $assessment)
     {
         $schema = [
         'notices' => 0,
@@ -149,71 +137,72 @@ class JSON extends Format
             $schema['totals'][$severity] = array_sum($results);
         }
 
-        return $schema;
+        $this->data = $schema;
+        return $this;
     }
 
-    protected function renderResult(array $variables)
+    public function render(Profile $profile, Assessment $assessment)
     {
-        return json_encode($variables);
+        return json_encode($this->prepareContent($profile, $assessment));
     }
 
-    protected function preprocessMultiResult(Profile $profile, Target $target, array $results)
-    {
-        $report = [
-        'by_site' => [],
-        'by_policy' => [],
-        'sites' => []
-        ];
-        $resultsByPolicy = [];
-        foreach ($results as $uri => $assessment) {
-            $report['sites'][] = $uri;
-            foreach ($assessment->getResults() as $response) {
-                $policy = [
-                'isSuccessful' => $response->isSuccessful(),
-                'hasWarning' => $response->hasWarning(),
-                'hasError' => $response->hasError(),
-                'isNotice' => $response->isNotice(),
-                'isNotApplicable' => $response->isNotApplicable(),
-                'message' => $response->getSummary(),
-                ];
-                if (!isset($report['by_policy'][$response->getName()])) {
-                    $report['by_policy'][$response->getName()] = [
-                    'sites' => [],
-                    'total' => 0,
-                    'success' => 0,
-                    'failure' => 0,
-                    'warning' => 0,
-                    'error' => 0,
-                    'not_applicable' => 0,
-                    'notice' => 0,
-                    'title' => $response->getTitle(),
-                    'description' => $response->getDescription(),
-                    'type' => $response->getType(),
-                    'name' => $response->getName(),
-                    ];
-                }
-                $report['by_policy'][$response->getName()]['sites'][$uri] = $policy;
-                $report['by_policy'][$response->getName()]['total']++;
-                $report['by_policy'][$response->getName()]['notice'] += $policy['isNotice'] ? 1 : 0;
-                $report['by_policy'][$response->getName()]['success'] += (!$policy['isNotice'] && $policy['isSuccessful'] && !$policy['hasWarning'])   ? 1 : 0;
-                $report['by_policy'][$response->getName()]['warning'] += $policy['hasWarning'] ? 1 : 0;
-                $report['by_policy'][$response->getName()]['error'] += $policy['hasError'] ? 1 : 0;
-                $report['by_policy'][$response->getName()]['not_applicable'] += $policy['isNotApplicable'] ? 1 : 0;
-                $report['by_policy'][$response->getName()]['failure'] += (!$policy['isSuccessful'] && !$policy['hasError'] && !$policy['isNotApplicable']) ? 1 : 0;
-                $report['by_site'][$uri][$response->getName()] = $policy['isSuccessful'];
-            }
-        }
-
-        foreach ($report['by_policy'] as &$result) {
-            $result['success_rate'] = round($result['success'] / $result['total'] * 100, 2);
-            $result['failure_rate'] = round($result['failure'] / $result['total'] * 100, 2);
-        }
-
-        return $report;
-    }
-
-    protected function renderMultiResult(array $variables)
-    {
-        return $this->renderResult($variables);
-    }
+    // protected function preprocessMultiResult(Profile $profile, Target $target, array $results)
+    // {
+    //     $report = [
+    //     'by_site' => [],
+    //     'by_policy' => [],
+    //     'sites' => []
+    //     ];
+    //     $resultsByPolicy = [];
+    //     foreach ($results as $uri => $assessment) {
+    //         $report['sites'][] = $uri;
+    //         foreach ($assessment->getResults() as $response) {
+    //             $policy = [
+    //             'isSuccessful' => $response->isSuccessful(),
+    //             'hasWarning' => $response->hasWarning(),
+    //             'hasError' => $response->hasError(),
+    //             'isNotice' => $response->isNotice(),
+    //             'isNotApplicable' => $response->isNotApplicable(),
+    //             'message' => $response->getSummary(),
+    //             ];
+    //             if (!isset($report['by_policy'][$response->getName()])) {
+    //                 $report['by_policy'][$response->getName()] = [
+    //                 'sites' => [],
+    //                 'total' => 0,
+    //                 'success' => 0,
+    //                 'failure' => 0,
+    //                 'warning' => 0,
+    //                 'error' => 0,
+    //                 'not_applicable' => 0,
+    //                 'notice' => 0,
+    //                 'title' => $response->getTitle(),
+    //                 'description' => $response->getDescription(),
+    //                 'type' => $response->getType(),
+    //                 'name' => $response->getName(),
+    //                 ];
+    //             }
+    //             $report['by_policy'][$response->getName()]['sites'][$uri] = $policy;
+    //             $report['by_policy'][$response->getName()]['total']++;
+    //             $report['by_policy'][$response->getName()]['notice'] += $policy['isNotice'] ? 1 : 0;
+    //             $report['by_policy'][$response->getName()]['success'] += (!$policy['isNotice'] && $policy['isSuccessful'] && !$policy['hasWarning'])   ? 1 : 0;
+    //             $report['by_policy'][$response->getName()]['warning'] += $policy['hasWarning'] ? 1 : 0;
+    //             $report['by_policy'][$response->getName()]['error'] += $policy['hasError'] ? 1 : 0;
+    //             $report['by_policy'][$response->getName()]['not_applicable'] += $policy['isNotApplicable'] ? 1 : 0;
+    //             $report['by_policy'][$response->getName()]['failure'] += (!$policy['isSuccessful'] && !$policy['hasError'] && !$policy['isNotApplicable']) ? 1 : 0;
+    //             $report['by_site'][$uri][$response->getName()] = $policy['isSuccessful'];
+    //         }
+    //     }
+    //
+    //     foreach ($report['by_policy'] as &$result) {
+    //         $result['success_rate'] = round($result['success'] / $result['total'] * 100, 2);
+    //         $result['failure_rate'] = round($result['failure'] / $result['total'] * 100, 2);
+    //     }
+    //
+    //     return $report;
+    // }
+    //
+    // protected function renderMultiResult(array $variables)
+    // {
+    //     return $this->renderResult($variables);
+    // }
 }

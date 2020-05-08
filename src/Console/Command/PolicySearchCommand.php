@@ -9,15 +9,22 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Drutiny\Registry;
-use Drutiny\Config;
-use Drutiny\PolicySource\PolicySource;
+use Drutiny\PolicyFactory;
 
 /**
  *
  */
 class PolicySearchCommand extends Command
 {
+
+  protected $policyFactory;
+
+
+  public function __construct(PolicyFactory $factory)
+  {
+      $this->policyFactory = $factory;
+      parent::__construct();
+  }
 
   /**
    * @inheritdoc
@@ -45,7 +52,7 @@ class PolicySearchCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $list = PolicySource::getPolicyList();
+        $list = $this->policyFactory->getPolicyList();
         $keyword = $input->getArgument('keyword');
 
         $rows = array();
@@ -71,6 +78,8 @@ class PolicySearchCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
         $io->table(['Title', 'Name', 'Source'], $rows);
+
+        return 0;
     }
 
   /**

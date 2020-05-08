@@ -60,12 +60,16 @@ class ProgressBar extends AbstractLogger
         return $this->bar;
     }
 
+    public function setMaxSteps(int $maxSteps)
+    {
+      $this->bar()->setMaxSteps($maxSteps);
+      $this->steps = $maxSteps;
+      return $this;
+    }
+
     public function resetSteps($steps = 1)
     {
-        $this->steps = $steps;
-        $this->bar = null;
-        $this->start();
-        return $this;
+        return $this->setMaxSteps($steps);
     }
 
   /**
@@ -137,5 +141,10 @@ class ProgressBar extends AbstractLogger
             echo "\n";
         }
         return $this;
+    }
+
+    public function getSteps():int
+    {
+      return $this->steps;
     }
 }

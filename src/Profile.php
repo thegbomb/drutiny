@@ -66,7 +66,6 @@ class Profile
    */
     protected $parent;
 
-
   /**
    * Keyed array of \Drutiny\Report\FormatOptions.
    *
@@ -80,57 +79,6 @@ class Profile
    * @var boolean
    */
     protected $reportPerSite = false;
-
-  /**
-   * Load a profile from file.
-   *
-   * @var $filepath string
-   */
-    public static function loadFromFile($filepath)
-    {
-        $info = Yaml::parseFile($filepath);
-        $name = str_replace('.profile.yml', '', pathinfo($filepath, PATHINFO_BASENAME));
-
-        $profile = new static();
-        $profile->setTitle($info['title'])
-            ->setName($name)
-            ->setFilepath($filepath);
-
-        if (isset($info['description'])) {
-            $profile->setDescription($info['description']);
-        }
-
-        if (isset($info['policies'])) {
-            $v21_keys = ['parameters', 'severity'];
-            foreach ($info['policies'] as $name => $metadata) {
-              // Check for v2.0.x style profiles.
-                if (!empty($metadata) && !count(array_intersect($v21_keys, array_keys($metadata)))) {
-                    throw new \Exception("{$info['title']} is a v2.0.x profile. Please upgrade $filepath to v2.2.x schema.");
-                }
-                $weight = array_search($name, array_keys($info['policies']));
-                $profile->addPolicyDefinition(PolicyDefinition::createFromProfile($name, $weight, $metadata));
-            }
-        }
-
-        if (isset($info['excluded_policies']) && is_array($info['excluded_policies'])) {
-            $profile->addExcludedPolicies($info['excluded_policies']);
-        }
-
-        if (isset($info['include'])) {
-            foreach ($info['include'] as $name) {
-                $include = ProfileSource::loadProfileByName($name);
-                $profile->addInclude($include);
-            }
-        }
-
-        if (isset($info['format'])) {
-            foreach ($info['format'] as $format => $options) {
-                $profile->addFormatOptions($format, $options);
-            }
-        }
-
-        return $profile;
-    }
 
   /**
    * Add a FormatOptions to the profile.
@@ -347,7 +295,6 @@ class Profile
 
     public function dump()
     {
-        $format = $this->getFormatOption('html');
         $export = [
         'title' => $this->getTitle(),
         'name' => $this->getName(),
@@ -355,15 +302,9 @@ class Profile
         'policies' => $this->dumpPolicyDefinitions(),
         'excluded_policies' => $this->excludedPolicies,
         'include' => array_keys($this->getIncludes()),
-      //  'content' => $format->getContent(),
+        'format' => $this->format,
         ];
-        if ($template = $format->getTemplate()) {
-            $export['format']['html']['template'] = $template;
-        }
-        if ($html = $format->getContent()) {
-            $export['format']['html']['content'] = $html;
-        }
-        return array_filter($export);
+        return $export;
     }
 
     protected function dumpPolicyDefinitions()
