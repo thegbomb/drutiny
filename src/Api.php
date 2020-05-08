@@ -4,7 +4,7 @@ namespace Drutiny;
 
 use Drutiny\Http\Client;
 use GuzzleHttp\Exception\ConnectException;
-use Symfony\Component\Console\Logger\ConsoleLogger;
+use Psr\Log\LoggerInterface;
 
 class Api
 {
@@ -12,7 +12,7 @@ class Api
     protected $httpFactory;
     protected $logger;
 
-    public function __construct(Client $http_factory, ConsoleLogger $logger)
+    public function __construct(Client $http_factory, LoggerInterface $logger)
     {
         $this->httpFactory = $http_factory;
         $this->logger = $logger;

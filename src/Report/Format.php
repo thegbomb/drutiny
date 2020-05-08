@@ -5,7 +5,6 @@ namespace Drutiny\Report;
 use Drutiny\Assessment;
 use Drutiny\Profile;
 use Drutiny\Console\Verbosity;
-use Drutiny\ProgressBar;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
@@ -14,17 +13,16 @@ abstract class Format implements FormatInterface
 {
 
     protected $format = 'unknown';
+    protected $extension = 'txt';
     protected $output;
     protected $twig;
-    protected $progress;
     protected $options = [];
     protected $logger;
 
-    public function __construct(Verbosity $verbosity, Environment $twig, ProgressBar $progress, LoggerInterface $logger)
+    public function __construct(Verbosity $verbosity, Environment $twig, LoggerInterface $logger)
     {
         $this->output = new BufferedOutput($verbosity->get(), true);
         $this->twig = $twig;
-        $this->progress = $progress;
         $this->logger = $logger;
     }
 
@@ -51,6 +49,11 @@ abstract class Format implements FormatInterface
     {
       $this->options = $options;
       return $this;
+    }
+
+    public function getExtension():string
+    {
+      return $this->extension;
     }
 
   /**

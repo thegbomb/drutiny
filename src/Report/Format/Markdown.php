@@ -4,60 +4,30 @@ namespace Drutiny\Report\Format;
 
 use Drutiny\Profile;
 use Drutiny\Assessment;
-use Symfony\Component\Yaml\Yaml;
 use Drutiny\Report\FormatInterface;
+use Twig\Extra\Markdown\twig_html_to_markdown;
 
-class Markdown extends JSON
+// class_exists('Twig\Extra\Markdown\MarkdownExtension');
+
+class Markdown extends HTML
 {
-  protected $format = 'markdown';
+    protected $format = 'markdown';
+    protected $extension = 'md';
 
-  /**
-   * The content to use when rendering Markdown.
-   *
-   * @var array
-   */
-    protected $content = [];
-
-  /**
-   * The twig template to use to render the report wrapper in HTML.
-   *
-   * @var string
-   */
-    protected $template = 'page';
-
-    public function setOptions(array $options = []):FormatInterface
+    public function render(Profile $profile, Assessment $assessment)
     {
-        if (!isset($options['content'])) {
-            $options['content'] = Yaml::parseFile(dirname(__DIR__) . '/templates/content/profile.markdown.yml');
-        }
-        return parent::setOptions($options);
-    }
+        $output = parent::render($profile, $assessment);
+        $markdown = \Twig\Extra\Markdown\twig_html_to_markdown($output);
+        $markdown = self::formatTables($markdown);
 
-    protected function prepareContent(Profile $profile, Assessment $assessment)
-    {
-      $variables = ['profile' => $profile, 'assessment' => $assessment];
-      $sections = [];
-      $this->progress->setMaxSteps($this->progress->getSteps() + count($this->options['content']));
-      $parsedown = new MarkdownHelper();
-      foreach ($this->options['content'] as $section) {
-        foreach ($section as $attribute => $value) {
-
-        }
-      }
-    }
-
-    protected function renderResult(array $variables)
-    {
-        $md = $this->processRender($this->renderTemplate('site', $variables), $variables);
-
-      // Don't render charts in markdown.
-        $lines = explode(PHP_EOL, $md);
+        $lines = explode(PHP_EOL, $markdown);
         $lines = array_filter($lines, function ($line) {
             return !preg_match(MarkdownHelper::CHART_REGEX, $line);
         });
 
         return implode(PHP_EOL, $lines);
     }
+
 
     // protected function preprocessMultiResult(Profile $profile, Target $target, array $results)
     // {

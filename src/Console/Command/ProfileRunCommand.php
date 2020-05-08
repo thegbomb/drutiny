@@ -5,11 +5,9 @@ namespace Drutiny\Console\Command;
 use Drutiny\Assessment;
 use Drutiny\Profile\ProfileSource;
 use Drutiny\Profile\PolicyDefinition;
-use Drutiny\Target\Registry as TargetRegistry;
 use Drutiny\DomainSource;
-use Drutiny\DomainList\DomainListRegistry;
-use Drutiny\ProgressBar;
 use Drutiny\PolicyFactory;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -24,14 +22,14 @@ class ProfileRunCommand extends AbstractReportingCommand
 {
 
     protected $domainSource;
-    protected $progress;
+    protected $logger;
     protected $policyFactory;
 
 
-    public function __construct(DomainSource $domainSource, ProgressBar $progress, PolicyFactory $factory)
+    public function __construct(DomainSource $domainSource, LoggerInterface $logger, PolicyFactory $factory)
     {
         $this->domainSource = $domainSource;
-        $this->progress = $progress;
+        $this->logger = $logger;
         $this->policyFactory = $factory;
         parent::__construct();
     }
@@ -170,12 +168,12 @@ class ProfileRunCommand extends AbstractReportingCommand
             $profile->setTitle($title);
         }
 
-      // Set the filepath where the report will be written to (can be console).
-        $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input);
-
       // Setup the reporting format.
         $format = $input->getOption('format');
         $format = $container->get('format.factory')->create($format, $profile->getFormatOptions($format));
+
+        // Set the filepath where the report will be written to (can be console).
+        $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
 
       // Allow command line to add policies to the profile.
         $included_policies = $input->getOption('include-policy');
@@ -209,22 +207,6 @@ class ProfileRunCommand extends AbstractReportingCommand
             $uris = array_merge($domains, ($uris === ['default']) ? [] : $uris);
         }
 
-      // Setup the progress bar to log updates.
-        $steps = count($policyDefinitions) * count($uris);
-
-        $this->progress->resetSteps($steps);
-
-      // We don't want to run the progress bar if the output is to stdout.
-      // Unless the format is console/terminal as then the output doesn't matter.
-      // E.g. turn of progress bar in json, html and markdown formats.
-        if ($filepath == 'stdout' && !in_array($format->getFormat(), ['console', 'terminal'])) {
-            $this->progress->disable();
-        }
-      // Do not use the progress bar when using a high verbosity logging output.
-        elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $this->progress->disable();
-        }
-
         $results = [];
 
         $start = new \DateTime($input->getOption('reporting-period-start'));
@@ -236,14 +218,12 @@ class ProfileRunCommand extends AbstractReportingCommand
             $policies[] = $policyDefinition->getPolicy($this->policyFactory);
         }
 
-        $this->progress->start();
-
         foreach ($uris as $uri) {
             try {
+                $this->logger->setTopic("Evaluating ".$profile->getName()." against $uri.");
                 $target->setUri($uri);
             } catch (\Drutiny\Target\InvalidTargetException $e) {
-                $container->get('logger')->warning("Target cannot be evaluated: " . $e->getMessage());
-                $this->progress->advance(count($policyDefinitions));
+                $this->logger->warning("Target cannot be evaluated: " . $e->getMessage());
                 continue;
             }
 
@@ -252,13 +232,11 @@ class ProfileRunCommand extends AbstractReportingCommand
             ->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
         }
 
-        $this->progress->finish();
-
         if (!count($results)) {
-            $container->get('logger')->error("No results were generated.");
+            $this->logger->error("No results were generated.");
             return;
         }
-
+        $this->logger->setTopic("Building " . $format->getFormat());
         $this->report($profile, $input, $output, $target, $results);
 
       // Do not use a non-zero exit code when no severity is set (Default).
@@ -270,25 +248,6 @@ class ProfileRunCommand extends AbstractReportingCommand
         return max(array_map(function ($assessment) {
             return $assessment->getSeverityCode();
         }, $results));
-    }
-
-  /**
-   * Determine a default filepath.
-   */
-    protected function getDefaultReportFilepath(InputInterface $input):string
-    {
-        $filepath = 'stdout';
-      // If format is not out to console and the filepath isn't set, automate
-      // what the filepath should be.
-        if (!in_array($input->getOption('format'), ['console', 'terminal'])) {
-            $filepath = strtr('target-profile-date.format', [
-             'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
-             'profile' => $input->getArgument('profile'),
-             'date' => date('Ymd-His'),
-             'format' => $input->getOption('format')
-            ]);
-        }
-        return $filepath;
     }
 
     protected function parseDomainSourceOptions(InputInterface $input):array

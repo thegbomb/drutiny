@@ -11,6 +11,7 @@ use Drutiny\Sandbox\Sandbox;
 use Drutiny\DomainSource;
 use Drutiny\Target\Target;
 use Drutiny\ProgressBar;
+use Drutiny\Report\FormatInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,6 +61,25 @@ abstract class AbstractReportingCommand extends Command
         );
     }
 
+    /**
+     * Determine a default filepath.
+     */
+      protected function getDefaultReportFilepath(InputInterface $input, FormatInterface $format):string
+      {
+          $filepath = 'stdout';
+        // If format is not out to console and the filepath isn't set, automate
+        // what the filepath should be.
+          if (!in_array($input->getOption('format'), ['console', 'terminal'])) {
+              $filepath = strtr('target-profile-date.ext', [
+               'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
+               'profile' => $input->getArgument('profile'),
+               'date' => date('Ymd-His'),
+               'ext' => $format->getExtension(),
+              ]);
+          }
+          return $filepath;
+      }
+
   /**
    * Write up the report.
    */
@@ -75,27 +95,14 @@ abstract class AbstractReportingCommand extends Command
         $filepath = $input->getOption('report-filename');
         $format = $input->getOption('format');
 
-      // If format is not out to console and the filepath isn't set, automate
-      // what the filepath should be.
-        if (!in_array($format, ['console', 'terminal']) && !$filepath) {
-            $filepath = strtr('target-profile-date.format', [
-            'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
-            'profile' => $profile->getName(),
-            'date' => date('Ymd-His'),
-            'format' => $format,
-            ]);
-        }
-      // If the filepath is not set for console formats, then force to stdout.
-        elseif (in_array($format, ['console', 'terminal']) && !$filepath) {
-            $filepath = 'stdout';
-        }
-
       // Setup the reporting format.
         $format = $this->getApplication()
         ->getKernel()
         ->getContainer()
         ->get('format.factory')
         ->create($format, $profile->getFormatOptions($format));
+
+        $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
 
         $report = $format->render($profile, reset($results));
 

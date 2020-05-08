@@ -2,14 +2,14 @@
 
 namespace Drutiny\Http\Middleware;
 
+use Drutiny\Console\Verbosity;
 use Drutiny\Http\MiddlewareInterface;
+use Drutiny\ImmuntableConfig;
 use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
 use Psr\Http\Message\RequestInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Logger\ConsoleLogger;
-use Drutiny\Console\Verbosity;
-use Drutiny\ImmuntableConfig;
 
 class Logger implements MiddlewareInterface
 {
@@ -20,7 +20,7 @@ class Logger implements MiddlewareInterface
   /**
    * @param $container ContainerInterface
    */
-    public function __construct(Verbosity $verbosity, ConsoleLogger $logger, ImmuntableConfig $config)
+    public function __construct(Verbosity $verbosity, LoggerInterface $logger, ImmuntableConfig $config)
     {
         $this->config = $config->getConfig('http');
         $this->logger = $logger;

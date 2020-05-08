@@ -8,7 +8,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Drutiny\ProgressBar;
 use Drutiny\PolicyFactory;
 
 /**
@@ -17,13 +16,11 @@ use Drutiny\PolicyFactory;
 class PolicyListCommand extends Command
 {
 
-  protected $progress;
   protected $policyFactory;
 
 
-  public function __construct(ProgressBar $progress, PolicyFactory $factory)
+  public function __construct(PolicyFactory $factory)
   {
-      $this->progress = $progress;
       $this->policyFactory = $factory;
       parent::__construct();
   }
@@ -55,10 +52,7 @@ class PolicyListCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->progress->setTopic("Loading policy data");
-        $this->progress->start();
         $list = $this->policyFactory->getPolicyList();
-        $this->progress->advance();
 
         if ($source_filter = $input->getOption('source')) {
             $list = array_filter($list, function ($policy) use ($source_filter) {
@@ -91,9 +85,8 @@ class PolicyListCommand extends Command
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $headers[] = 'URI';
         }
-        $this->progress->finish();
         $io->table($headers, $rows);
-        
+
         return 0;
     }
 

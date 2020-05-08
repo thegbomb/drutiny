@@ -6,28 +6,36 @@ use Drutiny\Assessment;
 use Drutiny\Profile;
 use Drutiny\Report\Format;
 use Drutiny\Report\FormatInterface;
-// use TOC\MarkupFixer;
-// use TOC\TocGenerator;
-// use Drutiny\Report\Format\Menu\Renderer;
 use Symfony\Component\Yaml\Yaml;
 use Twig\TemplateWrapper;
+use Twig\Environment;
 
 class HTML extends Format
 {
 
     protected $format = 'html';
+    protected $extension = 'html';
 
 
     public function setOptions(array $options = []):FormatInterface
     {
         if (!isset($options['content'])) {
-            // $options['content'] = $this->twig->load('report/profile.md.twig');
-            $options['content'] = Yaml::parseFile(dirname(__DIR__) . '/templates/content/profile.html.yml');
+            $options['content'] = $this->twig->load('report/profile.md.twig');
+            // $options['content'] = Yaml::parseFile(dirname(__DIR__) . '/templates/content/profile.html.yml');
         }
-        $options['template'] = $options['template'] ?? 'report/page.html.twig';
+        $options['template'] = $options['template'] ?? 'report/page.' . $this->getExtension() . '.twig';
         return parent::setOptions($options);
     }
 
+    /**
+     * Registered as a Twig filter to be used as: "Title here"|heading.
+     */
+    public static function filterSectionHeading(Environment $env, $heading)
+    {
+      return $env
+        ->createTemplate('<h2 class="section-title" id="section_{{ heading | u.snake }}">{{ heading }}</h2>')
+        ->render(['heading' => $heading]);
+    }
 
     protected function prepareContent(Profile $profile, Assessment $assessment)
     {
@@ -45,7 +53,6 @@ class HTML extends Format
       }
 
       // Backward compatible 2.x Yaml style.
-      $this->progress->setMaxSteps($this->progress->getSteps() + count($this->options['content']));
       foreach ($this->options['content'] as $section) {
         foreach ($section as $attribute => $value) {
           // Convert from Mustache (supported in Drutiny 2.x) over to twig syntax.
@@ -72,7 +79,6 @@ class HTML extends Format
           $section[$attribute] = $template;
         }
         $sections[] = $section;
-        $this->progress->advance();
       }
       return $sections;
     }

@@ -7,7 +7,7 @@ use Drutiny\AuditResponse\NoAuditResponseFoundException;
 use Drutiny\Target\TargetInterface;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Sandbox\ReportingPeriodTrait;
-use Symfony\Component\Console\Logger\ConsoleLogger;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Assessment
@@ -27,7 +27,7 @@ class Assessment
     protected $statsBySeverity = [];
     protected $remediable = [];
 
-    public function __construct(ConsoleLogger $logger, ContainerInterface $container)
+    public function __construct(LoggerInterface $logger, ContainerInterface $container)
     {
         $this->logger = $logger;
         $this->container = $container;
