@@ -2,7 +2,7 @@
   <div class="col-sm-12 col-md-10">
     <h4 id="{{ result.policy.name }}">{{ result.policy.title }} <span class="text-danger glyphicon glyphicon-remove" aria-hidden="true"></span></h4>
 
-    {{ result.policy.description | markdown_to_html }}
+    {{ include(template_from_string(result.policy.description)) | markdown_to_html }}
 
     <div class="alert alert-danger" role="alert">
       {% with result.tokens %}

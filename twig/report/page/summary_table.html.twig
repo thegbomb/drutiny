@@ -12,7 +12,7 @@
     <tr class="{% if result.isNotice %}{% elseif result.isSuccessful %}has-success{% elseif result.hasWarning %}has-warning{% else %}has-error{% endif %}">
       <th><a href="#{{ result.policy.name }}">{{ result.policy.title }}</a></th>
       <td>{{ result.severity }}</td>
-      <td class="control-label">{{ result.type|split('-')|join(' ') }}</td>
+      <td class="control-label">{{ result.type|split('-')|join(' ')|title  }}</td>
       </tr>
     {% endif %}
     {% endfor %}

@@ -94,11 +94,7 @@ services:
 
     # Default logger echoes logs out to the console.
     logger:
-      alias: Symfony\Component\Console\Logger\ConsoleLogger
-
-    Symfony\Component\Console\Logger\ConsoleLogger:
-      arguments:
-        - '@output'
+      alias: Drutiny\Console\ProgressLogger
 
     # Default output class echoes out to the console.
     output:
@@ -146,11 +142,20 @@ services:
         - [addExtension, ['@Twig\Extra\Markdown\MarkdownExtension']]
         - [addExtension, ['@Twig\Extra\String\StringExtension']]
         - [addFilter, ['@twig.filters.array_sum']]
+        - [addFilter, ['@twig.filters.sectionHeading']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
 
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
+
+    twig.filters.sectionHeading:
+      class: Twig\TwigFilter
+      arguments:
+        - 'heading'
+        - ['Drutiny\Report\Format\HTML', 'filterSectionHeading']
+        - needs_environment: true
+          is_safe: ['html']
 
     process.manager:
       class: Drutiny\Process\ProcessManager
@@ -188,6 +193,9 @@ services:
     Symfony\Component\Finder\Finder:
       alias: finder
 
+    Symfony\Component\Console\Output\ConsoleOutputInterface:
+      alias: Symfony\Component\Console\Output\ConsoleOutput
+
     Psr\Log\LoggerInterface:
       alias: logger
 
@@ -203,3 +211,4 @@ services:
     Twig\Extra\Markdown\MarkdownInterface:
     Twig\Extra\Markdown\MarkdownRuntime:
     Twig\Extra\String\StringExtension:
+    Symfony\Component\Console\Output\ConsoleOutput:

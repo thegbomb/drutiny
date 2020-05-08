@@ -1,0 +1,12 @@
+{% if sections is iterable %}
+  {% for section in sections %}
+    {% if section.heading is defined %}
+    ## {{ section.heading }}
+    {{ section.body | raw }}
+    {% else %}
+      {{ section | raw }}
+    {% endif %}
+  {% endfor %}
+{% else %}
+  {{ sections | raw }}
+{% endif %}
