@@ -63,17 +63,17 @@ class JSON extends Format
             'has_warning' => $response->hasWarning(),
             'has_error' => $response->hasError(),
             'is_not_applicable' => $response->isNotApplicable(),
-            'title' => $response->getTitle(),
-            'description' => $response->getDescription(),
-            'remediation' => $response->getRemediation(),
-            'success' => $response->getSuccess(),
-            'failure' => $response->getFailure(),
-            'warning' => $response->getWarning(),
+            'title' => $response->getPolicy()->getProperty('title'),
+            'description' => $response->getPolicy()->getProperty('description'),
+            'remediation' => $response->getPolicy()->getProperty('remediation'),
+            'success' => $response->getPolicy()->getProperty('success'),
+            'failure' => $response->getPolicy()->getProperty('failure'),
+            'warning' => $response->getPolicy()->getProperty('warning'),
             'type' => $response->getType(),
             'severity' => $response->getSeverity(),
             'severity_code' => $response->getSeverityCode(),
             'exception' => $response->getExceptionMessage(),
-            'name' => $response->getName(),
+            'name' => $response->getPolicy()->getProperty('name'),
             ];
 
             $schema['total']++;
@@ -121,7 +121,7 @@ class JSON extends Format
                 case 'failure':
                     $schema['failures']++;
                     $var['status_title'] = 'Failed';
-                    $schema['remediations'][] = $response->getRemediation();
+                    $schema['remediations'][] = $response->getPolicy()->getProperty('remediation');
                     $schema['stats'][$var['severity']]['failure']++;
                     break;
             }
@@ -138,7 +138,7 @@ class JSON extends Format
         }
 
         $this->data = $schema;
-        return $this;
+        return $this->data;
     }
 
     public function render(Profile $profile, Assessment $assessment)

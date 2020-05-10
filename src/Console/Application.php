@@ -39,6 +39,17 @@ class Application extends BaseApplication
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function run(InputInterface $input = null, OutputInterface $output = null)
+    {
+      if ($output === null) {
+        $output = $this->kernel->getContainer()->get('output');
+      }
+      return parent::run($input, $output);
+    }
+
+    /**
      * Runs the current application.
      *
      * @return int 0 if everything went fine, or an error code

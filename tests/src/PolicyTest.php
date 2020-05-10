@@ -2,28 +2,35 @@
 
 namespace DrutinyTests\Audit;
 
-use Drutiny\Container;
+use Drutiny\Console\Application;
+use Drutiny\Kernel;
 use Drutiny\Policy;
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Target\Registry as TargetRegistry;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 
 class PolicyTest extends TestCase {
 
   protected $target;
+  protected $application;
+  protected $output;
+  protected $container;
 
-  public function __construct()
+  protected function setUp(): void
   {
-    Container::setLogger(new NullLogger());
-    $this->target = TargetRegistry::getTarget('none', '');
-    parent::__construct();
+      $kernel = new Kernel('phpunit');
+      $kernel->addServicePath(
+        str_replace($kernel->getProjectDir(), '', dirname(dirname(__FILE__))));
+      $this->application = new Application($kernel, 'x.y.z');
+      $this->application->setAutoExit(FALSE);
+      $this->output = $kernel->getContainer()->get('output');
+      $this->container = $kernel->getContainer();
+      $this->target = $this->container->get('target.factory')->create('@none');
   }
 
   public function testPass()
   {
-    $policy = Policy::load('Test:Pass');
-    $sandbox = new Sandbox($this->target, $policy);
+    $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:Pass');
+    $sandbox = $this->container->get('sandbox')->create($this->target, $policy);
 
     $response = $sandbox->run();
     $this->assertTrue($response->isSuccessful());
@@ -31,8 +38,8 @@ class PolicyTest extends TestCase {
 
   public function testFail()
   {
-    $policy = Policy::load('Test:Fail');
-    $sandbox = new Sandbox($this->target, $policy);
+    $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:Fail');
+    $sandbox = $this->container->get('sandbox')->create($this->target, $policy);
 
     $response = $sandbox->run();
     $this->assertFalse($response->isSuccessful());
@@ -40,8 +47,8 @@ class PolicyTest extends TestCase {
 
   public function testError()
   {
-    $policy = Policy::load('Test:Error');
-    $sandbox = new Sandbox($this->target, $policy);
+    $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:Error');
+    $sandbox = $this->container->get('sandbox')->create($this->target, $policy);
 
     $response = $sandbox->run();
     $this->assertFalse($response->isSuccessful());
@@ -50,8 +57,8 @@ class PolicyTest extends TestCase {
 
   public function testWarning()
   {
-    $policy = Policy::load('Test:Warning');
-    $sandbox = new Sandbox($this->target, $policy);
+    $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:Warning');
+    $sandbox = $this->container->get('sandbox')->create($this->target, $policy);
 
     $response = $sandbox->run();
     $this->assertTrue($response->isSuccessful());
@@ -60,8 +67,8 @@ class PolicyTest extends TestCase {
 
   public function testNotApplicable()
   {
-    $policy = Policy::load('Test:NA');
-    $sandbox = new Sandbox($this->target, $policy);
+    $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:NA');
+    $sandbox = $this->container->get('sandbox')->create($this->target, $policy);
 
     $response = $sandbox->run();
     $this->assertFalse($response->isSuccessful());
@@ -70,8 +77,8 @@ class PolicyTest extends TestCase {
 
   public function testNotice()
   {
-    $policy = Policy::load('Test:Notice');
-    $sandbox = new Sandbox($this->target, $policy);
+    $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:Notice');
+    $sandbox = $this->container->get('sandbox')->create($this->target, $policy);
 
     $response = $sandbox->run();
     $this->assertTrue($response->isSuccessful());

@@ -7,15 +7,17 @@ use Psr\Log\LoggerTrait;
 use Psr\Log\LogLevel;
 use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 
 
 class ProgressLogger implements LoggerInterface {
   use LoggerTrait;
 
+  protected $logger;
   protected $output;
+  protected $buffer;
   protected $indicator;
   protected $topic;
   protected $formatLevelMap = [
@@ -29,18 +31,35 @@ class ProgressLogger implements LoggerInterface {
       LogLevel::DEBUG => 'info',
   ];
 
-  public function __construct(ConsoleOutputInterface $output)
+  public function __construct(OutputInterface $output)
   {
-    if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-      $progress_output = $output;
-      $this->output = new ConsoleLogger(new NullOutput());
+    $this->output = $output;
+    $this->buffer = new BufferedOutput;
+
+    if ($output->getVerbosity() <= OutputInterface::VERBOSITY_NORMAL) {
+      $progress_output = $this->buffer;
+      $this->logger = new ConsoleLogger(new NullOutput());
     }
     else {
-      $this->output = new ConsoleLogger($output);
+      $this->logger = new ConsoleLogger($this->buffer);
       $progress_output = new NullOutput();
     }
     $this->indicator = new ProgressIndicator($progress_output, 'very_verbose');
     $this->indicator->start('Starting');
+  }
+
+  /**
+   * Call when its safe to begin output to stdout.
+   */
+  public function flushBuffer()
+  {
+    if ($this->output->getVerbosity() <= OutputInterface::VERBOSITY_NORMAL) {
+      $this->indicator = new ProgressIndicator($this->output, 'very_verbose');
+      $this->indicator->start('Starting');
+    }
+    $this->output->write($this->buffer->fetch());
+    $this->logger = new ConsoleLogger($this->output);
+    return $this;
   }
 
   public function setMessage($message)
@@ -67,7 +86,7 @@ class ProgressLogger implements LoggerInterface {
       'message' => str_replace(PHP_EOL, "|", $message)
     ]));
 
-    $this->output->log($level, $message, $context);
+    $this->logger->log($level, $message, $context);
   }
 
   public function __destruct()

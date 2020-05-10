@@ -15,14 +15,30 @@ use Symfony\Component\DependencyInjection\Loader\GlobFileLoader;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
-// use Symfony\Component\Routing\RouteCollectionBuilder;
-
 class Kernel
 {
 
     private const CONFIG_EXTS = '.{php,yaml,yml}';
-
     private $container;
+    private $environment;
+    private $loadingPaths = [];
+    private $initialized = FALSE;
+
+    public function __construct($environment)
+    {
+      $this->environment = $environment;
+      $this->addServicePath(DRUTINY_LIB);
+      $this->addServicePath('vendor/*/');
+    }
+
+    public function addServicePath($path)
+    {
+      if ($this->initialized) {
+        throw new \RuntimeException("Cannot add $path as service path. Container already initialized.");
+      }
+      $this->loadingPaths[] = $path;
+      return $this;
+    }
 
     public function getContainer()
     {
@@ -47,6 +63,7 @@ class Kernel
     {
         $this->container = $this->buildContainer();
         $this->container->compile();
+        $this->initialized = TRUE;
         return $this->container;
     }
 
@@ -64,8 +81,13 @@ class Kernel
 
         $loader = $this->getContainerLoader($container);
 
-        $loader->load($this->getProjectDir().'/{drutiny}'.self::CONFIG_EXTS, 'glob');
-        $loader->load($this->getProjectDir().'/vendor/*/{drutiny}'.self::CONFIG_EXTS, 'glob');
+        foreach ($this->loadingPaths as $path) {
+          $loading_path = [
+            $this->getProjectDir(),
+            '/', $path, '{drutiny}'.self::CONFIG_EXTS,
+          ];
+          $loader->load(implode('/', $loading_path), 'glob');
+        }
         return $container;
     }
 

@@ -2,100 +2,134 @@
 
 namespace DrutinyTests\Audit;
 
+use Drutiny\Console\Application;
+use Drutiny\Kernel;
+use Drutiny\Policy;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use Drutiny\Command\ProfileRunCommand;
-use Drutiny\Command\ProfileInfoCommand;
-use Drutiny\Command\ProfileListCommand;
-use Drutiny\Command\PolicyListCommand;
-use Drutiny\Command\PolicyAuditCommand;
-use Drutiny\Command\PolicyInfoCommand;
-use Drutiny\Command\AuditRunCommand;
+
 
 class ApplicationTest extends TestCase {
 
+  protected $application;
+  protected $output;
+  protected $container;
+
+  protected function setUp(): void
+  {
+      $kernel = new Kernel('phpunit');
+      $kernel->addServicePath(
+        str_replace($kernel->getProjectDir(), '', dirname(dirname(__FILE__))));
+      $this->application = new Application($kernel, 'x.y.z');
+      $this->application->setAutoExit(FALSE);
+      $this->output = $kernel->getContainer()->get('output');
+      $this->container = $kernel->getContainer();
+  }
+
+  public function testContainer()
+  {
+      $this->assertTrue(
+        $this->application
+        ->getKernel()
+        ->getContainer()
+        ->getParameter('phpunit.testing'));
+  }
+
   public function testProfileRun()
   {
-    $command = new ProfileRunCommand();
     $input = new ArrayInput([
+      'command' => 'profile:run',
       'profile' => 'test',
       'target' => '@none'
     ]);
-    $return_code = $command->run($input, $output = new BufferedOutput());
 
-    $this->assertTrue(strlen($output->fetch()) > 0);
-    $this->assertTrue($return_code === 0);
+    $code = $this->application->run($input, $this->output);
+    $this->assertIsInt($code);
+    $this->assertEquals(0, $code);
+    $this->assertStringContainsString('Always notice test policy Notice', $this->output->fetch());
   }
 
   public function testProfileList()
   {
-    $command = new ProfileListCommand();
-    $input = new ArrayInput([]);
-    $return_code = $command->run($input, $output = new BufferedOutput());
+    $input = new ArrayInput([
+      'command' => 'profile:list',
+    ]);
 
-    $this->assertTrue(strlen($output->fetch()) > 0);
-    $this->assertTrue($return_code === 0);
+    $code = $this->application->run($input, $this->output);
+    $this->assertIsInt($code);
+    $this->assertEquals(0, $code);
+    $this->assertStringContainsString('Test Profile', $this->output->fetch());
   }
 
   public function testProfileInfo()
   {
-    $command = new ProfileInfoCommand();
     $input = new ArrayInput([
-      'profile' => 'test',
+      'command' => 'profile:info',
+      'profile' => 'test'
     ]);
-    $return_code = $command->run($input, $output = new BufferedOutput());
 
-    $this->assertTrue(strlen($output->fetch()) > 0);
-    $this->assertTrue($return_code === 0);
+    $code = $this->application->run($input, $this->output);
+    $this->assertStringContainsString('Test Profile', $this->output->fetch());
+    $this->assertIsInt($code);
+    $this->assertEquals(0, $code);
+
   }
 
   public function testPolicyList()
   {
-    $command = new PolicyListCommand();
-    $input = new ArrayInput([]);
-    $return_code = $command->run($input, $output = new BufferedOutput());
+    $input = new ArrayInput([
+      'command' => 'policy:list'
+    ]);
 
-    $this->assertTrue(strlen($output->fetch()) > 0);
-    $this->assertTrue($return_code === 0);
+    $code = $this->application->run($input, $this->output);
+    $this->assertStringContainsString('Always notice test policy', $this->output->fetch());
+    $this->assertIsInt($code);
+    $this->assertEquals(0, $code);
+
   }
 
+  /**
+   * @todo
+   */
   public function testPolicyAudit()
   {
-    $command = new PolicyAuditCommand();
     $input = new ArrayInput([
+      'command' => 'policy:audit',
       'policy' => 'Test:Pass',
       'target' => '@none'
     ]);
-    $return_code = $command->run($input, $output = new BufferedOutput());
 
-    $this->assertTrue(strlen($output->fetch()) > 0);
-    $this->assertTrue($return_code === 0);
+    $code = $this->application->run($input, $this->output);
+    $this->assertIsInt($code);
+    $this->assertEquals(0, $code);
+    $this->assertStringContainsString('Always pass test policy', $this->output->fetch());
   }
 
   public function testPolicyInfo()
   {
-    $command = new PolicyInfoCommand();
     $input = new ArrayInput([
-      'policy' => 'Test:Pass',
+      'command' => 'policy:info',
+      'policy' => 'Test:Pass'
     ]);
-    $return_code = $command->run($input, $output = new BufferedOutput());
 
-    $this->assertTrue(strlen($output->fetch()) > 0);
-    $this->assertTrue($return_code === 0);
+    $code = $this->application->run($input, $this->output);
+    $this->assertIsInt($code);
+    $this->assertEquals(0, $code);
+    $this->assertStringContainsString('This policy should always pass', $this->output->fetch());
   }
 
   public function testAuditRun()
   {
-    $command = new AuditRunCommand();
     $input = new ArrayInput([
+      'command' => 'audit:run',
       'audit' => 'Drutiny\Audit\AlwaysPass',
       'target' => '@none'
     ]);
-    $return_code = $command->run($input, $output = new BufferedOutput());
 
-    $this->assertTrue(strlen($output->fetch()) > 0);
-    $this->assertTrue($return_code === 0);
+    $code = $this->application->run($input, $this->output);
+    $this->assertIsInt($code);
+    $this->assertEquals(Policy::SEVERITY_NORMAL, $code);
+    $this->assertStringContainsString('Drutiny\\\Audit\\\AlwaysPass', $this->output->fetch());
   }
 }

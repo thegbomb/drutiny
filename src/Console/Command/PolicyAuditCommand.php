@@ -3,14 +3,11 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
-use Drutiny\Container;
 use Drutiny\Profile;
 use Drutiny\Profile\PolicyDefinition;
-use Drutiny\ProgressBar;
 use Drutiny\RemediableInterface;
+use Drutiny\PolicyFactory;
 use Drutiny\Report\Format;
-use Drutiny\Report\ProfileRunReport;
-use Drutiny\Target\Registry as TargetRegistry;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,6 +22,13 @@ use Symfony\Component\Yaml\Yaml;
  */
 class PolicyAuditCommand extends AbstractReportingCommand
 {
+  protected $policyFactory;
+
+  public function __construct(PolicyFactory $factory)
+  {
+      $this->policyFactory = $factory;
+      parent::__construct();
+  }
 
   /**
    * @inheritdoc
@@ -77,6 +81,13 @@ class PolicyAuditCommand extends AbstractReportingCommand
             InputOption::VALUE_OPTIONAL,
             'The end point in time to report to. Can be absolute or relative. Defaults to the current hour.',
             date('Y-m-d H:00:00')
+        )
+        ->addOption(
+            'exit-on-severity',
+            'x',
+            InputOption::VALUE_OPTIONAL,
+            'Send an exit code to the console if a policy of a given severity fails. Defaults to none (exit code 0). (Options: none, low, normal, high, critical)',
+            FALSE
         );
         parent::configure();
     }
@@ -86,10 +97,12 @@ class PolicyAuditCommand extends AbstractReportingCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-      // Ensure Container logger uses the same verbosity.
-        Container::setVerbosity($output->getVerbosity());
 
-      // Setup any parameters for the check.
+        $container = $this->getApplication()
+        ->getKernel()
+        ->getContainer();
+
+        // Setup any parameters for the check.
         $parameters = [];
         foreach ($input->getOption('set-parameter') as $option) {
             list($key, $value) = explode('=', $option, 2);
@@ -106,16 +119,15 @@ class PolicyAuditCommand extends AbstractReportingCommand
                 PolicyDefinition::createFromProfile($name, 0, [
                 'parameters' => $parameters
                 ])
-            )
-            ->addFormatOptions(Format::create('terminal', [
-              'content' => Yaml::parseFile(dirname(__DIR__) . '/Report/templates/content/policy.markdown.yml')
-            ]));
+            );
 
-      // Setup the target.
-        $target = TargetRegistry::loadTarget($input->getArgument('target'));
-        $target->setUri($input->getOption('uri'));
+        // Setup the target.
+        $target = $container->get('target.factory')->create($input->getArgument('target'));
 
-        $assessment = new Assessment($input->getOption('uri'));
+        // Get the URLs.
+        $uri = $input->getOption('uri');
+        $target->setUri($uri);
+
         $result = [];
 
         $start = new \DateTime($input->getOption('reporting-period-start'));
@@ -124,15 +136,31 @@ class PolicyAuditCommand extends AbstractReportingCommand
 
         $policies = [];
         foreach ($profile->getAllPolicyDefinitions() as $definition) {
-            $policies[] = $definition->getPolicy();
+            $policies[] = $definition->getPolicy($this->policyFactory);
         }
 
-        $assessment->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
+        $assessment = $container->get('Drutiny\Assessment')
+        ->setUri($uri)
+        ->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
 
         if (!$input->getOption('report-filename')) {
             $input->setOption('report-filename', 'stdout');
         }
 
         $this->report($profile, $input, $output, $target, [$assessment]);
+
+        // Do not use a non-zero exit code when no severity is set (Default).
+        $exit_severity = $input->getOption('exit-on-severity');
+        if ($exit_severity === FALSE) {
+            return 0;
+        }
+        $this->logger->info("Exiting with max severity code.");
+
+        // Return the max severity as the exit code.
+        $exit_code = max(array_map(function ($assessment) {
+            return $assessment->getSeverityCode();
+        }, $results));
+
+        return $exit_code >= $exit_severity ? $exit_code : 0;
     }
 }

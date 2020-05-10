@@ -91,6 +91,10 @@ class Policy
             $this->dependencies = array_map($builder, $policyData['depends']);
         }
 
+        if (!isset($this->severityCode)) {
+          $this->severityCode = Policy::SEVERITY_NORMAL;
+        }
+
       // Map a severity value to its respective security code.
         if (isset($new_properties['severity'])) {
             switch ($policyData['severity']) {
@@ -98,13 +102,13 @@ class Policy
                     $this->severityCode = Policy::SEVERITY_LOW;
                     break;
                 case 'normal':
-                    $this->severityCode = Policy::SEVERITY_LOW;
+                    $this->severityCode = Policy::SEVERITY_NORMAL;
                     break;
                 case 'high':
-                    $this->severityCode = Policy::SEVERITY_LOW;
+                    $this->severityCode = Policy::SEVERITY_HIGH;
                     break;
                 case 'critical':
-                    $this->severityCode = Policy::SEVERITY_LOW;
+                    $this->severityCode = Policy::SEVERITY_CRITICAL;
                     break;
             }
         }

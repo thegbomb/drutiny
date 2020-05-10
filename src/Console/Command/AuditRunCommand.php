@@ -3,12 +3,8 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
-use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\Policy;
 use Drutiny\Profile;
-use Drutiny\RemediableInterface;
-use Drutiny\Report\ProfileRunReport;
-use Drutiny\Target\Registry as TargetRegistry;
 use Drutiny\Target\Target;
 use Drutiny\Report\Format;
 use Symfony\Component\Console\Command\Command;
@@ -84,9 +80,14 @@ class AuditRunCommand extends AbstractReportingCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $container = $this->getApplication()
+        ->getKernel()
+        ->getContainer();
+
         $audit_class = $input->getArgument('audit');
 
-        $policy = new Policy([
+        $policy = new Policy();
+        $policy->setProperties([
         'title' => 'Audit: ' . $audit_class,
         'name' => '_test',
         'class' => $audit_class,
@@ -95,6 +96,7 @@ class AuditRunCommand extends AbstractReportingCommand
         'success' => 'success',
         'failure' => 'failure',
         'warning' => 'warning',
+        'uuid' => $audit_class,
         ]);
 
       // Setup any parameters for the check.
@@ -105,8 +107,8 @@ class AuditRunCommand extends AbstractReportingCommand
             $policy->addParameter($key, $info);
         }
 
-      // Setup the target.
-        $target = TargetRegistry::loadTarget($input->getArgument('target'));
+        // Setup the target.
+        $target = $container->get('target.factory')->create($input->getArgument('target'));
 
         $start = new \DateTime($input->getOption('reporting-period-start'));
         $end   = new \DateTime($input->getOption('reporting-period-end'));
@@ -115,16 +117,20 @@ class AuditRunCommand extends AbstractReportingCommand
             $target->setUri($uri);
         }
 
-        $assessment = new Assessment($input->getOption('uri'));
-        $assessment->assessTarget($target, [$policy], $start, $end, $input->getOption('remediate'));
+        $sandbox = $container
+        ->get('sandbox')
+        ->create($target, $policy)
+        ->setReportingPeriod($start, $end);
+
+        $response = $sandbox->run();
+
+        $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
+        $assessment->setPolicyResult($response);
 
         $profile = new Profile();
         $profile->setTitle('Audit Run')
             ->setName('audit:run')
-            ->setFilepath('/dev/null')
-            ->addFormatOptions(Format::create('terminal', [
-              'content' => Yaml::parseFile(dirname(__DIR__) . '/Report/templates/content/policy.markdown.yml')
-            ]));
+            ->setFilepath('/dev/null');
 
         if (!$input->getOption('report-filename')) {
             $input->setOption('report-filename', 'stdout');
@@ -134,5 +140,6 @@ class AuditRunCommand extends AbstractReportingCommand
         }
 
         $this->report($profile, $input, $output, $target, [$assessment]);
+        return $response->getSeverityCode();
     }
 }

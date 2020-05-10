@@ -3,6 +3,7 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
+use Drutiny\Console\ProgressLogger;
 use Drutiny\Profile\ProfileSource;
 use Drutiny\Profile\PolicyDefinition;
 use Drutiny\DomainSource;
@@ -23,14 +24,16 @@ class ProfileRunCommand extends AbstractReportingCommand
 
     protected $domainSource;
     protected $logger;
+    protected $progressLogger;
     protected $policyFactory;
 
 
-    public function __construct(DomainSource $domainSource, LoggerInterface $logger, PolicyFactory $factory)
+    public function __construct(DomainSource $domainSource, LoggerInterface $logger, ProgressLogger $progressLogger, PolicyFactory $factory)
     {
         $this->domainSource = $domainSource;
         $this->logger = $logger;
         $this->policyFactory = $factory;
+        $this->progressLogger = $progressLogger;
         parent::__construct();
     }
 
@@ -72,7 +75,7 @@ class ProfileRunCommand extends AbstractReportingCommand
             'x',
             InputOption::VALUE_OPTIONAL,
             'Send an exit code to the console if a policy of a given severity fails. Defaults to none (exit code 0). (Options: none, low, normal, high, critical)',
-            'none'
+            FALSE
         )
         ->addOption(
             'exclude-policy',
@@ -149,11 +152,12 @@ class ProfileRunCommand extends AbstractReportingCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+
         $container = $this->getApplication()
         ->getKernel()
         ->getContainer();
 
-      // Ensure Container logger uses the same verbosity.
+        // Ensure Container logger uses the same verbosity.
         $container->get('verbosity')
         ->set($output->getVerbosity());
 
@@ -163,17 +167,24 @@ class ProfileRunCommand extends AbstractReportingCommand
         ->loadProfileByName($input->getArgument('profile'))
         ->setReportPerSite($input->getOption('report-per-site'));
 
-      // Override the title of the profile with the specified value.
+        // Override the title of the profile with the specified value.
         if ($title = $input->getOption('title')) {
             $profile->setTitle($title);
         }
 
-      // Setup the reporting format.
+        // Setup the reporting format.
         $format = $input->getOption('format');
         $format = $container->get('format.factory')->create($format, $profile->getFormatOptions($format));
 
         // Set the filepath where the report will be written to (can be console).
         $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
+
+        // If we're echoing to standard out, then we can run the logger and
+        // progress indicator without compromising output formats such as json
+        // and HTML.
+        if ($filepath != 'stdout') {
+          $this->progressLogger->flushBuffer();
+        }
 
       // Allow command line to add policies to the profile.
         $included_policies = $input->getOption('include-policy');
@@ -190,10 +201,10 @@ class ProfileRunCommand extends AbstractReportingCommand
             return !in_array($policy->getName(), $excluded_policies);
         });
 
-      // Setup the target.
+        // Setup the target.
         $target = $container->get('target.factory')->create($input->getArgument('target'));
 
-      // Get the URLs.
+        // Get the URLs.
         $uris = $input->getOption('uri');
 
         $domains = [];
@@ -234,20 +245,24 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         if (!count($results)) {
             $this->logger->error("No results were generated.");
-            return;
+            return 101;
         }
-        $this->logger->setTopic("Building " . $format->getFormat());
+        $this->logger->setTopic("Building report for " . $format->getFormat());
         $this->report($profile, $input, $output, $target, $results);
 
-      // Do not use a non-zero exit code when no severity is set (Default).
-        if (!$input->getOption('exit-on-severity')) {
-            return;
+        // Do not use a non-zero exit code when no severity is set (Default).
+        $exit_severity = $input->getOption('exit-on-severity');
+        if ($exit_severity === FALSE) {
+            return 0;
         }
+        $this->logger->info("Exiting with max severity code.");
 
-      // Return the max severity as the exit code.
-        return max(array_map(function ($assessment) {
+        // Return the max severity as the exit code.
+        $exit_code = max(array_map(function ($assessment) {
             return $assessment->getSeverityCode();
         }, $results));
+
+        return $exit_code >= $exit_severity ? $exit_code : 0;
     }
 
     protected function parseDomainSourceOptions(InputInterface $input):array

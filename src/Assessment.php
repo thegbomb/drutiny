@@ -61,11 +61,11 @@ class Assessment
             return $policy instanceof Policy;
         });
 
-        $is_progress_bar = $this->logger instanceof ProgressBar;
+        $is_progress_bar = $this->logger instanceof \Drutiny\Console\ProgressLogger;
 
         foreach ($policies as $policy) {
             if ($is_progress_bar) {
-                $this->logger->setTopic($this->uri . '][' . $policy->get('title'));
+                $this->logger->setTopic($this->uri . '][' . $policy->getProperty('title'));
             }
 
             $this->logger->info("Assessing policy...");
@@ -91,12 +91,12 @@ class Assessment
 
           // Attempt remediation.
             if ($remediate && !$response->isSuccessful()) {
-                $this->logger->info("\xE2\x9A\xA0 Remediating " . $policy->get('title'));
+                $this->logger->info("\xE2\x9A\xA0 Remediating " . $policy->getProperty('title'));
                 $this->setPolicyResult($sandbox->remediate());
             }
 
             if ($is_progress_bar) {
-                $this->logger->advance();
+                $this->logger->info(sprintf('Policy "%s" assessment completed.', $policy->getProperty('title')));
             }
         }
 

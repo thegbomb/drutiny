@@ -2,24 +2,29 @@
 
 namespace DrutinyTests\Audit;
 
-use Drutiny\Container;
+use Drutiny\Console\Application;
+use Drutiny\Kernel;
 use Drutiny\Policy;
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Target\Registry as TargetRegistry;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 
 class SandboxTest extends TestCase {
 
   protected $sandbox;
 
-  public function __construct()
+  protected function setUp(): void
   {
-    Container::setLogger(new NullLogger());
-    $target = TargetRegistry::getTarget('none', '');
-    $policy = Policy::load('Test:Pass');
-    $this->sandbox = new Sandbox($target, $policy);
-    parent::__construct();
+      $kernel = new Kernel('phpunit');
+      $kernel->addServicePath(
+        str_replace($kernel->getProjectDir(), '', dirname(dirname(__FILE__))));
+      $this->application = new Application($kernel, 'x.y.z');
+      $this->application->setAutoExit(FALSE);
+      $this->output = $kernel->getContainer()->get('output');
+      $this->container = $kernel->getContainer();
+      $this->target = $this->container->get('target.factory')->create('@none');
+
+      $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:Pass');
+      $this->sandbox = $this->container->get('sandbox')->create($this->target, $policy);
   }
 
   public function testReportingPeriod()

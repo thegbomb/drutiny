@@ -1,0 +1,15 @@
+parameters:
+  cache.directory: phpunit-cache
+  cache.ttl: 0
+  twig.cache: false #~/.drutiny/cache/twig
+  twig.debug: true
+  twig.strict: true
+  phpunit.testing: true
+
+services:
+  _defaults:
+    public: true
+  # Override the default output to stop application from outputting
+  # to the phpunit interface.
+  output:
+    class: Symfony\Component\Console\Output\BufferedOutput
