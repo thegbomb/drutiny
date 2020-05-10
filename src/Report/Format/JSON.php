@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class JSON extends Format
 {
     protected $format = 'json';
+    protected $extension = 'json';
     protected $data;
 
     protected function prepareContent(Profile $profile, Assessment $assessment)
