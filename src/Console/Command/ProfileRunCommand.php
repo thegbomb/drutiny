@@ -182,7 +182,7 @@ class ProfileRunCommand extends AbstractReportingCommand
         // If we're echoing to standard out, then we can run the logger and
         // progress indicator without compromising output formats such as json
         // and HTML.
-        if ($filepath != 'stdout') {
+        if ($filepath != 'stdout' || $input->getOption('format') == 'terminal') {
           $this->progressLogger->flushBuffer();
         }
 
