@@ -69,7 +69,7 @@ abstract class AbstractReportingCommand extends Command
           $filepath = 'stdout';
         // If format is not out to console and the filepath isn't set, automate
         // what the filepath should be.
-          if (!in_array($input->getOption('format'), ['console', 'terminal'])) {
+          if ($input->getOption('format') != 'terminal') {
               $filepath = strtr('target-profile-date.ext', [
                'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
                'profile' => $input->getArgument('profile'),
