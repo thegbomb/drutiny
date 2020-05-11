@@ -2,10 +2,10 @@
 
 namespace Drutiny;
 
-use Symfony\Component\Config\Loader\LoaderInterface;
-use Symfony\Component\Config\Loader\DelegatingLoader;
-use Symfony\Component\Config\Loader\LoaderResolver;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\Config\Loader\DelegatingLoader;
+use Symfony\Component\Config\Loader\LoaderInterface;
+use Symfony\Component\Config\Loader\LoaderResolver;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -14,6 +14,7 @@ use Symfony\Component\DependencyInjection\Loader\DirectoryLoader;
 use Symfony\Component\DependencyInjection\Loader\GlobFileLoader;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
 
 class Kernel
 {
@@ -81,6 +82,8 @@ class Kernel
 
         $loader = $this->getContainerLoader($container);
 
+        $container->addCompilerPass(new RegisterListenersPass('event_dispatcher', 'kernel.event_listener', 'drutiny.event_subscriber'));
+
         foreach ($this->loadingPaths as $path) {
           $loading_path = [
             $this->getProjectDir(),
@@ -88,6 +91,8 @@ class Kernel
           ];
           $loader->load(implode('/', $loading_path), 'glob');
         }
+
+
         return $container;
     }
 

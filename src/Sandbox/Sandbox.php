@@ -179,4 +179,11 @@ class Sandbox
     {
         return $this->container->get('logger');
     }
+
+
+    public function drush()
+    {
+      $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getBridge("drush").');
+      return $this->getTarget()->getBridge('drush');
+    }
 }

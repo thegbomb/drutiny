@@ -22,8 +22,7 @@ trait ParameterTrait
             return $this->params[$key];
         }
 
-        $defaults = $this->sandbox()
-        ->getPolicy()
+        $defaults = $this->getPolicy()
         ->getProperty('parameters');
 
         if (isset($defaults[$key])) {
@@ -70,7 +69,7 @@ trait ParameterTrait
         foreach ($this->params as $key => $value) {
             $tokens[$key] = $value;
         }
-        $tokens['_uri'] = $this->getTarget()->uri();
+        $tokens['_uri'] = $this->getTarget()->getUri();
         return $tokens;
     }
 }

@@ -46,6 +46,9 @@ services:
       Drutiny\DomainList\DomainListInterface:
         tags: [domain_list]
 
+      Symfony\Component\EventDispatcher\EventSubscriberInterface:
+        tags: [drutiny.event_subscriber]
+
     cache.array:
         class: Symfony\Component\Cache\Adapter\ArrayAdapter
         arguments: ['%cache.ttl%']
@@ -75,6 +78,9 @@ services:
     # DomainListInterface provider.
     domain_list.yaml:
         class: Drutiny\DomainList\DomainListYamlFile
+
+    event_dispatcher:
+        class: Symfony\Component\EventDispatcher\EventDispatcher
 
     # A factory class for producing a reporting format instance.
     format.factory:
@@ -118,8 +124,10 @@ services:
     target.factory:
       class: Drutiny\Target\TargetFactory
 
+    target:
+      alias: target.drush
+
     target.drush:
-      factory: ['Drutiny\Target\DrushTarget', 'create']
       class: Drutiny\Target\DrushTarget
 
     target.none:
@@ -170,13 +178,17 @@ services:
         exclude:
           - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
           - src/Console/Application.php
+          - src/Event/*
           - src/*/*Exception.php
           - src/Sandbox/Sandbox.php
           - src/ExpressionLanguage.php
           - src/Report/Format/Menu/*
 
+    Drutiny\Target\Bridge\ExecutionInterface:
+      alias: 'Drutiny\Target\Bridge\LocalBridge'
+
     Drutiny\Target\TargetInterface:
-      alias: 'target.drush'
+      alias: 'target'
 
     Symfony\Contracts\Cache\CacheInterface:
       alias: 'cache.array'
@@ -195,6 +207,9 @@ services:
 
     Symfony\Component\Console\Output\ConsoleOutputInterface:
       alias: Symfony\Component\Console\Output\ConsoleOutput
+
+    Symfony\Component\EventDispatcher\EventDispatcher:
+      alias: event_dispatcher
 
     Psr\Log\LoggerInterface:
       alias: logger

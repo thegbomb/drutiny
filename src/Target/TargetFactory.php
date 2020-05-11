@@ -26,7 +26,6 @@ class TargetFactory implements ContainerAwareInterface
         }
 
         $target = $this->container->get("target.$target_name");
-        $target->setContainer($this->container);
         $target->parse($target_data);
 
         $this->container->set('target', $target);

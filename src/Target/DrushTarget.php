@@ -2,54 +2,42 @@
 
 namespace Drutiny\Target;
 
-use Drutiny\Driver\Exec;
-use Drutiny\Process\ProcessManager;
+use Drutiny\Target\Bridge\Drush\DrushBridge;
 
 /**
- * @Drutiny\Annotation\Target(
- *  name = "drush"
- * )
+ * Target for parsing Drush aliases.
  */
-class DrushTarget extends Target implements DrushTargetInterface, DrushExecutableTargetInterface
+class DrushTarget extends Target implements TargetInterface
 {
-    use DrushTargetMetadataTrait;
-
     protected $alias;
-
-    protected $processManager;
-
-    public function __construct(ProcessManager $process_manager)
-    {
-        $this->processManager = $process_manager;
-    }
-
-  /**
-   * @param ProcessManager $process_manager
-   */
-    public static function create(ProcessManager $process_manager)
-    {
-        return new static($process_manager);
-    }
 
   /**
    * @inheritdoc
    * Implements Target::parse().
    */
-    public function parse($target_data)
+    public function parse($alias):TargetInterface
     {
-        $this->alias = $target_data;
+        $this->alias = $alias;
+        $this->createProperty('drush')
+          ->setProperty('drush.alias', $this->alias);
 
-        $output = $this->processManager->exec(['drush', 'sa', $target_data, '--format=json']);
+        $status_cmd = 'drush site:alias $DRUSH_ALIAS --format=json';
+        $execBridge = $this->getProperty('bridge.local');
+        $drush_properties = $execBridge->run($status_cmd, function ($output) use ($alias) {
+          $json = json_decode($output, true);
+          $index = substr($alias, 1);
+          return $json[$index] ?? array_shift($json);
+        });
 
-        $options = json_decode($output, true);
-
-        $key = str_replace('@', '', $target_data);
-        $this->options = isset($options[$key]) ? $options[$key] : array_shift($options);
-
-      // Set the URI from the Drush alias if it hasn't been manually set already.
-        if (!$this->uri() && isset($this->options['uri'])) {
-            $this->setUri($this->options['uri']);
+        foreach ($drush_properties as $key => $value) {
+          $this->setProperty('drush.'.$key, $value);
         }
+
+        if (isset($drush_properties['uri'])) {
+          $this->setProperty('uri', $drush_properties['uri']);
+        }
+
+        $this->setProperty('bridge.drush', new DrushBridge($execBridge));
 
         return $this;
     }
@@ -59,7 +47,7 @@ class DrushTarget extends Target implements DrushTargetInterface, DrushExecutabl
    */
     public function getOptions()
     {
-        return $this->options;
+        return $this->getProperty('drush');
     }
 
   /**
@@ -68,55 +56,5 @@ class DrushTarget extends Target implements DrushTargetInterface, DrushExecutabl
     public function getAlias()
     {
         return $this->alias;
-    }
-
-  /**
-   * {@inheritdoc}
-   */
-    public function runDrushCommand($method, array $args, array $options, $pipe = '', $bin = 'drush')
-    {
-        $parameters = [
-        '@method' => $method,
-        '@args' => implode(' ', $args),
-        '@options' => implode(' ', $options),
-        '@alias' => $this->getAlias(),
-        '@pipe' => $pipe,
-        '@drush' => $bin,
-        ];
-
-      // Do not use a locally sourced alias if the command will be executed remotely.
-        if (isset($this->options['remote-host'])) {
-            $parameters['@root'] = $this->options['root'];
-            return $this->exec('@pipe @drush -r @root @options @method @args', $parameters);
-        }
-        return $this->exec('@pipe @drush @alias @options @method @args', $parameters);
-    }
-
-  /**
-   * @inheritdoc
-   * Implements ExecInterface::exec().
-   */
-    public function exec($command, $args = [])
-    {
-      // If the drush target is remote, amend the command
-      // to execute the command remotely.
-        if (isset($this->options['remote-host'])) {
-            $args['%docroot%'] = $this->options['root'];
-            $command = strtr($command, $args);
-          //Container::getLogger()->info(__CLASS__ . ": base64 encoding command: $command");
-            $command = base64_encode($command);
-            $command = "echo $command | base64 --decode | sh";
-
-            $defaults = $this->options + [
-            'remote-user' => get_current_user(),
-            'remote-host' => '',
-            'ssh-options'  => '',
-            ];
-            unset($defaults['path-aliases']);
-            $args = ['@command' => escapeshellarg($command)];
-
-            $command = strtr('ssh ssh-options remote-user@remote-host @command', $defaults);
-        }
-        return parent::exec($command, $args);
     }
 }

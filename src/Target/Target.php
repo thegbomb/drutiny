@@ -2,126 +2,143 @@
 
 namespace Drutiny\Target;
 
-use Doctrine\Common\Annotations\AnnotationReader;
-use Drutiny\Container;
-use Drutiny\Driver\Exec;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+use Drutiny\Event\TargetPropertyBridgeEvent;
+use Symfony\Component\PropertyAccess\PropertyAccess;
+use Symfony\Component\PropertyAccess\Exception\NoSuchIndexException;
+use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Psr\Log\LoggerInterface;
 
 /**
  * Basic function of a Target.
  */
-abstract class Target implements TargetInterface
+abstract class Target
 {
-    use \Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
-    private $uri = false;
+  /* @var PropertyAccess */
+  protected $propertyAccessor;
+  protected $properties;
+  protected $knownPropertyPaths = [];
+  protected $local;
+  protected $logger;
+  protected $dispatcher;
 
-  /**
-   *
-   */
-    public function parse($target_data)
-    {
-        return $this;
-    }
-
-    public function validate()
-    {
-        return true;
-    }
-
-  /**
-   *
-   */
-    final public function uri()
-    {
-        return $this->uri;
-    }
-
-    final public function setUri($uri)
-    {
-        $this->uri = $uri;
-        if (!$this->validate()) {
-            throw new InvalidTargetException(strtr("@uri is an invalid target", [
-            '@uri' => $uri
-            ]));
-        }
-        return $this;
-    }
-
-  /**
-   * @inheritdoc
-   * Implements ExecInterface::exec().
-   */
-    public function exec($command, $args = [])
-    {
-        $process = new Exec();
-        return $process->exec($command, $args);
-    }
-
-  /**
-   * Parse a target argument into the target driver and data.
-   */
-    public static function parseTarget($target)
-    {
-        $target_name = 'drush';
-        $target_data = $target;
-        if (strpos($target, ':') !== false) {
-            list($target_name, $target_data) = explode(':', $target, 2);
-        }
-        return [$target_name, $target_data];
-    }
-
-  /**
-   * Alias for Registry::getTarget().
-   */
-    public static function getTarget($name, $options = [])
-    {
-        return Registry::getTarget($name, $options);
-    }
+  public function __construct(Bridge\LocalBridge $local, LoggerInterface $logger, EventDispatcher $dispatcher)
+  {
+    $this->dispatcher = $dispatcher;
+    $this->logger = $logger;
+    $this->propertyAccessor = PropertyAccess::createPropertyAccessorBuilder()
+    ->enableExceptionOnInvalidIndex()
+    ->getPropertyAccessor();
+    $this->properties = $this->createPropertyInstance();
+    $this->createProperty('bridge')
+      ->setProperty('bridge.local', $local->setTarget($this));
+  }
 
   /**
    * {@inheritdoc}
    */
-    public function metadataUri()
-    {
-        return $this->uri();
-    }
+  public function setUri($uri)
+  {
+    return $this->setProperty('uri', $uri);
+  }
 
   /**
    * {@inheritdoc}
    */
-    public function metadataDomain()
-    {
-        return parse_url($this->uri(), PHP_URL_HOST);
-    }
+  public function getUri()
+  {
+    return $this->getProperty('uri');
+  }
 
   /**
-   * Pull metadata from Drutiny\Target\Metadata interfaces.
-   *
-   * @return array of metatdata keyed by metadata name.
+   * {@inheritdoc}
    */
-    final public function getMetadata()
-    {
-        $item = Container::cache('target')->getItem('metadata');
+  public function getBridge($key)
+  {
+    return $this->getProperty('bridge.'.$key);
+  }
 
-        if (!$item->isHit()) {
-            $metadata = [];
-            $reflection = new \ReflectionClass($this);
-            $interfaces = $reflection->getInterfaces();
-            $reader = new AnnotationReader();
+  protected function createProperty($key)
+  {
+    return $this->setProperty($key, $this->createPropertyInstance());
+  }
 
-            foreach ($interfaces as $interface) {
-                $methods = $interface->getMethods(\ReflectionMethod::IS_PUBLIC);
-                foreach ($methods as $method) {
-                    $annotation = $reader->getMethodAnnotation($method, 'Drutiny\Annotation\Metadata');
-                    if (empty($annotation)) {
-                        continue;
-                    }
-                    $metadata[$annotation->name] = $method->name;
-                }
-            }
-            Container::cache('target')->save($item->set($metadata));
+  private function createPropertyInstance()
+  {
+    return new class {
+      public $value;
+
+      public function __set($key, $value)
+      {
+        $this->value = $this->value ?? new \stdClass;
+        $this->value->{$key} = $value;
+        return $value;
+      }
+
+      public function __get($key)
+      {
+        if (!isset($this->value->{$key})) {
+          throw new NoSuchIndexException("$key doesn't exist.");
         }
-        return $item->get();
+        return $this->value->{$key};
+      }
+    };
+  }
+
+  /**
+   * Set a property.
+   */
+  protected function setProperty($key, $value)
+  {
+    // Allow property bridges to change the value.
+    $event = new TargetPropertyBridgeEvent($this, $key, $value);
+    $event_name = 'target.property.'.$key;
+    $this->logger->debug("Firing event '$event_name' from ".static::class);
+    $this->dispatcher->dispatch($event, $event_name);
+    $value = $event->getValue();
+    $this->propertyAccessor->setValue($this->properties, $key, $value);
+    $this->logger->debug("Setting ".static::class." property '$key' with value of type " . gettype($value));
+
+    if (!in_array($key, $this->knownPropertyPaths)) {
+      $this->knownPropertyPaths[] = $key;
     }
+
+    return $this;
+  }
+
+  /**
+   * Get a set property.
+   *
+   * @exception NoSuchIndexException
+   */
+  public function getProperty($key)
+  {
+    return $this->propertyAccessor->getValue($this->properties, $key);
+  }
+
+  /**
+   * Get a list of properties available.
+   */
+  public function getPropertyList()
+  {
+    sort($this->knownPropertyPaths);
+    return $this->knownPropertyPaths;
+  }
+
+  /**
+   * Check a property path exists.
+   */
+  public function hasProperty($key)
+  {
+    try {
+      $this->propertyAccessor->getValue($this->properties, $key);
+      return TRUE;
+    }
+    catch (NoSuchIndexException $e) {
+      return FALSE;
+    }
+  }
+
+  abstract public function parse($data):TargetInterface;
 }
