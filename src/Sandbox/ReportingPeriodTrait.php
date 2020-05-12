@@ -77,6 +77,8 @@ trait ReportingPeriodTrait
                + ($interval->h * 3600)
                // days to seconds
                + ($interval->d * 86400)
+               // months to seconds
+               + ($interval->m * 2592000)
                // years to seconds
                + ($interval->y * 31536000);
         return $seconds;
