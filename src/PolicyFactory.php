@@ -9,6 +9,7 @@ use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Psr\Log\LoggerInterface;
 
 class PolicyFactory
 {
@@ -17,10 +18,11 @@ class PolicyFactory
 
     protected $cache;
 
-    public function __construct(ContainerInterface $container, CacheInterface $cache)
+    public function __construct(ContainerInterface $container, CacheInterface $cache, LoggerInterface $logger)
     {
         $this->setContainer($container);
         $this->cache = $cache;
+        $this->logger = $logger;
     }
 
   /**
@@ -65,9 +67,8 @@ class PolicyFactory
         if (!empty($available_list)) {
             return $available_list;
         }
-
         $policy_list = $this->cache->get('policy.list', function ($item) {
-            $lists = [];
+            $list = [];
             foreach ($this->getSources() as $source) {
                 try {
                     $items = $source->getList();
@@ -95,6 +96,7 @@ class PolicyFactory
                 $this->container->get($listedPolicy['class']);
                 return true;
             } catch (\Exception $e) {
+                $this->logger->warning($e->getMessage());
                 return false;
             }
         });
