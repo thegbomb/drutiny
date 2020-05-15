@@ -10,14 +10,23 @@ class DrushBridge implements DrushBridgeInterface {
 
   protected const LAUNCHERS = ['drush-launcher', 'drush.launcher', 'drush'];
   protected $supportedCommandMap = [
+    'configGet' => 'config:get',
     'pmList' => 'pm:list',
-    'status' => 'status'
+    'pmSecurity' => 'pm:security',
+    'stateGet' => 'state:get',
+    'status' => 'status',
+    'userInformation' => 'user:information',
+    'sqlq' => 'sqlq',
   ];
   public function __construct(ExecutionInterface $bridge)
   {
     $this->execBridge = $bridge;
   }
 
+  /**
+   * Usage: ->configGet('system.settings', ['format' => 'json'])
+   * Executes: drush config:get 'system.settings' --format=json
+   */
   public function __call($cmd, $args)
   {
     if (!isset($this->supportedCommandMap[$cmd])) {
@@ -31,6 +40,11 @@ class DrushBridge implements DrushBridgeInterface {
       $options['root'] = '$DRUSH_ROOT';
     }
 
+    // Quote all arguments.
+    array_walk($args, function (&$arg) {
+      $arg = sprintf("'%s'", $arg);
+    });
+
     // Setup the options to pass into the command.
     foreach ($options as $key => $value) {
       $is_short = strlen($key) == 1;
@@ -41,8 +55,8 @@ class DrushBridge implements DrushBridgeInterface {
         continue;
       }
       $delimiter = $is_short ? ' ' : "=";
-      // Key/value option. E.g. --format=json
-      $args[] = $opt.$delimiter.sprintf('%s', $value);
+      // Key/value option. E.g. --format='json'
+      $args[] = $opt.$delimiter.sprintf("'%s'", $value);
     }
 
     // Prepend the drush launcher to use.

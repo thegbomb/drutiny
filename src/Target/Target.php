@@ -3,6 +3,7 @@
 namespace Drutiny\Target;
 
 use Drutiny\Event\TargetPropertyBridgeEvent;
+use Drutiny\Target\Bridge\ExecutionInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\Exception\NoSuchIndexException;
 use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException;
@@ -31,8 +32,10 @@ abstract class Target
     ->enableExceptionOnInvalidIndex()
     ->getPropertyAccessor();
     $this->properties = $this->createPropertyInstance();
+    $local->setTarget($this);
     $this->createProperty('bridge')
-      ->setProperty('bridge.local', $local->setTarget($this));
+      ->setProperty('bridge.local', $local)
+      ->setProperty('bridge.exec', $local);
   }
 
   /**
@@ -57,6 +60,14 @@ abstract class Target
   public function getBridge($key)
   {
     return $this->getProperty('bridge.'.$key);
+  }
+
+  /**
+   * Allow the execution bridge to change depending on the target environment.
+   */
+  public function setExecBridge(ExecutionInterface $bridge)
+  {
+    return $this->setProperty('bridge.exec', $bridge);
   }
 
   protected function createProperty($key)

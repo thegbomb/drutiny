@@ -31,11 +31,12 @@ class RemoteDrushBridge implements EventSubscriberInterface {
     $target = $event->getTarget();
 
     try {
-      $remoteBridge = new RemoteBridge($target->getProperty('bridge.local'));
+      $remoteBridge = new RemoteBridge($target->getBridge('exec'));
       $remoteBridge->setConfig('User', $target->getProperty('drush.remote-user'));
       $remoteBridge->setConfig('Host', $target->getProperty('drush.remote-host'));
       // TODO: ssh-options
       $bridge->setExecBridge($remoteBridge);
+      $target->setExecBridge($remoteBridge);
     }
     // If the config doesn't exist then do nothing.
     catch (NoSuchIndexException $e) {}
