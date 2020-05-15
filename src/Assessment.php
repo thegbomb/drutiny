@@ -96,7 +96,7 @@ class Assessment
             }
 
             if ($is_progress_bar) {
-                $this->logger->info(sprintf('Policy "%s" assessment completed.', $policy->getProperty('title')));
+                $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $policy->getProperty('title'), $response->getType()));
             }
         }
 
