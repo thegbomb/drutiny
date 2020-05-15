@@ -40,7 +40,7 @@ class AuditResponse
   /**
    * Set the state of the response.
    */
-    public function set($state = null)
+    public function set($state = null, $tokens = [])
     {
         switch (true) {
             case ($state === Audit::SUCCESS):
@@ -69,7 +69,7 @@ class AuditResponse
             default:
                 throw new AuditResponseException("Unknown state set in Audit Response: $state");
         }
-
+        $this->setTokens($tokens);
         $this->state = $state;
         return $this;
     }
