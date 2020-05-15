@@ -16,10 +16,15 @@ class CronLast extends Audit {
    */
   public function audit(Sandbox $sandbox) {
 
-    try {
-      $last = $sandbox->drush([
-        'format' => 'json'
-        ])->stateGet('system.cron_last');
+      try {
+        $last = $sandbox->drush([
+          'format' => 'json'
+          ])->stateGet('system.cron_last');
+        $last = is_array($last) ? $last['system.cron_last'] : $last;
+      }
+      catch (DrushFormatException $e) {
+        return FALSE;
+      }
 
       if (empty($last)) {
         return FALSE;
@@ -33,10 +38,6 @@ class CronLast extends Audit {
         return FALSE;
       }
       return TRUE;
-    }
-    catch (DrushFormatException $e) {
-      return Audit::ERROR;
-    }
   }
 
 }

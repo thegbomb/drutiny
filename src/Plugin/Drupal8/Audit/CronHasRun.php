@@ -24,6 +24,7 @@ class CronHasRun extends Audit {
 
     try {
       $timestamp = $sandbox->drush(['format' => 'json'])->stateGet('system.cron_last');
+      $timestamp = is_array($timestamp) ? $timestamp['system.cron_last'] : $timestamp;
     }
     catch (DrushFormatException $e) {
       return FALSE;

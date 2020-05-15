@@ -23,7 +23,7 @@ class NoExperimentalCore extends Audit {
     ])->pmList();
 
     $info = array_filter($info, function ($package) {
-      return strpos('experimental', strtolower($package['package'])) !== FALSE;
+      return strpos(strtolower($package['package']), 'experimental') !== FALSE;
     });
 
     if (empty($info)) {
