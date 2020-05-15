@@ -151,11 +151,19 @@ services:
         - [addExtension, ['@Twig\Extra\String\StringExtension']]
         - [addFilter, ['@twig.filters.array_sum']]
         - [addFilter, ['@twig.filters.sectionHeading']]
+        - [addFilter, ['@twig.filters.mustache2twig']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
 
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
+
+    twig.filters.mustache2twig:
+      class: Twig\TwigFilter
+      arguments:
+        - 'mustache2twig'
+        - ['Drutiny\Report\Format\HTML', 'convertMustache2TwigSyntax']
+        - is_safe: ['html']
 
     twig.filters.sectionHeading:
       class: Twig\TwigFilter
