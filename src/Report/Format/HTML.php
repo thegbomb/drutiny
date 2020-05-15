@@ -37,6 +37,7 @@ class HTML extends Format
         ->render(['heading' => $heading]);
     }
 
+
     protected function prepareContent(Profile $profile, Assessment $assessment)
     {
       $variables = ['profile' => $profile, 'assessment' => $assessment];

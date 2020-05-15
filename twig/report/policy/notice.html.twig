@@ -1,11 +1,11 @@
 <div class="row result-group">
   <div class="col-sm-12 col-md-10">
     <h4 id="{{ result.policy.name }}">{{ result.policy.title }}</h4>
-    {{ include(template_from_string(result.policy.description)) | markdown_to_html }}
+    {{ include(template_from_string(result.policy.description | mustache2twig)) | markdown_to_html }}
     <div class="panel panel-info">
       <div class="panel-body">
         {% with result.tokens %}
-        {{ include(template_from_string(result.policy.success)) | markdown_to_html }}
+        {{ include(template_from_string(result.policy.success | mustache2twig)) | markdown_to_html }}
         {% endwith %}
       </div>
     </div>

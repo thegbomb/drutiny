@@ -86,7 +86,7 @@ abstract class Format implements FormatInterface
         return $this->format;
     }
 
-    protected function mapDrutiny2toDrutiny3variables($template)
+    protected static function mapDrutiny2toDrutiny3variables($template)
     {
       return strtr($template, [
         'reporting_period_start' => "assessment.reportingPeriodStart.format('Y-m-d H:i:s e')",
@@ -114,8 +114,12 @@ abstract class Format implements FormatInterface
         'var1output_notice in output_notice' => "response in assessment.results|filter(r => r.isNotice)",
         '{{ var1output_notice|raw }}' => "{% include 'report/policy/notice.html.twig' with {'result': response } %}",
 
+        'var0output_error in output_error' => "response in assessment.results|filter(r => r.hasError)",
+        '{{ var0output_error|raw }}' => "{% include 'report/policy/error.html.twig' with {'result': response } %}",
+
         'var1output_error in output_error' => "response in assessment.results|filter(r => r.hasError)",
         '{{ var1output_error|raw }}' => "{% include 'report/policy/error.html.twig' with {'result': response } %}",
+
 
         'var1output_success in output_success' => "response in assessment.results|filter(r => r.isSuccessful)",
         '{{ var1output_success|raw }}' => "{% include 'report/policy/success.html.twig' with {'result': response } %}",
@@ -123,60 +127,115 @@ abstract class Format implements FormatInterface
       ]);
     }
 
-    const MUSTACHE_OPEN = '{{';
-    const MUSTANCE_CLOSE = '}}';
-
-    protected function convertMustache2TwigSyntax($template)
-    {
-      $template = strtr($template, [
-        '{{{' => '{{',
-        '}}}' => '|raw }}'
-      ]);
-      if (strpos($template, self::MUSTACHE_OPEN) === FALSE) {
-        return $template;
-      }
-      $control_structure = [];
+    public static function convertMustache2TwigSyntax($sample) {
       $tokens = [];
-      while (($pos = strpos($template, self::MUSTACHE_OPEN)) !== FALSE) {
-        $end_pos = strpos($template, self::MUSTANCE_CLOSE);
+      while (preg_match_all('/({?{{)\s*([\#\^\/ ])?\s*([a-zA-Z0-9]+|\.)\s?(}}}?)/', $sample, $matches)) {
+        foreach ($matches[3] as $idx => $variable) {
+          $operator = $matches[2][$idx];
+          $is_raw = (strlen($matches[1][$idx]) == 3);
+          $syntax = $matches[0][$idx];
 
-        $mustache_statement = substr($template, $pos, $end_pos - $pos + strlen(self::MUSTANCE_CLOSE));
-        $syntax = trim(strtr($mustache_statement, [
-          self::MUSTACHE_OPEN => '',
-          self::MUSTANCE_CLOSE => '',
-        ]));
-
-        switch (substr($syntax, 0, 1)) {
-          case '^':
-            $twig_statement = "{% if not " . trim(substr($syntax, 1)) . " %}";
-            $control_structure[] = 'endif';
-            break;
-          case '#':
-            // Look for known variables used as if statements.
-            if (in_array(trim(substr($syntax, 1)), ['passes', 'notices', 'failures', 'warnings', 'errors'])) {
-              $twig_statement = "{% if __" . trim(substr($syntax, 1)) . " %}";
-              $control_structure[] = 'endif';
-              break;
+          // If condition or loop.
+          if ($operator == '#') {
+            // Find closing condition.
+            $closing_idx = array_search($variable, array_slice($matches[3], $idx+1, null, true));
+            if ($matches[2][$closing_idx] != '/') {
+              throw new Exception("Expected closing statement for $variable. Found: {$matches[0][$closing_idx]}");
             }
-            // Otherwise assume its a foreach.
-            $variable = 'var' . count($control_structure).trim(substr($syntax, 1));
-            $twig_statement = "{% for $variable in " . trim(substr($syntax, 1)) . " %}";
-            $control_structure[] = 'endfor';
-            break;
-          case '/':
-            $twig_statement = "{% " . array_pop($control_structure) . " %}";
-            break;
-          case '.':
-            $twig_statement = "{{ " . $variable . substr($syntax, 1) .  " }}";
-            break;
-          default:
-            $twig_statement = "{{ " . $syntax . " }}";
-        }
-        $token_name = hash('md5', $twig_statement . count($tokens));
-        $tokens[$token_name] = $twig_statement;
+            $start = strpos($sample, $matches[0][$idx]);
+            $end = strpos(substr($sample, $start), $matches[0][$closing_idx]) + strlen($matches[0][$closing_idx]);
+            $snippet = substr($sample, $start, $end);
+            $token = md5($snippet);
 
-        $template = substr($template, 0, $pos).$token_name.substr($template, $end_pos + strlen(self::MUSTANCE_CLOSE));
+            $content = substr($sample, $start + strlen($syntax), $end - strlen($syntax) - strlen($matches[0][$closing_idx]));
+            $tokens[$token] = static::mustache_tpl($variable, static::convertMustache2TwigSyntax($content));
+
+            $sample = implode($token, explode($snippet, $sample, 2));
+            break;
+          }
+          elseif (empty($operator)) {
+            $token = md5($syntax);
+            $var = '{{'.($variable == '.' ? 'self' : $variable).($is_raw ? '|raw':'').'}}';
+            $tokens[$token] = $var;
+            $sample = implode($token, explode($syntax, $sample, 2));
+            break;
+          }
+          throw new Exception("Unknown condition met: $operator $variable.");
+        }
       }
-      return strtr($template, $tokens);
+      return strtr($sample, $tokens);
     }
+
+    private static function mustache_tpl($variable, $content) {
+      return <<<HTML
+      {% if $variable is iterable %}
+          {% for self in $variable %}{% with $variable %}$content{% endwith %}{% endfor %}
+      {% else %}$content{% endif %}
+      HTML;
+    }
+
+    // const MUSTACHE_OPEN = '{{';
+    // const MUSTANCE_CLOSE = '}}';
+    //
+    // public static function convertMustache2TwigSyntax($template)
+    // {
+    //   if (strpos($template, '{{ . }}')) {
+    //     var_dump($template);die;
+    //   }
+    //   $template = strtr($template, [
+    //     '{{{' => '{{',
+    //     '}}}' => '|raw }}'
+    //   ]);
+    //   if (strpos($template, self::MUSTACHE_OPEN) === FALSE) {
+    //     return $template;
+    //   }
+    //   $control_structure = [];
+    //   $tokens = [];
+    //   while (($pos = strpos($template, self::MUSTACHE_OPEN)) !== FALSE) {
+    //     $end_pos = strpos($template, self::MUSTANCE_CLOSE);
+    //
+    //     $mustache_statement = substr($template, $pos, $end_pos - $pos + strlen(self::MUSTANCE_CLOSE));
+    //     $syntax = trim(strtr($mustache_statement, [
+    //       self::MUSTACHE_OPEN => '',
+    //       self::MUSTANCE_CLOSE => '',
+    //     ]));
+    //
+    //     $twig_statement = '';
+    //
+    //     switch (substr($syntax, 0, 1)) {
+    //       case '^':
+    //         $twig_statement = "{% if not " . trim(substr($syntax, 1)) . " %}";
+    //         $control_structure[] = ['endif'];
+    //         break;
+    //       case '#':
+    //         // Look for known variables used as if statements.
+    //         if (in_array(trim(substr($syntax, 1)), ['passes', 'notices', 'failures', 'warnings', 'errors'])) {
+    //           $twig_statement = "{% if __" . trim(substr($syntax, 1)) . " %}";
+    //           $control_structure[] = ['endif'];
+    //           break;
+    //         }
+    //         // Otherwise assume its a foreach.
+    //         $variable = 'var' . count($control_structure).trim(substr($syntax, 1));
+    //         $twig_statement = "{% for $variable in " . trim(substr($syntax, 1)) . " %}";
+    //         $twig_statement .= "{% with $variable %}";
+    //         $control_structure[] = ['endwith','endfor'];
+    //         break;
+    //       case '/':
+    //         foreach (array_pop($control_structure) as $end) {
+    //           $twig_statement .= "{% $end %}";
+    //         }
+    //         break;
+    //       case '.':
+    //         $twig_statement = "{{ " . $variable . substr($syntax, 1) .  " }}";
+    //         break;
+    //       default:
+    //         $twig_statement = "{{ " . $syntax . " }}";
+    //     }
+    //     $token_name = hash('md5', $twig_statement . count($tokens));
+    //     $tokens[$token_name] = $twig_statement;
+    //
+    //     $template = substr($template, 0, $pos).$token_name.substr($template, $end_pos + strlen(self::MUSTANCE_CLOSE));
+    //   }
+    //   return strtr($template, $tokens);
+    // }
 }

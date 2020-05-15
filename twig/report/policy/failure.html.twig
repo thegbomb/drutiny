@@ -6,21 +6,21 @@
 
     <div class="alert alert-danger" role="alert">
       {% with result.tokens %}
-      {{ include(template_from_string(result.policy.failure)) | markdown_to_html }}
+      {{ include(template_from_string(result.policy.failure | mustache2twig)) | markdown_to_html }}
       {% endwith %}
     </div>
 
     {% if result.hasWarning %}
     <div class="alert alert-warning" role="alert">
       {% with result.tokens %}
-      {{ include(template_from_string(result.policy.warning)) | markdown_to_html }}
+      {{ include(template_from_string(result.policy.warning | mustache2twig)) | markdown_to_html }}
       {% endwith %}
     </div>
     {% endif %}
     <div class="alert alert-info" role="alert">
     <h5>Remediation</h5>
     {% with result.tokens %}
-    {{ include(template_from_string(result.policy.remediation)) | markdown_to_html }}
+    {{ include(template_from_string(result.policy.remediation | mustache2twig)) | markdown_to_html }}
     {% endwith %}
     </div>
   </div>
