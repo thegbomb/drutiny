@@ -54,6 +54,14 @@ class LocalFs implements PolicySourceInterface
     {
         $policy = new Policy();
         unset($definition['source']);
+        // Convert parameters to remove default key.
+        if (!empty($definition['parameters'])) {
+          foreach ($definition['parameters'] as &$value) {
+            if (isset($value['default'])) {
+              $value = $value['default'];
+            }
+          }
+        }
         return $policy->setProperties($definition);
     }
 
