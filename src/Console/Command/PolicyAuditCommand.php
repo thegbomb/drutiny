@@ -3,11 +3,13 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
+use Drutiny\Console\ProgressLogger;
+use Drutiny\PolicyFactory;
 use Drutiny\Profile;
 use Drutiny\Profile\PolicyDefinition;
 use Drutiny\RemediableInterface;
-use Drutiny\PolicyFactory;
 use Drutiny\Report\Format;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -24,9 +26,11 @@ class PolicyAuditCommand extends AbstractReportingCommand
 {
   protected $policyFactory;
 
-  public function __construct(PolicyFactory $factory)
+  public function __construct(LoggerInterface $logger, ProgressLogger $progressLogger, PolicyFactory $factory)
   {
+      $this->logger = $logger;
       $this->policyFactory = $factory;
+      $this->progressLogger = $progressLogger;
       parent::__construct();
   }
 
@@ -101,6 +105,12 @@ class PolicyAuditCommand extends AbstractReportingCommand
         $container = $this->getApplication()
         ->getKernel()
         ->getContainer();
+
+        // Ensure Container logger uses the same verbosity.
+        $container->get('verbosity')
+        ->set($output->getVerbosity());
+
+        $this->progressLogger->flushBuffer();
 
         // Setup any parameters for the check.
         $parameters = [];

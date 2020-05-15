@@ -189,7 +189,8 @@ class ProfileRunCommand extends AbstractReportingCommand
       // Allow command line to add policies to the profile.
         $included_policies = $input->getOption('include-policy');
         foreach ($included_policies as $policy_name) {
-            $policyDefinition = PolicyDefinition::createFromProfile($policy_name, count($profile->getAllPolicyDefinitions()));
+            $this->logger->debug("Loading policy definition: $policy_name");
+            $policyDefinition = PolicyDefinition::createFromProfile($policy_name);
             $profile->addPolicyDefinition($policyDefinition);
         }
 
@@ -202,13 +203,16 @@ class ProfileRunCommand extends AbstractReportingCommand
         });
 
         // Setup the target.
+        $this->logger->debug("Loading target: " . $input->getArgument('target'));
         $target = $container->get('target.factory')->create($input->getArgument('target'));
+        $this->logger->debug("Target " . $input->getArgument('target') . ' loaded.');
 
         // Get the URLs.
         $uris = $input->getOption('uri');
 
         $domains = [];
         foreach ($this->parseDomainSourceOptions($input) as $source => $options) {
+            $this->logger->debug("Loading domains from $source.");
             $domains = array_merge($this->domainSource->getDomains($source, $options), $domains);
         }
 
@@ -226,8 +230,11 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         $policies = [];
         foreach ($policyDefinitions as $policyDefinition) {
+            $this->logger->debug("Loading policy from definition: " . $policyDefinition->getName());
             $policies[] = $policyDefinition->getPolicy($this->policyFactory);
         }
+
+        $uris = ($uris === ['default']) ? [$target->getUri()] : $uris;
 
         foreach ($uris as $uri) {
             try {

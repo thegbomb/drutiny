@@ -2,13 +2,15 @@
 
 namespace Drutiny\Console\Command;
 
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use Drutiny\Console\ProgressLogger;
 use Drutiny\PolicyFactory;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  *
@@ -19,9 +21,11 @@ class PolicyListCommand extends Command
   protected $policyFactory;
 
 
-  public function __construct(PolicyFactory $factory)
+  public function __construct(LoggerInterface $logger, ProgressLogger $progressLogger, PolicyFactory $factory)
   {
+      $this->logger = $logger;
       $this->policyFactory = $factory;
+      $this->progressLogger = $progressLogger;
       parent::__construct();
   }
 
@@ -52,6 +56,16 @@ class PolicyListCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $container = $this->getApplication()
+        ->getKernel()
+        ->getContainer();
+
+        // Ensure Container logger uses the same verbosity.
+        $container->get('verbosity')
+        ->set($output->getVerbosity());
+
+        $this->progressLogger->flushBuffer();
+
         $list = $this->policyFactory->getPolicyList();
 
         if ($source_filter = $input->getOption('source')) {
@@ -67,9 +81,6 @@ class PolicyListCommand extends Command
             'name' => $listedPolicy['name'],
             'source' => $listedPolicy['source'],
             );
-            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                $row['filename'] = $listedPolicy['filepath'];
-            }
             $rows[] = $row;
         }
 
