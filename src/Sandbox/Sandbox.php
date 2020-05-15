@@ -20,6 +20,7 @@ class Sandbox
 {
     use ParameterTrait;
     use ReportingPeriodTrait;
+    use Drutiny2xBackwardCompatibilityTrait;
 
     protected $target;
     protected $audit;
@@ -112,6 +113,7 @@ class Sandbox
             }
             $this->setParameter('exception', $message);
             $response->set(Audit::ERROR, $this->getParameterTokens());
+            $watchdog->error($message);
         }
 
         return $response;
@@ -178,12 +180,5 @@ class Sandbox
     public function logger()
     {
         return $this->container->get('logger');
-    }
-
-
-    public function drush()
-    {
-      $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getBridge("drush").');
-      return $this->getTarget()->getBridge('drush');
     }
 }
