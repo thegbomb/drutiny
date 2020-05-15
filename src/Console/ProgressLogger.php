@@ -15,6 +15,8 @@ use Symfony\Component\Console\Logger\ConsoleLogger;
 class ProgressLogger implements LoggerInterface {
   use LoggerTrait;
 
+  const MAX_INDICATOR_MSG_LENGTH = 96;
+
   protected $logger;
   protected $output;
   protected $buffer;
@@ -79,14 +81,23 @@ class ProgressLogger implements LoggerInterface {
   public function log($level, $message, array $context = array())
   {
     $this->indicator->advance();
+    $this->logger->log($level, $message, $context);
+
+    if (strlen($message) >= 256) {
+      return;
+    }
+
+    $message = str_replace(PHP_EOL, "|", $message);
+    $message = strlen($message) >= static::MAX_INDICATOR_MSG_LENGTH ? substr($message, 0, static::MAX_INDICATOR_MSG_LENGTH).'...[snip]' : $message;
+
     $this->indicator->setMessage(strtr('topic<f>[level]</f>message', [
       'topic' => $this->topic,
       'f' => $this->formatLevelMap[$level],
-      'level' => mb_strtoupper($level),
-      'message' => str_replace(PHP_EOL, "|", $message)
+      'level' => strtoupper($level),
+      'message' => $message,
     ]));
 
-    $this->logger->log($level, $message, $context);
+
   }
 
   public function __destruct()
