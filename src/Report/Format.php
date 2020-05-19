@@ -169,73 +169,8 @@ abstract class Format implements FormatInterface
     private static function mustache_tpl($variable, $content) {
       return <<<HTML
       {% if $variable is iterable %}
-          {% for self in $variable %}{% with $variable %}$content{% endwith %}{% endfor %}
-      {% else %}$content{% endif %}
+          {% for self in $variable %}{% if self is iterable %}{% with self %}$content{% endwith %}{% else %}$content{% endif %}{% endfor %}
+      {% else %}{% endif %}
       HTML;
     }
-
-    // const MUSTACHE_OPEN = '{{';
-    // const MUSTANCE_CLOSE = '}}';
-    //
-    // public static function convertMustache2TwigSyntax($template)
-    // {
-    //   if (strpos($template, '{{ . }}')) {
-    //     var_dump($template);die;
-    //   }
-    //   $template = strtr($template, [
-    //     '{{{' => '{{',
-    //     '}}}' => '|raw }}'
-    //   ]);
-    //   if (strpos($template, self::MUSTACHE_OPEN) === FALSE) {
-    //     return $template;
-    //   }
-    //   $control_structure = [];
-    //   $tokens = [];
-    //   while (($pos = strpos($template, self::MUSTACHE_OPEN)) !== FALSE) {
-    //     $end_pos = strpos($template, self::MUSTANCE_CLOSE);
-    //
-    //     $mustache_statement = substr($template, $pos, $end_pos - $pos + strlen(self::MUSTANCE_CLOSE));
-    //     $syntax = trim(strtr($mustache_statement, [
-    //       self::MUSTACHE_OPEN => '',
-    //       self::MUSTANCE_CLOSE => '',
-    //     ]));
-    //
-    //     $twig_statement = '';
-    //
-    //     switch (substr($syntax, 0, 1)) {
-    //       case '^':
-    //         $twig_statement = "{% if not " . trim(substr($syntax, 1)) . " %}";
-    //         $control_structure[] = ['endif'];
-    //         break;
-    //       case '#':
-    //         // Look for known variables used as if statements.
-    //         if (in_array(trim(substr($syntax, 1)), ['passes', 'notices', 'failures', 'warnings', 'errors'])) {
-    //           $twig_statement = "{% if __" . trim(substr($syntax, 1)) . " %}";
-    //           $control_structure[] = ['endif'];
-    //           break;
-    //         }
-    //         // Otherwise assume its a foreach.
-    //         $variable = 'var' . count($control_structure).trim(substr($syntax, 1));
-    //         $twig_statement = "{% for $variable in " . trim(substr($syntax, 1)) . " %}";
-    //         $twig_statement .= "{% with $variable %}";
-    //         $control_structure[] = ['endwith','endfor'];
-    //         break;
-    //       case '/':
-    //         foreach (array_pop($control_structure) as $end) {
-    //           $twig_statement .= "{% $end %}";
-    //         }
-    //         break;
-    //       case '.':
-    //         $twig_statement = "{{ " . $variable . substr($syntax, 1) .  " }}";
-    //         break;
-    //       default:
-    //         $twig_statement = "{{ " . $syntax . " }}";
-    //     }
-    //     $token_name = hash('md5', $twig_statement . count($tokens));
-    //     $tokens[$token_name] = $twig_statement;
-    //
-    //     $template = substr($template, 0, $pos).$token_name.substr($template, $end_pos + strlen(self::MUSTANCE_CLOSE));
-    //   }
-    //   return strtr($template, $tokens);
-    // }
 }

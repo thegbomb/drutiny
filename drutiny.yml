@@ -11,7 +11,7 @@ parameters:
   twig.templates: twig
   twig.cache: false #~/.drutiny/cache/twig
   twig.debug: true
-  twig.strict: true
+  twig.strict: false
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -179,7 +179,7 @@ services:
         - '@twig.loader'
         - cache: '%twig.cache%'
           debug: '%twig.debug%'
-          strict_variables: '%twig.strict'
+          strict_variables: '%twig.strict%'
       calls:
         - [addExtension, ['@Twig\Extension\DebugExtension']]
         - [addExtension, ['@Twig\Extension\StringLoaderExtension']]
@@ -254,6 +254,9 @@ services:
 
     Symfony\Component\EventDispatcher\EventDispatcher:
       alias: event_dispatcher
+
+    Symfony\Component\ExpressionLanguage\ExpressionLanguage:
+      alias: expression_language
 
     Psr\Log\LoggerInterface:
       alias: logger

@@ -46,7 +46,7 @@ trait Drutiny2xBackwardCompatibilityTrait {
           if (in_array("--format=json", $args)) {
             return json_decode($output, TRUE);
           }
-          return $output;
+          return explode(PHP_EOL, $output);
         });
       }
     };
