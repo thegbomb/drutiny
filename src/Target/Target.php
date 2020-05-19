@@ -3,6 +3,7 @@
 namespace Drutiny\Target;
 
 use Drutiny\Event\TargetPropertyBridgeEvent;
+use Drutiny\Entity\DataBag;
 use Drutiny\Target\Bridge\ExecutionInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\Exception\NoSuchIndexException;
@@ -19,7 +20,6 @@ abstract class Target
   /* @var PropertyAccess */
   protected $propertyAccessor;
   protected $properties;
-  protected $knownPropertyPaths = [];
   protected $local;
   protected $logger;
   protected $dispatcher;
@@ -29,19 +29,27 @@ abstract class Target
     $this->dispatcher = $dispatcher;
     $this->logger = $logger;
     $this->propertyAccessor = PropertyAccess::createPropertyAccessorBuilder()
-    ->enableExceptionOnInvalidIndex()
-    ->getPropertyAccessor();
-    $this->properties = $this->createPropertyInstance();
+      ->enableExceptionOnInvalidIndex()
+      ->getPropertyAccessor();
+    $this->properties = new DataBag();
+    $this->properties->onSet(function ($k, $v) {
+      return $this->emitProperty($k, $v);
+    });
+
     $local->setTarget($this);
-    $this->createProperty('bridge')
-      ->setProperty('bridge.local', $local)
-      ->setProperty('bridge.exec', $local);
+
+    $bridge = $this->createProperty('bridge');
+    $bridge->add([
+      'local' => $local,
+      'exec' => $local
+    ]);
+
   }
 
   /**
    * {@inheritdoc}
    */
-  public function setUri($uri)
+  public function setUri(string $uri)
   {
     return $this->setProperty('uri', $uri);
   }
@@ -72,29 +80,28 @@ abstract class Target
 
   protected function createProperty($key)
   {
-    return $this->setProperty($key, $this->createPropertyInstance());
+    $bag = new DataBag();
+    $bag->onSet(function ($k, $v) use ($key) {
+      return $this->emitProperty($key.'.'.$k, $v);
+    });
+
+    $this->properties->set($key, $bag);
+
+    return $bag;
   }
 
-  private function createPropertyInstance()
+  private function emitProperty($key, $value)
   {
-    return new class {
-      public $value;
+    // Allow property bridges to change the value.
+    $event = new TargetPropertyBridgeEvent($this, $key, $value);
+    $event_name = 'target.property.'.$key;
 
-      public function __set($key, $value)
-      {
-        $this->value = $this->value ?? new \stdClass;
-        $this->value->{$key} = $value;
-        return $value;
-      }
+    $this->logger->debug("Firing event '$event_name' from ".static::class);
+    $this->dispatcher->dispatch($event, $event_name);
+    $value = $event->getValue();
+    // $this->logger->debug("Setting ".static::class." property '$key' with value of type " . gettype($value));
 
-      public function __get($key)
-      {
-        if (!isset($this->value->{$key})) {
-          throw new NoSuchIndexException("$key doesn't exist.");
-        }
-        return $this->value->{$key};
-      }
-    };
+    return $value;
   }
 
   /**
@@ -102,19 +109,7 @@ abstract class Target
    */
   protected function setProperty($key, $value)
   {
-    // Allow property bridges to change the value.
-    $event = new TargetPropertyBridgeEvent($this, $key, $value);
-    $event_name = 'target.property.'.$key;
-    $this->logger->debug("Firing event '$event_name' from ".static::class);
-    $this->dispatcher->dispatch($event, $event_name);
-    $value = $event->getValue();
     $this->propertyAccessor->setValue($this->properties, $key, $value);
-    $this->logger->debug("Setting ".static::class." property '$key' with value of type " . gettype($value));
-
-    if (!in_array($key, $this->knownPropertyPaths)) {
-      $this->knownPropertyPaths[] = $key;
-    }
-
     return $this;
   }
 
@@ -133,8 +128,20 @@ abstract class Target
    */
   public function getPropertyList()
   {
-    sort($this->knownPropertyPaths);
-    return $this->knownPropertyPaths;
+    $paths = $this->getDataPaths($this->properties);
+    sort($paths);
+    return $paths;
+  }
+
+  private function getDataPaths(Databag $bag, $prefix = '') {
+    $keys = [];
+    foreach ($bag->all() as $key => $value) {
+        $keys[] = $prefix.$key;
+        if ($value instanceof Databag) {
+          $keys = array_merge($this->getDataPaths($value, $prefix.$key.'.'), $keys);
+        }
+    }
+    return $keys;
   }
 
   /**

@@ -5,8 +5,8 @@ namespace Drutiny\Target\PropertyBridge;
 use Drutiny\Event\TargetPropertyBridgeEvent;
 use Drutiny\Target\Bridge\RemoteBridge;
 use Drutiny\Target\Bridge\Drush\DrushBridge;
+use Drutiny\Entity\Exception\DataNotFoundException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\PropertyAccess\Exception\NoSuchIndexException;
 
 class RemoteDrushBridge implements EventSubscriberInterface {
   public static function getSubscribedEvents()
@@ -39,6 +39,6 @@ class RemoteDrushBridge implements EventSubscriberInterface {
       $target->setExecBridge($remoteBridge);
     }
     // If the config doesn't exist then do nothing.
-    catch (NoSuchIndexException $e) {}
+    catch (DataNotFoundException $e) {}
   }
 }

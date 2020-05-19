@@ -18,8 +18,8 @@ class DrushTarget extends Target implements TargetInterface
     public function parse($alias):TargetInterface
     {
         $this->alias = $alias;
-        $this->createProperty('drush')
-          ->setProperty('drush.alias', $this->alias);
+        $drush = $this->createProperty('drush');
+        $drush->set('alias', $this->alias);
 
         $status_cmd = 'drush site:alias $DRUSH_ALIAS --format=json';
         $execBridge = $this->getProperty('bridge.local');
@@ -29,15 +29,16 @@ class DrushTarget extends Target implements TargetInterface
           return $json[$index] ?? array_shift($json);
         });
 
-        foreach ($drush_properties as $key => $value) {
-          $this->setProperty('drush.'.$key, $value);
-        }
+        $drush->add($drush_properties);
 
         if (isset($drush_properties['uri'])) {
           $this->setProperty('uri', $drush_properties['uri']);
         }
 
         $this->setProperty('bridge.drush', new DrushBridge($execBridge));
+
+        $version = $this->getProperty('bridge.exec')->run('php -v | head -1 | awk \'{print $2}\'');
+        $this->setProperty('php_version', $version);
 
         return $this;
     }
