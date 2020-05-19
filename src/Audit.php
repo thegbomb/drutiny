@@ -2,15 +2,42 @@
 
 namespace Drutiny;
 
-use Drutiny\Sandbox\Sandbox;
-use Drutiny\AuditValidationException;
 use Drutiny\Audit\AuditInterface;
+use Drutiny\AuditValidationException;
+use Drutiny\Sandbox\Sandbox;
+use Drutiny\Target\TargetInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
  *
  */
 abstract class Audit implements AuditInterface
 {
+    protected $definition;
+    protected $logger;
+    protected $container;
+    protected $target;
+    protected $expressionLanguage;
+
+    public function __construct(
+      ContainerInterface $container,
+      TargetInterface $target,
+      LoggerInterface $logger,
+      ExpressionLanguage $expressionLanguage
+      )
+    {
+      $this->container = $container;
+      $this->target = $target;
+      $this->logger = $logger;
+      $this->definition = new InputDefinition();
+      $this->expressionLanguage = $expressionLanguage;
+      $this->configure();
+    }
+
     public function configure() {}
 
   /**
@@ -50,5 +77,17 @@ abstract class Audit implements AuditInterface
         } catch (\Exception $e) {
             throw new AuditValidationException("Audit failed validation at " . $method->getDeclaringClass()->getFilename() . " [$method->name]: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Set information about a parameter.
+     */
+    protected function addParameter(string $name, int $mode = null, string $description = '', $default = null)
+    {
+        if (!isset($this->definition)) {
+          $this->definition = new InputDefinition();
+        }
+        $this->definition->addArgument(new InputArgument($name, $mode, $description, $default));
+        return $this;
     }
 }

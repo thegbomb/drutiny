@@ -5,7 +5,6 @@ namespace Drutiny\Audit;
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Annotation\Param;
-use Drutiny\ExpressionLanguage;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -31,8 +30,7 @@ abstract class AbstractAnalysis extends Audit
     $this->addParameter(
         'expression',
         static::PARAMETER_REQUIRED,
-        'The expression language to evaluate. See https://symfony.com/doc/current/components/expression_language/syntax.html',
-        'true'
+        'The expression language to evaluate. See https://symfony.com/doc/current/components/expression_language/syntax.html'
       )
       ->addParameter(
         'warning',
@@ -47,7 +45,7 @@ abstract class AbstractAnalysis extends Audit
         'false'
       );
   }
-  
+
   /**
    * Gather analysis data to audit.
    */
@@ -57,7 +55,7 @@ abstract class AbstractAnalysis extends Audit
     {
         $this->gather($sandbox);
 
-        $expressionLanguage = new ExpressionLanguage($sandbox);
+        $expressionLanguage = $this->container->get('expression_language');
 
         $variables  = $sandbox->getParameterTokens();
         $sandbox->logger()->debug(__CLASS__ . ':TOKENS ' . Yaml::dump($variables));
