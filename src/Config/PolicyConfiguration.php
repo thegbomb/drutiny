@@ -62,15 +62,21 @@ class PolicyConfiguration implements ConfigurationInterface
             // Messaging
             ->scalarNode('remediation')
               ->info('Content to communicate how to remediate a policy failure.')
+              ->defaultValue('')
               ->end()
             ->scalarNode('failure')
               ->info('Content to communicate a policy failure.')
+              ->defaultValue('')
+              ->isRequired()
               ->end()
             ->scalarNode('success')
               ->info('Content to communicate a policy success.')
+              ->defaultValue('')
+              ->isRequired()
               ->end()
             ->scalarNode('warning')
               ->info('Content to communicate a policy warning (in a success).')
+              ->defaultValue('')
               ->end()
 
             // Configuration
