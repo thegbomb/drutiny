@@ -47,7 +47,7 @@ class ApplicationTest extends TestCase {
     $code = $this->application->run($input, $this->output);
     $this->assertIsInt($code);
     $this->assertEquals(0, $code);
-    $this->assertStringContainsString('Always notice test policy Notice', $this->output->fetch());
+    $this->assertStringContainsString('Always pass test policy', $this->output->fetch());
   }
 
   public function testProfileList()
