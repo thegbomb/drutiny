@@ -115,7 +115,7 @@ class AuditResponse
         if ($this->hasWarning()) {
             return 'warning';
         }
-        $policy_type = $this->policy->getProperty('type');
+        $policy_type = $this->policy->type;
         if ($policy_type == 'data') {
             return 'notice';
         }
@@ -176,7 +176,7 @@ class AuditResponse
 
     public function getSeverity()
     {
-        return $this->policy->getSeverityName();
+        return $this->policy->severity;
     }
 
     public function getSeverityCode()

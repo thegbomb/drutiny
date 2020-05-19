@@ -22,8 +22,7 @@ trait ParameterTrait
             return $this->params[$key];
         }
 
-        $defaults = $this->getPolicy()
-        ->getProperty('parameters');
+        $defaults = $this->getPolicy()->parameters;
 
         if (isset($defaults[$key])) {
             $default_value = $defaults[$key];
@@ -65,7 +64,7 @@ trait ParameterTrait
    */
     public function getParameterTokens()
     {
-        $tokens = $this->getPolicy()->getProperty('parameters');
+        $tokens = $this->getPolicy()->parameters;
         foreach ($this->params as $key => $value) {
             $tokens[$key] = $value;
         }

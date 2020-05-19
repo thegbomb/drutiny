@@ -26,7 +26,28 @@ use Symfony\Component\Yaml\Yaml;
  */
 abstract class AbstractAnalysis extends Audit
 {
-
+  public function configure()
+  {
+    $this->addParameter(
+        'expression',
+        static::PARAMETER_REQUIRED,
+        'The expression language to evaluate. See https://symfony.com/doc/current/components/expression_language/syntax.html',
+        'true'
+      )
+      ->addParameter(
+        'warning',
+        static::PARAMETER_OPTIONAL,
+        'The expression language to evaludate if the analysis is not applicable. See https://symfony.com/doc/current/components/expression_language/syntax.html',
+        'false'
+      )
+      ->addParameter(
+        'not_applicable',
+        static::PARAMETER_OPTIONAL,
+        'The expression language to evaludate if the analysis is not applicable. See https://symfony.com/doc/current/components/expression_language/syntax.html',
+        'false'
+      );
+  }
+  
   /**
    * Gather analysis data to audit.
    */
