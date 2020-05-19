@@ -49,6 +49,9 @@ services:
       Symfony\Component\EventDispatcher\EventSubscriberInterface:
         tags: [drutiny.event_subscriber]
 
+      Drutiny\ExpressionLanguage\Func\ContainerDependentFunctionInterface:
+        tags: [drutiny.expression_language.function]
+
     cache.array:
         class: Symfony\Component\Cache\Adapter\ArrayAdapter
         arguments: ['%cache.ttl%']
@@ -81,6 +84,39 @@ services:
 
     event_dispatcher:
         class: Symfony\Component\EventDispatcher\EventDispatcher
+
+    expression_language:
+      class: Symfony\Component\ExpressionLanguage\ExpressionLanguage
+      arguments: [null, ['@Drutiny\ExpressionLanguage\ExpressionFunctionProvider']]
+      calls:
+        - [addFunction, ['@Drutiny\ExpressionLanguage\Func\ArraySelect']]
+        - [addFunction, ['@Drutiny\ExpressionLanguage\Func\Filter']]
+        - [addFunction, ['@Drutiny\ExpressionLanguage\Func\SemverGt']]
+        - [addFunction, ['@Drutiny\ExpressionLanguage\Func\SemverGte']]
+        - [addFunction, ['@expression_language.array_filter']]
+        - [addFunction, ['@expression_language.array_key_exists']]
+        - [addFunction, ['@expression_language.count']]
+        - [addFunction, ['@expression_language.in_array']]
+
+    expression_language.in_array:
+      class: Symfony\Component\ExpressionLanguage\ExpressionFunction
+      factory: [Symfony\Component\ExpressionLanguage\ExpressionFunction, fromPhp]
+      arguments: [in_array]
+
+    expression_language.array_key_exists:
+      class: Symfony\Component\ExpressionLanguage\ExpressionFunction
+      factory: [Symfony\Component\ExpressionLanguage\ExpressionFunction, fromPhp]
+      arguments: [array_key_exists]
+
+    expression_language.count:
+      class: Symfony\Component\ExpressionLanguage\ExpressionFunction
+      factory: [Symfony\Component\ExpressionLanguage\ExpressionFunction, fromPhp]
+      arguments: [count]
+
+    expression_language.array_filter:
+      class: Symfony\Component\ExpressionLanguage\ExpressionFunction
+      factory: [Symfony\Component\ExpressionLanguage\ExpressionFunction, fromPhp]
+      arguments: [array_filter]
 
     # A factory class for producing a reporting format instance.
     format.factory:
