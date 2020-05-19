@@ -4,36 +4,27 @@ namespace Drutiny;
 
 use Drutiny\Config\PolicyConfiguration;
 use Drutiny\Policy\Dependency;
+use Drutiny\Entity\DataBag;
+use Drutiny\Entity\ExportableInterface;
 use Symfony\Component\Config\Definition\Processor;
 
-class Policy
+class Policy implements ExportableInterface
 {
     const SEVERITY_LOW = 1;
     const SEVERITY_NORMAL = 2;
     const SEVERITY_HIGH = 4;
     const SEVERITY_CRITICAL = 8;
 
-    protected $properties = [];
+    protected $propertyBag;
+    protected $parameterBag;
     protected $remediable = false;
     protected $dependencies = [];
     protected $severityCode;
 
-  /**
-   * @array list of object attributes that may be passed through the renderer.
-   */
-    protected $renderableProperties = [
-    'title',
-    'name',
-    'description',
-    'remediation',
-    'success',
-    'warning',
-    'failure'
-    ];
-
-    public function getProperty($property)
+    public function __construct()
     {
-        return $this->properties[$property] ?? null;
+      $this->parameterBag = new DataBag();
+      $this->propertyBag = new DataBag();
     }
 
     /**
@@ -41,7 +32,10 @@ class Policy
      */
     public function __get($property)
     {
-      return $this->getProperty($property);
+      if ($property == 'parameters') {
+        return $this->parameterBag->all();
+      }
+      return $this->propertyBag->get($property);
     }
 
     /**
@@ -49,8 +43,12 @@ class Policy
      */
     public function __isset($property)
     {
-      return $this->getProperty($property) !== NULL;
+      if ($property == 'parameters') {
+        return true;
+      }
+      return $this->propertyBag->has($property);
     }
+
   /**
    * Set policy property.
    */
@@ -61,7 +59,8 @@ class Policy
 
     public function setProperties(array $new_properties = [])
     {
-        $data = $this->properties;
+
+        $data = $this->propertyBag->all();
 
         foreach ($new_properties as $property => $value) {
             $data[$property] = $value;
@@ -75,16 +74,20 @@ class Policy
             ['policy' => $data]
         );
 
-        foreach ($policyData as $property => $value) {
-            $this->properties[$property] = $value;
+        // Parameters sit on their own DataBag.
+        if (isset($new_properties['parameters'])) {
+            $this->parameterBag->add($new_properties['parameters']);
+            unset($new_properties['parameters']);
         }
 
-        if (isset($properties['class'])) {
+        $this->propertyBag->add($policyData);
+
+        if (isset($new_properties['class'])) {
             $reflect = new \ReflectionClass($policyData['class']);
             $this->remediable = $reflect->implementsInterface('\Drutiny\RemediableInterface');
         }
 
-        if (isset($properties['depends'])) {
+        if (isset($new_properties['depends'])) {
             $builder = function ($depends) {
                 return new Dependency($depends['expression'], $depends['on_fail']);
             };
@@ -116,6 +119,26 @@ class Policy
         return $this;
     }
 
+    public function addParameter($key, $value)
+    {
+        return $this->parameterBag->set($key, $value);
+    }
+
+    public function addParameters(array $parameters)
+    {
+      return $this->parameterBag->add($parameters);
+    }
+
+    public function getParameter($key)
+    {
+      return $this->parameterBag->get($key);
+    }
+
+    public function getAllParameters()
+    {
+      return $this->parameterBag->all();
+    }
+
   /**
    * Get list of Drutiny\Policy\Dependency objects.
    */
@@ -134,28 +157,10 @@ class Policy
         return $this->severityCode;
     }
 
-    public function getSeverityName()
-    {
-        return $this->properties['severity'];
-    }
-
-    public function getParameter($key)
-    {
-        if (!isset($this->properties['parameters'][$key])) {
-            throw new \Exception("$key is not an available parameter on policy {$this->properties['name']}.");
-        }
-        return $this->properties['parameters'][$key];
-    }
-
-    public function addParameter($key, $value)
-    {
-        $parameters = $this->properties['parameters'] ?? [];
-        $parameters[$key] = $value;
-        return $this->setProperty('parameters', $parameters);
-    }
-
     public function export()
     {
-        return $this->properties;
+        $data = $this->propertyBag->all();
+        $data['parameters'] = $this->parameterBag->all();
+        return $data;
     }
 }

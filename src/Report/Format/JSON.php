@@ -64,17 +64,17 @@ class JSON extends Format
             'has_warning' => $response->hasWarning(),
             'has_error' => $response->hasError(),
             'is_not_applicable' => $response->isNotApplicable(),
-            'title' => $response->getPolicy()->getProperty('title'),
-            'description' => $response->getPolicy()->getProperty('description'),
-            'remediation' => $response->getPolicy()->getProperty('remediation'),
-            'success' => $response->getPolicy()->getProperty('success'),
-            'failure' => $response->getPolicy()->getProperty('failure'),
-            'warning' => $response->getPolicy()->getProperty('warning'),
+            'title' => $response->getPolicy()->title,
+            'description' => $response->getPolicy()->description,
+            'remediation' => $response->getPolicy()->remediation,
+            'success' => $response->getPolicy()->success,
+            'failure' => $response->getPolicy()->failure,
+            'warning' => $response->getPolicy()->warning,
             'type' => $response->getType(),
             'severity' => $response->getSeverity(),
             'severity_code' => $response->getSeverityCode(),
             'exception' => $response->getExceptionMessage(),
-            'name' => $response->getPolicy()->getProperty('name'),
+            'name' => $response->getPolicy()->name,
             ];
 
             $schema['total']++;
@@ -122,7 +122,7 @@ class JSON extends Format
                 case 'failure':
                     $schema['failures']++;
                     $var['status_title'] = 'Failed';
-                    $schema['remediations'][] = $response->getPolicy()->getProperty('remediation');
+                    $schema['remediations'][] = $response->getPolicy()->remediation;
                     $schema['stats'][$var['severity']]['failure']++;
                     break;
             }

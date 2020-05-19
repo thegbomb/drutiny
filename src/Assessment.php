@@ -65,7 +65,7 @@ class Assessment
 
         foreach ($policies as $policy) {
             if ($is_progress_bar) {
-                $this->logger->setTopic($this->uri . '][' . $policy->getProperty('title'));
+                $this->logger->setTopic($this->uri . '][' . $policy->title);
             }
 
             $this->logger->info("Assessing policy...");
@@ -91,12 +91,12 @@ class Assessment
 
           // Attempt remediation.
             if ($remediate && !$response->isSuccessful()) {
-                $this->logger->info("\xE2\x9A\xA0 Remediating " . $policy->getProperty('title'));
+                $this->logger->info("\xE2\x9A\xA0 Remediating " . $policy->title);
                 $this->setPolicyResult($sandbox->remediate());
             }
 
             if ($is_progress_bar) {
-                $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $policy->getProperty('title'), $response->getType()));
+                $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $policy->title, $response->getType()));
             }
         }
 
@@ -112,7 +112,7 @@ class Assessment
    */
     public function setPolicyResult(AuditResponse $response)
     {
-        $this->results[$response->getPolicy()->getProperty('name')] = $response;
+        $this->results[$response->getPolicy()->name] = $response;
 
       // Set the overall success state of the Assessment. Considered
       // a success if all policies pass.
@@ -149,7 +149,7 @@ class Assessment
    * @param string $name
    * @return AuditResponse
    */
-    public function getPolicyResult($name)
+    public function getPolicyResult(string $name)
     {
         if (!isset($this->results[$name])) {
             throw new NoAuditResponseFoundException($name, "Policy '$name' does not have an AuditResponse.");

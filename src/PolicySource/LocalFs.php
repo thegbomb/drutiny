@@ -7,6 +7,7 @@ use Drutiny\Cache;
 use Drutiny\Config;
 use Drutiny\Container;
 use Drutiny\Policy;
+use Drutiny\Policy\Dependency;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\Finder\Finder;
@@ -62,6 +63,16 @@ class LocalFs implements PolicySourceInterface
             }
           }
         }
+
+        if (isset($definition['depends'])) {
+            foreach ($definition['depends'] as &$dependency) {
+                $dependency = !is_string($dependency) ? $dependency : [
+                'expression' => sprintf("policy('%s') == 'success'", $dependency),
+                'on_fail' => Dependency::ON_FAIL_REPORT_ONLY
+                ];
+            }
+        }
+
         return $policy->setProperties($definition);
     }
 

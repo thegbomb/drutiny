@@ -3,7 +3,7 @@
 namespace Drutiny\Sandbox;
 
 use Drutiny\Audit;
-use Drutiny\AuditInterface;
+use Drutiny\Audit\AuditInterface;
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\Driver\Exec;
 use Drutiny\Policy;
@@ -48,7 +48,7 @@ class Sandbox
         $end   = clone $start;
         $end->add(new \DateInterval('PT24H'));
 
-        $audit = $this->container->get($policy->getProperty('class'));
+        $audit = $this->container->get($policy->class);
         $sandbox = new static($this->container);
 
         return $sandbox->setTarget($target)
@@ -83,7 +83,7 @@ class Sandbox
         $response = new AuditResponse($this->getPolicy());
         $watchdog = $this->container->get('logger');
 
-        $watchdog->info('Auditing ' . $this->policy->getProperty('name'));
+        $watchdog->info('Auditing ' . $this->policy->name);
         try {
           // Ensure policy dependencies are met.
             foreach ($this->policy->getDepends() as $dependency) {
@@ -180,5 +180,10 @@ class Sandbox
     public function logger()
     {
         return $this->container->get('logger');
+    }
+
+    public function getContainer()
+    {
+        return $this->container;
     }
 }
