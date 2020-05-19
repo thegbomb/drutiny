@@ -65,7 +65,7 @@ class Assessment
 
         foreach ($policies as $policy) {
             if ($is_progress_bar) {
-                $this->logger->setTopic($this->uri . '][' . $policy->title);
+                $this->logger->setTopic(sprintf('%s (%s)', $policy->name, $this->uri));
             }
 
             $this->logger->info("Assessing policy...");

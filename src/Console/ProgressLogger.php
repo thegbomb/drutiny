@@ -55,12 +55,16 @@ class ProgressLogger implements LoggerInterface {
    */
   public function flushBuffer()
   {
+    $this->output->write($this->buffer->fetch());
+
     if ($this->output->getVerbosity() <= OutputInterface::VERBOSITY_NORMAL) {
       $this->indicator = new ProgressIndicator($this->output, 'very_verbose');
       $this->indicator->start('Starting');
     }
-    $this->output->write($this->buffer->fetch());
-    $this->logger = new ConsoleLogger($this->output);
+    else {
+      $this->logger = new ConsoleLogger($this->output);
+    }
+
     return $this;
   }
 
@@ -71,7 +75,7 @@ class ProgressLogger implements LoggerInterface {
 
   public function setTopic($topic)
   {
-    $this->topic = sprintf('<info>[[%s]]</info>', $topic);
+    $this->topic = sprintf('<info>%s</info>', $topic);
     $this->indicator->setMessage($topic);
   }
 
