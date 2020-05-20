@@ -2,125 +2,67 @@
 
 namespace Drutiny;
 
-use Drutiny\Profile\PolicyDefinition;
-use Drutiny\Profile\ProfileSource;
+use Drutiny\Entity\PolicyOverride;
 use Drutiny\Report\Format;
-use Symfony\Component\Yaml\Yaml;
+use Drutiny\Entity\ExportableInterface;
+use Drutiny\Entity\DataBag;
+use Psr\Log\LoggerInterface;
 
-class Profile
+class Profile implements ExportableInterface
 {
     use \Drutiny\Sandbox\ReportingPeriodTrait;
 
-  /**
-   * Title of the Profile.
-   *
-   * @var string
-   */
-    protected $title;
-
-  /**
-   * Machine name of the Profile.
-   *
-   * @var string
-   */
-    protected $name;
-
-
-  /**
-   * Description of the Profile.
-   *
-   * @var string
-   */
-    protected $description;
-
-  /**
-   * Filepath location of where the profile file is.
-   *
-   * @var string
-   */
-    protected $filepath;
-
-  /**
-   * A list of other \Drutiny\Profile\ProfileDefinition objects to include.
-   *
-   * @var array
-   */
-    protected $policies = [];
-
-  /**
-   * A list of policy names, presumably inherited, to exclude.
-   */
-    protected $excludedPolicies = [];
-
-  /**
-   * A list of other \Drutiny\Profile objects to include.
-   *
-   * @var array
-   */
-    protected $include = [];
-
-  /**
-   * If profile is included by another profile then this property points to that profile.
-   *
-   * @var object Profile.
-   */
-    protected $parent;
-
-  /**
-   * Keyed array of \Drutiny\Report\FormatOptions.
-   *
-   * @var array
-   */
-    protected $format = [];
-
-  /**
-   * Flag to render multisite reports into single site reports also.
-   *
-   * @var boolean
-   */
     protected $reportPerSite = false;
+    protected $dataBag;
+    protected $logger;
 
-  /**
-   * Add a FormatOptions to the profile.
-   */
-    public function addFormatOptions($format, $options)
+    public function __construct(LoggerInterface $logger)
     {
-        $this->format[$format] = $options;
-        return $this;
+      $this->logger = $logger;
+      $this->dataBag = new DataBag();
     }
 
-  /**
-   * Get a FormatOptions to the profile.
-   */
-    public function getFormatOptions($format)
+    public static function create(LoggerInterface $logger)
     {
-        return $this->format[$format] ?? [];
+      return new static($logger);
     }
 
-  /**
-   * Add a PolicyDefinition to the profile.
-   */
-    public function addPolicyDefinition(PolicyDefinition $definition)
+    /**
+     * Make properties read-only attributes of object.
+     */
+    public function __get($property)
     {
-      // Do not include excluded dependencies
-        if (!in_array($definition->getName(), $this->excludedPolicies)) {
-            $this->policies[$definition->getName()] = $definition;
-        }
-        return $this;
+      return $this->dataBag->get($property);
     }
 
-    public function addExcludedPolicies(array $excluded_policies)
+    /**
+     * Required for __get to work in twig templates.
+     */
+    public function __isset($property)
     {
-        $this->excludedPolicies = array_unique(array_merge($this->excludedPolicies, $excluded_policies));
-        return $this;
+      return $this->dataBag->has($property);
     }
 
-  /**
-   * Add a PolicyDefinition to the profile.
-   */
-    public function getPolicyDefinition($name)
+    public function setProperties(array $data)
     {
-        return isset($this->policies[$name]) ? $this->policies[$name] : false;
+      $data = array_merge($this->dataBag->all(), $data);
+      $data['policies'] = $data['policies'] ?? new DataBag();
+      if (is_array($data['policies'])) {
+        $data['policies'] = new DataBag($data['policies']);
+      }
+      $keys = array_keys($data['policies']->all());
+      foreach ($data['policies']->all() as $name => $policy_override) {
+          $weight = array_search($name, $keys);
+          if ($policy_override instanceof PolicyOverride) {
+            $policy_override->set('weight', $weight);
+            continue;
+          }
+          $policy_override['weight'] = $weight;
+          $policy_override['name'] = $name;
+          $data['policies']->set($name, new PolicyOverride($policy_override));
+      }
+      $this->dataBag->add($data);
+      return $this;
     }
 
   /**
@@ -128,158 +70,49 @@ class Profile
    */
     public function getAllPolicyDefinitions()
     {
+      $list = array_filter($this->policies->all(), function ($policy_override) {
+        return !in_array($policy_override->name, $this->excluded_policies);
+      });
 
       // Sort $policies
       // 1. By weight. Lighter policies float to the top.
       // 2. By name, alphabetical sorting.
-        uasort($this->policies, function (PolicyDefinition $a, PolicyDefinition $b) {
+        uasort($list, function (PolicyOverride $a, PolicyOverride $b) {
 
           // 1. By weight. Lighter policies float to the top.
-            if ($a->getWeight() == $b->getWeight()) {
-                $alpha = [$a->getName(), $b->getName()];
+            if ($a->weight == $b->weight) {
+                $alpha = [$a->name, $b->name];
                 sort($alpha);
               // 2. By name, alphabetical sorting.
-                return $alpha[0] == $a->getName() ? -1 : 1;
+                return $alpha[0] == $a->name ? -1 : 1;
             }
-            return $a->getWeight() > $b->getWeight() ? 1 : -1;
+            return $a->weight > $b->weight ? 1 : -1;
         });
-        return $this->policies;
+        return $list;
     }
 
-  /**
-   * Get the profile title.
-   */
-    public function getTitle()
-    {
-        return $this->title;
-    }
-
-  /**
-   * Set the title of the profile.
-   */
-    public function setTitle($title)
-    {
-        $this->title = $title;
-        return $this;
-    }
-
-  /**
-   * Get the profile Name.
-   */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-  /**
-   * Set the Name of the profile.
-   */
-    public function setName($name)
-    {
-        $this->name = $name;
-        return $this;
-    }
-
-  /**
-   * Get the profile Name.
-   */
-    public function getDescription()
-    {
-        return $this->description;
-    }
-
-  /**
-   * Set the Name of the profile.
-   */
-    public function setDescription($description)
-    {
-        $this->description = $description;
-        return $this;
-    }
-
-  /**
-   * Get the filepath.
-   */
-    public function getFilepath()
-    {
-        return $this->filepath;
-    }
-
-  /**
-   * Set the Name of the profile.
-   */
-    public function setFilepath($filepath)
-    {
-        $this->filepath = $filepath;
-        return $this;
-    }
-
-  /**
-   * Add a Profile to the profile.
-   */
+    /**
+     * Add a Profile to the profile.
+     */
     public function addInclude(Profile $profile)
     {
         $profile->setParent($this);
-        $this->include[$profile->getName()] = $profile;
-        foreach ($profile->getAllPolicyDefinitions() as $policy) {
+
+        $include = $this->include;
+        $include[] = $profile->name;
+        $this->dataBag->set('include', $include);
+
+        $weight = count($this->getAllPolicyDefinitions());
+
+        foreach ($profile->getAllPolicyDefinitions() as $policy_override) {
           // Do not override policies already specified, they take priority.
-            if ($this->getPolicyDefinition($policy->getName())) {
+            if ($this->dataBag->get('policies')->get($policy_override->name)) {
                 continue;
             }
-            $this->addPolicyDefinition($policy);
+            $policy_override->set('weight', ++$weight);
+            $this->policies->set($policy_override->name, $policy_override);
         }
         return $this;
-    }
-
-  /**
-   * Return a specific included profile.
-   */
-    public function getInclude($name)
-    {
-        return isset($this->include[$name]) ? $this->include[$name] : false;
-    }
-
-  /**
-   * Return an array of profiles included in this profile.
-   */
-    public function getIncludes()
-    {
-        return $this->include;
-    }
-
-  /**
-   * Add a Profile to the profile.
-   */
-    public function setParent(Profile $parent)
-    {
-      // Ensure parent doesn't already have this profile loaded.
-      // This prevents recursive looping.
-        if (!$parent->getParent($this->getName())) {
-            $this->parent = $parent;
-            return $this;
-        }
-        throw new \Exception($this->getName() . ' already found in profile lineage.');
-    }
-
-  /**
-   * Find a parent in the tree of parent profiles.
-   */
-    public function getParent($name = null)
-    {
-        if (!$this->parent) {
-            return false;
-        }
-        if ($name) {
-            if ($this->parent->getName() == $name) {
-                return $this->parent;
-            }
-            if ($parent = $this->parent->getInclude($name)) {
-                return $parent;
-            }
-          // Recurse up the tree to find if the parent is in the tree.
-            return $this->parent->getParent($name);
-        }
-        return $this->parent;
     }
 
     public function reportPerSite()
@@ -293,26 +126,8 @@ class Profile
         return $this;
     }
 
-    public function dump()
+    public function export()
     {
-        $export = [
-        'title' => $this->getTitle(),
-        'name' => $this->getName(),
-        'description' => $this->getDescription(),
-        'policies' => $this->dumpPolicyDefinitions(),
-        'excluded_policies' => $this->excludedPolicies,
-        'include' => array_keys($this->getIncludes()),
-        'format' => $this->format,
-        ];
-        return $export;
-    }
-
-    protected function dumpPolicyDefinitions()
-    {
-        $list = [];
-        foreach ($this->policies as $name => $policy) {
-            $list[$name] = $policy->getProfileMetadata();
-        }
-        return $list;
+        return $this->dataBag->export();
     }
 }

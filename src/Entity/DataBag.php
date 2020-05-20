@@ -8,13 +8,14 @@ use Drutiny\Entity\Exception\DataNotFoundException;
 /**
  * Holds data.
  */
-class DataBag
+class DataBag implements ExportableInterface
 {
     protected $data = [];
     protected $resolved = false;
     protected $onSetCallback;
     protected $onClearCallback;
     protected $onRemoveCallback;
+    protected $onAddCallback;
 
     /**
      * @param array $data An array of data
@@ -42,8 +43,12 @@ class DataBag
      */
     public function add(array $data)
     {
+        if ($this->onAddCallback) {
+          $result = call_user_func($this->onAddCallback, $data);
+          $data = ($result !== null) ? $result : $data;
+        }
         foreach ($data as $key => $value) {
-            $this->set($key, $value);
+            $this->data[$key] = $value;
         }
     }
 
@@ -53,6 +58,19 @@ class DataBag
     public function all()
     {
         return $this->data;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function export()
+    {
+      return array_map(function ($data) {
+        if ($data instanceof ExportableInterface) {
+          return $data->export();
+        }
+        return $data;
+      }, $this->data);
     }
 
     public function __get(string $name)
@@ -304,6 +322,10 @@ class DataBag
     public function onSet(callable $func)
     {
       $this->onSetCallback = $func;
+    }
+    public function onAdd(callable $func)
+    {
+      $this->onAddCallback = $func;
     }
     public function onRemove(callable $func)
     {

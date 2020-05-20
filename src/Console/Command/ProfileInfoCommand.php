@@ -52,7 +52,7 @@ class ProfileInfoCommand extends Command
         $profile = $this->profileFactory->loadProfileByName($input->getArgument('profile'));
 
         $template = $this->twig->load('docs/profile.md.twig');
-        $markdown = $template->render($profile->dump());
+        $markdown = $template->render($profile->export());
 
         $formatted_output = Renderer::createFromMarkdown($markdown);
         $output->writeln((string) $formatted_output);

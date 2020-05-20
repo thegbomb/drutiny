@@ -149,6 +149,9 @@ services:
       class: 'Drutiny\PolicyFactory'
       arguments: ['@service_container', '@cache.filesystem']
 
+    profile:
+      class: 'Drutiny\Profile'
+      factory: ['Drutiny\Profile', create]
     # Factory for loading profiles from their sources.
     profile.factory:
       class: 'Drutiny\ProfileFactory'

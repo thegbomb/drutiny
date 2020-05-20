@@ -100,7 +100,7 @@ abstract class AbstractReportingCommand extends Command
         ->getKernel()
         ->getContainer()
         ->get('format.factory')
-        ->create($format, $profile->getFormatOptions($format));
+        ->create($format, $profile->format[$format] ?? []);
 
         $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
 

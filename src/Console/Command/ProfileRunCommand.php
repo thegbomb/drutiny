@@ -4,8 +4,7 @@ namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
 use Drutiny\Console\ProgressLogger;
-use Drutiny\Profile\ProfileSource;
-use Drutiny\Profile\PolicyDefinition;
+use Drutiny\Entity\PolicyOverride;
 use Drutiny\DomainSource;
 use Drutiny\PolicyFactory;
 use Psr\Log\LoggerInterface;
@@ -169,12 +168,12 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         // Override the title of the profile with the specified value.
         if ($title = $input->getOption('title')) {
-            $profile->setTitle($title);
+            $profile->setProperties(['title' => $title]);
         }
 
         // Setup the reporting format.
         $format = $input->getOption('format');
-        $format = $container->get('format.factory')->create($format, $profile->getFormatOptions($format));
+        $format = $container->get('format.factory')->create($format, $profile->format[$format] ?? []);
 
         // Set the filepath where the report will be written to (can be console).
         $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
@@ -186,21 +185,18 @@ class ProfileRunCommand extends AbstractReportingCommand
           $this->progressLogger->flushBuffer();
         }
 
-      // Allow command line to add policies to the profile.
+        // Allow command line to add policies to the profile.
         $included_policies = $input->getOption('include-policy');
         foreach ($included_policies as $policy_name) {
             $this->logger->debug("Loading policy definition: $policy_name");
-            $policyDefinition = PolicyDefinition::createFromProfile($policy_name);
-            $profile->addPolicyDefinition($policyDefinition);
+            $profile->policies->set($policy_name, new PolicyOverride(['name' => $policy_name]));
         }
 
-      // Allow command line omission of policies highlighted in the profile.
-      // WARNING: This may remove policy dependants which may make polices behave
-      // in strange ways.
-        $excluded_policies = $input->getOption('exclude-policy');
-        $policyDefinitions = array_filter($profile->getAllPolicyDefinitions(), function ($policy) use ($excluded_policies) {
-            return !in_array($policy->getName(), $excluded_policies);
-        });
+        // Allow command line omission of policies highlighted in the profile.
+        // WARNING: This may remove policy dependants which may make polices behave
+        // in strange ways.
+        $excluded_policies = $input->getOption('exclude-policy') ?? [];
+        $profile->setProperties(['excluded_policies' => $excluded_policies]);
 
         // Setup the target.
         $this->logger->debug("Loading target: " . $input->getArgument('target'));
@@ -229,8 +225,8 @@ class ProfileRunCommand extends AbstractReportingCommand
         $profile->setReportingPeriod($start, $end);
 
         $policies = [];
-        foreach ($policyDefinitions as $policyDefinition) {
-            $this->logger->debug("Loading policy from definition: " . $policyDefinition->getName());
+        foreach ($profile->getAllPolicyDefinitions() as $policyDefinition) {
+            $this->logger->debug("Loading policy from definition: " . $policyDefinition->name);
             $policies[] = $policyDefinition->getPolicy($this->policyFactory);
         }
 
@@ -238,7 +234,7 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         foreach ($uris as $uri) {
             try {
-                $this->logger->setTopic("Evaluating ".$profile->getName()." against $uri.");
+                $this->logger->setTopic("Evaluating ".$profile->name." against $uri.");
                 $target->setUri($uri);
             } catch (\Drutiny\Target\InvalidTargetException $e) {
                 $this->logger->warning("Target cannot be evaluated: " . $e->getMessage());

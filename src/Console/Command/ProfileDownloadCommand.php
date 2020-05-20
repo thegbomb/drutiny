@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Yaml\Yaml;
 use Drutiny\Profile\ProfileSource;
+use Drutiny\ProfileFactory;
 use Drutiny\Profile;
 
 /**
@@ -16,6 +17,13 @@ use Drutiny\Profile;
  */
 class ProfileDownloadCommand extends Command
 {
+    protected $profileFactory;
+
+    public function __construct(ProfileFactory $factory)
+    {
+        $this->profileFactory = $factory;
+        parent::__construct();
+    }
 
   /**
    * @inheritdoc
@@ -44,11 +52,16 @@ class ProfileDownloadCommand extends Command
     {
         $render = new SymfonyStyle($input, $output);
 
-        $profile = ProfileSource::loadProfileByName($name = $input->getArgument('profile'));
-
-        $output = Yaml::dump($profile->dump());
-        $filename = "$name.profile.yml";
+        $profile = $this->profileFactory->loadProfileByName($input->getArgument('profile'));
+        $export = $profile->export();
+        foreach ($export['policies'] as &$override) {
+          unset($override['name'], $override['weight']);
+        }
+        $filename = "{$profile->name}.profile.yml";
+        $export['uuid'] = $filename;
+        $output = Yaml::dump($export, 6);
         file_put_contents($filename, $output);
         $render->success("$filename written.");
+        return 0;
     }
 }
