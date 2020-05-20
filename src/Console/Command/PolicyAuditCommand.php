@@ -6,9 +6,9 @@ use Drutiny\Assessment;
 use Drutiny\Console\ProgressLogger;
 use Drutiny\PolicyFactory;
 use Drutiny\Profile;
-use Drutiny\Profile\PolicyDefinition;
 use Drutiny\RemediableInterface;
 use Drutiny\Report\Format;
+use Drutiny\Entity\PolicyOverride;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -121,15 +121,18 @@ class PolicyAuditCommand extends AbstractReportingCommand
         }
 
         $name = $input->getArgument('policy');
-        $profile = new Profile();
-        $profile->setTitle('Policy Audit: ' . $name)
-            ->setName($name)
-            ->setFilepath('/dev/null')
-            ->addPolicyDefinition(
-                PolicyDefinition::createFromProfile($name, 0, [
-                'parameters' => $parameters
-                ])
-            );
+        $profile = $container->get('profile');
+        $profile->setProperties([
+          'title' => 'Policy Audit: ' . $name,
+          'name' => $name,
+          'uuid' => '/dev/null',
+          'policies' => [
+            $name => new PolicyOverride([
+              'name' => $name,
+              'parameters' => $parameters
+            ])
+          ]
+        ]);
 
         // Setup the target.
         $target = $container->get('target.factory')->create($input->getArgument('target'));

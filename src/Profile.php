@@ -2,10 +2,11 @@
 
 namespace Drutiny;
 
+use Drutiny\Entity\DataBag;
+use Drutiny\Entity\Exception\DataNotFoundException;
+use Drutiny\Entity\ExportableInterface;
 use Drutiny\Entity\PolicyOverride;
 use Drutiny\Report\Format;
-use Drutiny\Entity\ExportableInterface;
-use Drutiny\Entity\DataBag;
 use Psr\Log\LoggerInterface;
 
 class Profile implements ExportableInterface
@@ -19,7 +20,10 @@ class Profile implements ExportableInterface
     public function __construct(LoggerInterface $logger)
     {
       $this->logger = $logger;
-      $this->dataBag = new DataBag();
+      $this->dataBag = new DataBag([
+        // Ensure is available for twig template.
+        'description' => '',
+      ]);
     }
 
     public static function create(LoggerInterface $logger)
@@ -70,9 +74,15 @@ class Profile implements ExportableInterface
    */
     public function getAllPolicyDefinitions()
     {
-      $list = array_filter($this->policies->all(), function ($policy_override) {
-        return !in_array($policy_override->name, $this->excluded_policies);
-      });
+      try {
+        $list = array_filter($this->policies->all(), function ($policy_override) {
+          return !in_array($policy_override->name, $this->excluded_policies);
+        });
+      }
+      catch (DataNotFoundException $e) {
+        $list = $this->policies->all();
+      }
+
 
       // Sort $policies
       // 1. By weight. Lighter policies float to the top.

@@ -11,7 +11,7 @@ parameters:
   twig.templates: twig
   twig.cache: false #~/.drutiny/cache/twig
   twig.debug: true
-  twig.strict: false
+  twig.strict: true
 services:
     # default configuration for services in *this* file
     _defaults:

@@ -4,13 +4,14 @@ namespace Drutiny\AuditResponse;
 
 use Drutiny\Policy;
 use Drutiny\Audit;
+use Drutiny\Entity\ExportableInterface;
 
 /**
  * Class AuditResponse.
  *
  * @package Drutiny\AuditResponse
  */
-class AuditResponse
+class AuditResponse implements ExportableInterface
 {
 
     protected $policy;
@@ -228,5 +229,20 @@ exception
             break;
         }
         return implode(PHP_EOL, $summary);
+    }
+
+    public function export()
+    {
+      return [
+        'status' => $this->isSuccessful(),
+        'is_notice' => $this->isNotice(),
+        'has_warning' => $this->hasWarning(),
+        'has_error' => $this->hasError(),
+        'is_not_applicable' => $this->isNotApplicable(),
+        'type' => $this->getType(),
+        'severity' => $this->getSeverity(),
+        'severity_code' => $this->getSeverityCode(),
+        'exception' => $this->getExceptionMessage(),
+      ];
     }
 }

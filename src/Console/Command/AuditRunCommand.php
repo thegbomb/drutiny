@@ -127,16 +127,18 @@ class AuditRunCommand extends AbstractReportingCommand
         $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
         $assessment->setPolicyResult($response);
 
-        $profile = new Profile();
-        $profile->setTitle('Audit Run')
-            ->setName('audit:run')
-            ->setFilepath('/dev/null');
+        $profile = $container->get('profile');
+        $profile->setProperties([
+          'title' => 'Audit Run',
+          'name' => 'audit:run',
+          'uuid' => '/dev/null'
+        ]);
 
         if (!$input->getOption('report-filename')) {
             $input->setOption('report-filename', 'stdout');
         }
         if (!$input->getOption('format')) {
-            $intput->setOption('format', 'terminal');
+            $input->setOption('format', 'terminal');
         }
 
         $this->report($profile, $input, $output, $target, [$assessment]);
