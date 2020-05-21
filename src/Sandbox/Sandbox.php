@@ -82,22 +82,21 @@ class Sandbox
     {
         $response = new AuditResponse($this->getPolicy());
         $watchdog = $this->container->get('logger');
-
         $watchdog->info('Auditing ' . $this->policy->name);
         try {
-          // Ensure policy dependencies are met.
+            // Ensure policy dependencies are met.
             foreach ($this->policy->getDepends() as $dependency) {
                 // Throws DependencyException if dependency is not met.
                 $dependency->execute($this);
             }
 
-          // Run the audit over the policy.
+            // Run the audit over the policy.
             $outcome = $this->audit->execute($this);
 
-          // Log the parameters output.
+            // Log the parameters output.
             $watchdog->debug("Tokens:\n" . Yaml::dump($this->getParameterTokens(), 4));
 
-          // Set the response.
+            // Set the response.
             $response->set($outcome, $this->getParameterTokens());
         } catch (\Drutiny\Policy\DependencyException $e) {
             $this->setParameter('exception', $e->getMessage());

@@ -1,5 +1,5 @@
 parameters:
-  cache.directory: phpunit-cache
+  cache.directory: .cache/phpunit
   cache.ttl: 0
   twig.cache: false #~/.drutiny/cache/twig
   twig.debug: true

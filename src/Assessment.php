@@ -4,9 +4,10 @@ namespace Drutiny;
 
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
-use Drutiny\Target\TargetInterface;
-use Drutiny\Sandbox\Sandbox;
 use Drutiny\Sandbox\ReportingPeriodTrait;
+use Drutiny\Sandbox\Sandbox;
+use Drutiny\Target\TargetInterface;
+use Drutiny\AsyncRuntime;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -26,11 +27,13 @@ class Assessment
     protected $statsByResult = [];
     protected $statsBySeverity = [];
     protected $remediable = [];
+    protected $async;
 
-    public function __construct(LoggerInterface $logger, ContainerInterface $container)
+    public function __construct(LoggerInterface $logger, ContainerInterface $container, AsyncRuntime $async)
     {
         $this->logger = $logger;
         $this->container = $container;
+        $this->async = $async;
     }
 
     public function setUri($uri = 'default')
@@ -63,6 +66,7 @@ class Assessment
 
         $is_progress_bar = $this->logger instanceof \Drutiny\Console\ProgressLogger;
 
+        $promises = [];
         foreach ($policies as $policy) {
             if ($is_progress_bar) {
                 $this->logger->setTopic(sprintf('%s (%s)', $policy->name, $this->uri));
@@ -76,8 +80,13 @@ class Assessment
             ->create($target, $policy)
             ->setReportingPeriod($start, $end);
 
-            $response = $sandbox->run();
+            $this->async->run(function () use ($sandbox) {
+              return $sandbox->run();
+            });
+        }
 
+        foreach ($this->async->wait() as $response) {
+            // $response = $sandbox->run();
             $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
             $this->statsByResult[$response->getType()]++;
 
@@ -91,15 +100,14 @@ class Assessment
 
           // Attempt remediation.
             if ($remediate && !$response->isSuccessful()) {
-                $this->logger->info("\xE2\x9A\xA0 Remediating " . $policy->title);
+                $this->logger->info("\xE2\x9A\xA0 Remediating " . $response->getPolicy()->title);
                 $this->setPolicyResult($sandbox->remediate());
             }
 
             if ($is_progress_bar) {
-                $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $policy->title, $response->getType()));
+                $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $response->getPolicy()->title, $response->getType()));
             }
         }
-
         return $this;
     }
 

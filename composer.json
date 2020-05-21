@@ -46,7 +46,8 @@
         "psr-4": {
             "Drutiny\\": "src/",
             "DrutinyTests\\": "tests/src/"
-        }
+        },
+        "files": ["src/functions.php"]
     },
     "bin": ["bin/drutiny", "bin/build_phar"],
     "require-dev": {

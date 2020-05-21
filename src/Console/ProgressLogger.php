@@ -85,7 +85,8 @@ class ProgressLogger implements LoggerInterface {
   public function log($level, $message, array $context = array())
   {
     $this->indicator->advance();
-    $this->logger->log($level, $message, $context);
+    $this->logger->log($level, "(".getmypid().") $message", $context);
+    // echo '['.getmypid().']'.__METHOD__.":".__LINE__." in ".__FILE__.PHP_EOL;
 
     if (strlen($message) >= 256) {
       return;

@@ -4,13 +4,14 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
-  cache.directory: ~/.drutiny/cache
-  cache.ttl: 0
-  config.local: ~/.drutiny/config.yml
-  config.credentials: ~/.drutiny/.credentials.yml
+  drutiny_config_dir: '%user_home_dir%/.drutiny'
+  cache.directory: '%drutiny_config_dir%/cache'
+  cache.ttl: 3600
+  config.local: '%drutiny_config_dir%/config.yml'
+  config.credentials: '%drutiny_config_dir%/.credentials.yml'
   twig.templates: twig
-  twig.cache: false #~/.drutiny/cache/twig
-  twig.debug: true
+  twig.cache: '%drutiny_config_dir%/twig'
+  twig.debug: false
   twig.strict: true
 services:
     # default configuration for services in *this* file
@@ -57,6 +58,10 @@ services:
         arguments: ['%cache.ttl%']
         calls:
           - [setLogger, ['@logger']]
+
+    cache.chain:
+        class: Symfony\Component\Cache\Adapter\ChainAdapter
+        arguments: [['@cache.filesystem'], '%cache.ttl%']
 
     cache.filesystem:
         class: Symfony\Component\Cache\Adapter\FilesystemAdapter
@@ -230,6 +235,7 @@ services:
           - src/Sandbox/Sandbox.php
           - src/ExpressionLanguage.php
           - src/Report/Format/Menu/*
+          - src/functions.php
 
     Drutiny\Target\Bridge\ExecutionInterface:
       alias: 'Drutiny\Target\Bridge\LocalBridge'
@@ -238,7 +244,7 @@ services:
       alias: 'target'
 
     Symfony\Contracts\Cache\CacheInterface:
-      alias: 'cache.array'
+      alias: 'cache.filesystem'
 
     Symfony\Component\Console\Output\OutputInterface:
       alias: output

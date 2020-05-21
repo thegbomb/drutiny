@@ -2,6 +2,8 @@
 
 namespace DrutinyTests\Audit;
 
+use Drutiny\AuditResponse\AuditResponse;
+use Drutiny\Audit;
 use Drutiny\Console\Application;
 use Drutiny\Kernel;
 use Drutiny\Policy;
@@ -56,5 +58,35 @@ class EntityTest extends TestCase {
       $target = $this->container->get('target.factory')->create('@none');
       $target->setUri('bar');
       $this->assertEquals($target->getProperty('uri'), 'bar');
+  }
+
+  public function testAuditResponse()
+  {
+    $policy = $this->container->get('policy.factory')->loadPolicyByName('Test:Pass');
+    $response = new AuditResponse($policy);
+    $response->set(Audit::SUCCESS, [
+      'foo' => 'bar',
+    ]);
+    $this->assertArrayHasKey('foo', $response->getTokens());
+    $this->assertContains('bar', $response->getTokens());
+    $this->assertTrue($response->isSuccessful());
+
+    $export = $response->export();
+    $export['state'] = Audit::FAIL;
+    $response->import($export);
+
+    $this->assertFalse($response->isSuccessful());
+    $this->assertFalse($response->hasError());
+
+    $this->assertIsString($sleep_data = $response->serialize());
+
+    $export = unserialize($sleep_data);
+    $export['state'] = Audit::ERROR;
+    $sleep_data = serialize($export);
+
+    $response->unserialize($sleep_data);
+
+    $this->assertFalse($response->isSuccessful());
+    $this->assertTrue($response->hasError());
   }
 }

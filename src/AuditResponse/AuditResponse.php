@@ -4,7 +4,9 @@ namespace Drutiny\AuditResponse;
 
 use Drutiny\Policy;
 use Drutiny\Audit;
+use Drutiny\Kernel;
 use Drutiny\Entity\ExportableInterface;
+use Drutiny\Entity\SerializableExportableTrait;
 
 /**
  * Class AuditResponse.
@@ -13,6 +15,7 @@ use Drutiny\Entity\ExportableInterface;
  */
 class AuditResponse implements ExportableInterface
 {
+    use SerializableExportableTrait;
 
     protected $policy;
     protected $state = Audit::NOT_APPLICABLE;
@@ -234,6 +237,7 @@ exception
     public function export()
     {
       return [
+        'policy' => $this->policy->name,
         'status' => $this->isSuccessful(),
         'is_notice' => $this->isNotice(),
         'has_warning' => $this->hasWarning(),
@@ -243,6 +247,17 @@ exception
         'severity' => $this->getSeverity(),
         'severity_code' => $this->getSeverityCode(),
         'exception' => $this->getExceptionMessage(),
+        'tokens' => $this->tokens,
+        'state' => $this->state,
+        'remediated' => $this->remediated,
       ];
+    }
+
+    public function import($export)
+    {
+      $this->state = $export['state'];
+      $this->remediated = $export['remediated'];
+      $this->tokens = $export['tokens'];
+      $this->policy = drutiny()->get('policy.factory')->loadPolicyByName($export['policy']);
     }
 }

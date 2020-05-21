@@ -84,6 +84,8 @@ class Kernel
 
         $container->addCompilerPass(new RegisterListenersPass('event_dispatcher', 'kernel.event_listener', 'drutiny.event_subscriber'));
 
+        $container->setParameter('user_home_dir', getenv('HOME'));
+
         foreach ($this->loadingPaths as $path) {
           $loading_path = [
             $this->getProjectDir(),
