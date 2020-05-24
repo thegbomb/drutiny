@@ -9,7 +9,10 @@ use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Console\Terminal;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 
 
 class ProgressLogger implements LoggerInterface {
@@ -17,37 +20,53 @@ class ProgressLogger implements LoggerInterface {
 
   const MAX_INDICATOR_MSG_LENGTH = 96;
 
-  protected $logger;
   protected $output;
   protected $buffer;
-  protected $indicator;
-  protected $topic;
-  protected $formatLevelMap = [
-      LogLevel::EMERGENCY => 'error',
-      LogLevel::ALERT => 'error',
-      LogLevel::CRITICAL => 'error',
-      LogLevel::ERROR => 'error',
-      LogLevel::WARNING => 'info',
-      LogLevel::NOTICE => 'info',
-      LogLevel::INFO => 'info',
-      LogLevel::DEBUG => 'info',
+  protected $flushed = false;
+  protected $tail;
+  protected $section;
+  protected $lastLogLevel;
+  protected $verbosityLevelMap = [
+      LogLevel::EMERGENCY => OutputInterface::VERBOSITY_NORMAL,
+      LogLevel::ALERT => OutputInterface::VERBOSITY_NORMAL,
+      LogLevel::CRITICAL => OutputInterface::VERBOSITY_NORMAL,
+      LogLevel::ERROR => OutputInterface::VERBOSITY_NORMAL,
+      LogLevel::WARNING => OutputInterface::VERBOSITY_NORMAL,
+      LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+      LogLevel::INFO => OutputInterface::VERBOSITY_VERY_VERBOSE,
+      LogLevel::DEBUG => OutputInterface::VERBOSITY_DEBUG,
   ];
 
   public function __construct(OutputInterface $output)
   {
     $this->output = $output;
-    $this->buffer = new BufferedOutput;
+    $this->buffer = new BufferedOutput();
+    $this->tail = $this->output->getVerbosity() > OutputInterface::VERBOSITY_NORMAL;
+    $this->section = ($output instanceof ConsoleOutput) ? $output->section() : $output;
 
-    if ($output->getVerbosity() <= OutputInterface::VERBOSITY_NORMAL) {
-      $progress_output = $this->buffer;
-      $this->logger = new ConsoleLogger(new NullOutput());
-    }
-    else {
-      $this->logger = new ConsoleLogger($this->buffer);
-      $progress_output = new NullOutput();
-    }
-    $this->indicator = new ProgressIndicator($progress_output, 'very_verbose');
-    $this->indicator->start('Starting');
+    $outputStyle = new OutputFormatterStyle('red', 'yellow', ['bold', 'blink']);
+    $output->getFormatter()->setStyle('emergency', $outputStyle);
+
+    $outputStyle = new OutputFormatterStyle('white', 'red', ['bold', 'blink']);
+    $output->getFormatter()->setStyle('alert', $outputStyle);
+
+    $outputStyle = new OutputFormatterStyle('white', 'red');
+    $output->getFormatter()->setStyle('critical', $outputStyle);
+
+    $outputStyle = new OutputFormatterStyle('red');
+    $output->getFormatter()->setStyle('error', $outputStyle);
+
+    $outputStyle = new OutputFormatterStyle('yellow');
+    $output->getFormatter()->setStyle('warning', $outputStyle);
+
+    $outputStyle = new OutputFormatterStyle('green');
+    $output->getFormatter()->setStyle('notice', $outputStyle);
+
+    $outputStyle = new OutputFormatterStyle('cyan');
+    $output->getFormatter()->setStyle('info', $outputStyle);
+
+    $outputStyle = new OutputFormatterStyle('default');
+    $output->getFormatter()->setStyle('debug', $outputStyle);
   }
 
   /**
@@ -55,28 +74,24 @@ class ProgressLogger implements LoggerInterface {
    */
   public function flushBuffer()
   {
-    $this->output->write($this->buffer->fetch());
-
-    if ($this->output->getVerbosity() <= OutputInterface::VERBOSITY_NORMAL) {
-      $this->indicator = new ProgressIndicator($this->output, 'very_verbose');
-      $this->indicator->start('Starting');
-    }
-    else {
-      $this->logger = new ConsoleLogger($this->output);
-    }
-
-    return $this;
+      $this->output->write($this->buffer->fetch());
+      $this->flushed = true;
+      return $this;
   }
 
   public function setMessage($message)
   {
-    $this->indicator->setMessage($message);
+      $this->log(LogLevel::NOTICE, $message);
   }
 
   public function setTopic($topic)
   {
-    $this->topic = sprintf('<info>%s</info>', $topic);
-    $this->indicator->setMessage($topic);
+      $this->log(LogLevel::NOTICE, $topic);
+  }
+
+  public function clear()
+  {
+      $this->section->clear();
   }
 
   /**
@@ -84,30 +99,58 @@ class ProgressLogger implements LoggerInterface {
    */
   public function log($level, $message, array $context = array())
   {
-    $this->indicator->advance();
-    $this->logger->log($level, "(".getmypid().") $message", $context);
-    // echo '['.getmypid().']'.__METHOD__.":".__LINE__." in ".__FILE__.PHP_EOL;
+      if (!isset($this->verbosityLevelMap[$level])) {
+          throw new InvalidArgumentException(sprintf('The log level "%s" does not exist.', $level));
+      }
 
-    if (strlen($message) >= 256) {
-      return;
-    }
+      $output = $this->tail ? $this->output : $this->section;
+      $output = $this->flushed ? $output : $this->buffer;
 
-    $message = str_replace(PHP_EOL, "|", $message);
-    $message = strlen($message) >= static::MAX_INDICATOR_MSG_LENGTH ? substr($message, 0, static::MAX_INDICATOR_MSG_LENGTH).'...[snip]' : $message;
+      // the if condition check isn't necessary -- it's the same one that $output will do internally anyway.
+      // We only do it for efficiency here as the message formatting is relatively expensive.
+      if ($output->getVerbosity() < $this->verbosityLevelMap[$level]) {
+          return;
+      }
 
-    $this->indicator->setMessage(strtr('topic<f>[level]</f>message', [
-      'topic' => $this->topic,
-      'f' => $this->formatLevelMap[$level],
-      'level' => strtoupper($level),
-      'message' => $message,
-    ]));
+      $message = sprintf('<%1$s>%2$s->[%3$s] %4$s</%1$s>', $level, getmypid(), $level, $this->interpolate($message, $context));
 
-
+      if (in_array($level, [LogLevel::EMERGENCY, LogLevel::ALERT, LogLevel::CRITICAL])) {
+          $output->write($message, $this->verbosityLevelMap[$level]);
+      }
+      elseif (!$this->tail && method_exists($output, 'overwrite') && ($level <= $this->lastLogLevel)) {
+          $output->overwrite($message, $this->verbosityLevelMap[$level]);
+      }
+      else {
+          $output->write($message, $this->verbosityLevelMap[$level]);
+      }
+      $this->lastLogLevel = $level;
   }
 
-  public function __destruct()
+  /**
+   * Interpolates context values into the message placeholders.
+   *
+   * @author PHP Framework Interoperability Group
+   */
+  private function interpolate(string $message, array $context): string
   {
-    $this->indicator->finish('Finished');
+      if (false === strpos($message, '{')) {
+          return $message;
+      }
+
+      $replacements = [];
+      foreach ($context as $key => $val) {
+          if (null === $val || is_scalar($val) || (\is_object($val) && method_exists($val, '__toString'))) {
+              $replacements["{{$key}}"] = $val;
+          } elseif ($val instanceof \DateTimeInterface) {
+              $replacements["{{$key}}"] = $val->format(\DateTime::RFC3339);
+          } elseif (\is_object($val)) {
+              $replacements["{{$key}}"] = '[object '.\get_class($val).']';
+          } else {
+              $replacements["{{$key}}"] = '['.\gettype($val).']';
+          }
+      }
+
+      return strtr($message, $replacements);
   }
 }
 
