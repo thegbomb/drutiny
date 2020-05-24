@@ -37,7 +37,8 @@
         "twig/string-extra": "^3.0",
         "league/html-to-markdown": "^4.9",
         "symfony/event-dispatcher": "^5.0",
-        "symfony/property-access": "^5.0"
+        "symfony/property-access": "^5.0",
+        "fiasco/async": "dev-master"
     },
     "conflict": {
       "drutiny/http": "^2.0"

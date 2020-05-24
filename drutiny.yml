@@ -283,3 +283,4 @@ services:
     Twig\Extra\Markdown\MarkdownRuntime:
     Twig\Extra\String\StringExtension:
     Symfony\Component\Console\Output\ConsoleOutput:
+    Async\AsyncRuntime:
