@@ -139,6 +139,7 @@ trait ReportingPeriodTrait
         if ($duration < 1800) {
           return 30;
         }
+      }
 
       // Return the key from the first element in the steps array, which should be the largest number of steps.
       return key($steps);
