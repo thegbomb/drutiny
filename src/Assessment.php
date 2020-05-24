@@ -2,12 +2,12 @@
 
 namespace Drutiny;
 
+use Async\AsyncRuntime;
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
 use Drutiny\Sandbox\ReportingPeriodTrait;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Target\TargetInterface;
-use Drutiny\AsyncRuntime;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
