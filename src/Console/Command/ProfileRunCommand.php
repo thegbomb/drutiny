@@ -245,6 +245,7 @@ class ProfileRunCommand extends AbstractReportingCommand
             ->setUri($uri)
             ->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
         }
+        $this->logger->clear();
 
         if (!count($results)) {
             $this->logger->error("No results were generated.");
