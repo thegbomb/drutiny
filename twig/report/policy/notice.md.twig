@@ -1,0 +1,7 @@
+#### {{ result.policy.title }}
+
+{% with result.tokens %}
+{{ include(template_from_string(result.policy.description | mustache2twig)) }}
+
+{{ include(template_from_string(result.policy.success | mustache2twig)) }}
+{% endwith %}

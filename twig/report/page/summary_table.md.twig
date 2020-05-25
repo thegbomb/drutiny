@@ -1,0 +1,7 @@
+Policy | Severity | Audit
+------ | -------- | -----
+{% for result in assessment.results|sort((a, b) => a.severityCode <=> b.severityCode) %}
+{% if result.hasWarning or result.hasError or not result.isSuccessful and not result.notApplicable %}
+{{ result.policy.title }} | {{ result.severity }} | {{ result.type|split('-')|join(' ')|title  }}
+{% endif %}
+{% endfor %}

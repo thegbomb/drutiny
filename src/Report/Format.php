@@ -43,6 +43,19 @@ abstract class Format implements FormatInterface
         }
     }
 
+    /**
+     * Attempt to load a twig template based on the provided format extension.
+     *
+     * Each class implementing this one will provide a property called "extension".
+     * This extension becomes apart of a prefix used to auto load twig templates.
+     *
+     * @param $name the namespace for the template. E.g. "content/page"
+     */
+    protected function loadTwigTemplate($name)
+    {
+      return $this->twig->load(sprintf('%s.%s.twig', $name, $this->extension));
+    }
+
     abstract protected function prepareContent(Profile $profile, Assessment $assessment);
 
     public function setOptions(array $options = []):FormatInterface

@@ -1,0 +1,14 @@
+#### {{ result.policy.title }}
+
+{% with result.tokens %}
+{{ include(template_from_string(result.policy.description | mustache2twig)) }}
+{{ include(template_from_string(result.policy.failure | mustache2twig)) }}
+
+{% if result.hasWarning %}
+##### Warning
+{{ include(template_from_string(result.policy.warning | mustache2twig)) }}
+{% endif %}
+
+##### Remediation
+{{ include(template_from_string(result.policy.remediation | mustache2twig)) }}
+{% endwith %}

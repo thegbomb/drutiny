@@ -1,0 +1,11 @@
+#### {{ result.policy.title }}
+
+{{ include(template_from_string(result.policy.description | mustache2twig)) }}
+
+This policy was unable to determine the state of {{ result.policy.title }}.
+
+{% if result.tokens.exception is defined %}
+```
+{{ result.tokens.exception }}
+```
+{% endif %}

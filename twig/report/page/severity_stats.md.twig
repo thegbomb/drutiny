@@ -1,0 +1,5 @@
+Severity | Pass | Fail | Error | Warning | Not Applicable | Notice
+-------- | ---- | ---- | ----- | ------- | -------------- | ------
+{% for severity, row in assessment.statsBySeverity  %}
+{{ severity }} ({{ row | sum }}) | {{row.success is defined ? row.success }} | {{ row.failure is defined ? row.failure }} | {{ row.error is defined ? row.error }} | {{ row.warning is defined ? row.warning }} | {{ row["not-applicable"] is defined ? row["not-applicable"] }} | {{row.notice is defined ? row.notice }}
+{% endfor %}
