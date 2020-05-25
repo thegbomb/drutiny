@@ -13,6 +13,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -134,14 +135,13 @@ class AuditRunCommand extends AbstractReportingCommand
           'uuid' => '/dev/null'
         ]);
 
-        if (!$input->getOption('report-filename')) {
-            $input->setOption('report-filename', 'stdout');
-        }
-        if (!$input->getOption('format')) {
-            $input->setOption('format', 'terminal');
-        }
+        $filepath = $input->getOption('report-filename') ?: 'stdout';
 
-        $this->report($profile, $input, $output, $target, [$assessment]);
+        $format = $input->getOption('format');
+        $format = $container->get('format.factory')->create($format, $profile->format[$format] ?? []);
+        $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($filepath, 'w')) : $output);
+        $format->render($profile, $assessment)->write();
+
         return $response->getSeverityCode();
     }
 }

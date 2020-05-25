@@ -11,7 +11,7 @@ parameters:
   config.credentials: '%drutiny_config_dir%/.credentials.yml'
   twig.templates: twig
   twig.cache: '%drutiny_config_dir%/twig'
-  twig.debug: false
+  twig.debug: true
   twig.strict: true
 services:
     # default configuration for services in *this* file
@@ -52,6 +52,10 @@ services:
 
       Drutiny\ExpressionLanguage\Func\ContainerDependentFunctionInterface:
         tags: [drutiny.expression_language.function]
+
+    async:
+        factory: [Async\AsyncRuntime, factory]
+        class: Async\AsyncRuntime
 
     cache.array:
         class: Symfony\Component\Cache\Adapter\ArrayAdapter
@@ -237,6 +241,9 @@ services:
           - src/Report/Format/Menu/*
           - src/functions.php
 
+    Async\AsyncRuntime:
+      alias: 'async'
+
     Drutiny\Target\Bridge\ExecutionInterface:
       alias: 'Drutiny\Target\Bridge\LocalBridge'
 
@@ -283,4 +290,3 @@ services:
     Twig\Extra\Markdown\MarkdownRuntime:
     Twig\Extra\String\StringExtension:
     Symfony\Component\Console\Output\ConsoleOutput:
-    Async\AsyncRuntime:

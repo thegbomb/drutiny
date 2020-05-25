@@ -14,8 +14,28 @@ trait SerializableExportableTrait {
     $this->import(unserialize($serialized));
   }
 
-  abstract protected function export();
-  abstract protected function import($export);
+  /**
+   * Export object data for serialization.
+   */
+  public function export()
+  {
+    return get_object_vars($this);
+  }
+
+  /**
+   * Import data that was output from the export method.
+   *
+   * @param array $export The return value of the export method.
+   */
+  public function import(array $export)
+  {
+    foreach ($export as $key => $value) {
+      if (!property_exists($this, $key)) {
+        continue;
+      }
+      $this->{$key} = $value;
+    }
+  }
 }
 
  ?>

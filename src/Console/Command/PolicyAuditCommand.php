@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Yaml\Yaml;
 
@@ -156,11 +157,12 @@ class PolicyAuditCommand extends AbstractReportingCommand
         ->setUri($uri)
         ->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
 
-        if (!$input->getOption('report-filename')) {
-            $input->setOption('report-filename', 'stdout');
-        }
+        $filepath = $input->getOption('report-filename') ?: 'stdout';
 
-        $this->report($profile, $input, $output, $target, [$assessment]);
+        $format = $input->getOption('format');
+        $format = $container->get('format.factory')->create($format, $profile->format[$format] ?? []);
+        $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($filepath, 'w')) : $output);
+        $format->render($profile, $assessment)->write();
 
         // Do not use a non-zero exit code when no severity is set (Default).
         $exit_severity = $input->getOption('exit-on-severity');
@@ -170,9 +172,7 @@ class PolicyAuditCommand extends AbstractReportingCommand
         $this->logger->info("Exiting with max severity code.");
 
         // Return the max severity as the exit code.
-        $exit_code = max(array_map(function ($assessment) {
-            return $assessment->getSeverityCode();
-        }, $results));
+        $exit_code = $assessment->getSeverityCode();
 
         return $exit_code >= $exit_severity ? $exit_code : 0;
     }

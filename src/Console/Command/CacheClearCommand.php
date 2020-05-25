@@ -38,24 +38,26 @@ class CacheClearCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $fs = $this->container->getParameter('cache.directory');
+        $fs[] = $this->container->getParameter('cache.directory');
+        $fs[] = $this->container->getParameter('twig.cache');
         $io = new SymfonyStyle($input, $output);
 
-
-        if (!file_exists($fs)) {
-          $io->notice('Cache is already cleared.');
-          return 0;
+        foreach ($fs as $dir) {
+          if (!file_exists($dir)) {
+            $io->error('Cache is already cleared: ' . $dir);
+            continue;
+          }
+          if (!is_writable($dir)) {
+            $io->error(sprintf('Cannot clear cache: %s is not writable.', $dir));
+            continue;
+          }
+          exec(sprintf('rm -rf %s', $dir), $output, $status);
+          if ($status === 0) {
+            $io->success('Cache is cleared: ' . $dir);
+            continue;
+          }
+          $io->error(sprintf('Cannot clear cache from %s. An error occured.', $dir));
         }
-        if (!is_writable($fs)) {
-          $io->error(sprintf('Cannot clear cache: %s is not writable.', $fs));
-          return 1;
-        }
-        exec(sprintf('rm -rf %s', $fs), $output, $status);
-        if ($status === 0) {
-          $io->success('Cache is cleared.');
-          return 0;
-        }
-        $io->error(sprintf('Cannot clear cache from %s. An error occured.', $fs));
-        return $status;
+        return 0;
     }
 }

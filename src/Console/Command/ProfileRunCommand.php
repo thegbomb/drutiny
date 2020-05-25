@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Application;
 
@@ -161,6 +162,7 @@ class ProfileRunCommand extends AbstractReportingCommand
         ->set($output->getVerbosity());
 
         $console = new SymfonyStyle($input, $output);
+        $async = $container->get('async')::factory($this->logger);
 
         $profile = $container->get('profile.factory')
         ->loadProfileByName($input->getArgument('profile'))
@@ -183,6 +185,12 @@ class ProfileRunCommand extends AbstractReportingCommand
         // and HTML.
         if ($filepath != 'stdout' || $input->getOption('format') == 'terminal') {
           $this->progressLogger->flushBuffer();
+        }
+
+        // Don't allow multisite assessments to be handled in parallel as the output
+        // to stdout will be messy.
+        if ($filepath == 'stdout') {
+          $async->disable();
         }
 
         // Allow command line to add policies to the profile.
@@ -241,30 +249,40 @@ class ProfileRunCommand extends AbstractReportingCommand
                 continue;
             }
 
-            $results[$uri] = $container->get('Drutiny\Assessment')
-            ->setUri($uri)
-            ->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
-        }
-        $this->logger->clear();
+            $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
+            $async->run(function () use ($console, $filepath, $assessment, $profile, $format, $target, $policies, $start, $end, $input, $output) {
 
-        if (!count($results)) {
-            $this->logger->error("No results were generated.");
-            return 101;
+              $assessment->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
+
+              // Write the report.
+              $report_filename = strtr($filepath, [
+                'uri' => $assessment->uri(),
+              ]);
+
+              $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($report_filename, 'w')) : $output);
+              $format->render($profile, $assessment)->write();
+
+              if ($filepath != 'stdout') {
+                $console->success(sprintf("%s report written to %s", $format->getFormat(), $report_filename));
+              }
+
+              // See $async->wait().
+              return $assessment->getSeverityCode();
+            });
         }
-        $this->logger->setTopic("Building report for " . $format->getFormat());
-        $this->report($profile, $input, $output, $target, $results);
+        // $this->logger->clear();
+
+        $exit_codes = [];
+        foreach ($async->wait() as $exit) {
+          $exit_codes[] = $exit;
+        }
 
         // Do not use a non-zero exit code when no severity is set (Default).
         $exit_severity = $input->getOption('exit-on-severity');
         if ($exit_severity === FALSE) {
             return 0;
         }
-        $this->logger->info("Exiting with max severity code.");
-
-        // Return the max severity as the exit code.
-        $exit_code = max(array_map(function ($assessment) {
-            return $assessment->getSeverityCode();
-        }, $results));
+        $exit_code = max($exit_codes);
 
         return $exit_code >= $exit_severity ? $exit_code : 0;
     }

@@ -5,19 +5,24 @@ namespace Drutiny;
 use Async\AsyncRuntime;
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
+use Drutiny\Entity\ExportableInterface;
+use Drutiny\Entity\SerializableExportableTrait;
 use Drutiny\Sandbox\ReportingPeriodTrait;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Target\TargetInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class Assessment
+class Assessment implements ExportableInterface
 {
-  use ReportingPeriodTrait;
+    use ReportingPeriodTrait;
+    use SerializableExportableTrait {
+      import as importUnserialized;
+    }
 
-  /**
-   * @var string URI
-   */
+    /**
+     * @var string URI
+     */
     protected $uri;
     protected $results = [];
     protected $successful = true;
@@ -33,7 +38,7 @@ class Assessment
     {
         $this->logger = $logger;
         $this->container = $container;
-        $this->async = $async;
+        $this->async = $async::factory($logger);
     }
 
     public function setUri($uri = 'default')
@@ -42,15 +47,15 @@ class Assessment
         return $this;
     }
 
-  /**
-   * Assess a Target.
-   *
-   * @param TargetInterface $target
-   * @param array $policies each item should be a Drutiny\Policy object.
-   * @param DateTime $start The start date of the reporting period. Defaults to -1 day.
-   * @param DateTime $end The end date of the reporting period. Defaults to now.
-   * @param bool $remediate If an Drutiny\Audit supports remediation and the policy failes, remediate the policy. Defaults to FALSE.
-   */
+    /**
+     * Assess a Target.
+     *
+     * @param TargetInterface $target
+     * @param array $policies each item should be a Drutiny\Policy object.
+     * @param DateTime $start The start date of the reporting period. Defaults to -1 day.
+     * @param DateTime $end The end date of the reporting period. Defaults to now.
+     * @param bool $remediate If an Drutiny\Audit supports remediation and the policy failes, remediate the policy. Defaults to FALSE.
+     */
     public function assessTarget(TargetInterface $target, array $policies, \DateTime $start = null, \DateTime $end = null, $remediate = false)
     {
         $start = $start ?: new \DateTime('-1 day');
@@ -64,15 +69,12 @@ class Assessment
             return $policy instanceof Policy;
         });
 
-        $is_progress_bar = $this->logger instanceof \Drutiny\Console\ProgressLogger;
-
         $promises = [];
         foreach ($policies as $policy) {
-            if ($is_progress_bar) {
-                $this->logger->setTopic(sprintf('%s (%s)', $policy->name, $this->uri));
-            }
-
-            $this->logger->info("Assessing policy...");
+            $this->logger->info("Assessing '{policy}' against {uri}", [
+              'policy' => $policy->name,
+              'uri' => $this->uri,
+            ]);
 
           // Setup the sandbox to run the assessment.
             $sandbox = $this->container
@@ -93,42 +95,40 @@ class Assessment
             $this->statsBySeverity[$response->getSeverity()][$response->getType()] = $this->statsBySeverity[$response->getSeverity()][$response->getType()] ?? 0;
             $this->statsBySeverity[$response->getSeverity()][$response->getType()]++;
 
-          // Omit irrelevant AuditResponses.
+            // Omit irrelevant AuditResponses.
             if (!$response->isIrrelevant()) {
                 $this->setPolicyResult($response);
             }
 
-          // Attempt remediation.
+            // Attempt remediation.
             if ($remediate && !$response->isSuccessful()) {
                 $this->logger->info("\xE2\x9A\xA0 Remediating " . $response->getPolicy()->title);
                 $this->setPolicyResult($sandbox->remediate());
             }
 
-            if ($is_progress_bar) {
-                $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $response->getPolicy()->title, $response->getType()));
-            }
+            $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $response->getPolicy()->title, $response->getType()));
         }
         return $this;
     }
 
-  /**
-   * Set the result of a Policy.
-   *
-   * The result of a Policy is unique to an assessment result set.
-   *
-   * @param AuditResponse $response
-   */
+    /**
+     * Set the result of a Policy.
+     *
+     * The result of a Policy is unique to an assessment result set.
+     *
+     * @param AuditResponse $response
+     */
     public function setPolicyResult(AuditResponse $response)
     {
         $this->results[$response->getPolicy()->name] = $response;
 
-      // Set the overall success state of the Assessment. Considered
-      // a success if all policies pass.
+        // Set the overall success state of the Assessment. Considered
+        // a success if all policies pass.
         $this->successful = $this->successful && $response->isSuccessful();
 
-      // If the policy failed its assessment and the severity of the Policy
-      // is higher than the current severity of the assessment, then increase
-      // the severity of the overall assessment.
+        // If the policy failed its assessment and the severity of the Policy
+        // is higher than the current severity of the assessment, then increase
+        // the severity of the overall assessment.
         $severity = $response->getPolicy()->getSeverity();
         if (!$response->isSuccessful() && ($this->severityCode < $severity)) {
             $this->severityCode = $severity;
@@ -143,20 +143,20 @@ class Assessment
         return $this->severityCode;
     }
 
-  /**
-   * Get the overall outcome of the assessment.
-   */
+    /**
+     * Get the overall outcome of the assessment.
+     */
     public function isSuccessful()
     {
         return $this->successful;
     }
 
-  /**
-   * Get an AuditResponse object by Policy name.
-   *
-   * @param string $name
-   * @return AuditResponse
-   */
+    /**
+     * Get an AuditResponse object by Policy name.
+     *
+     * @param string $name
+     * @return AuditResponse
+     */
     public function getPolicyResult(string $name)
     {
         if (!isset($this->results[$name])) {
@@ -165,11 +165,11 @@ class Assessment
         return $this->results[$name];
     }
 
-  /**
-   * Get the results array of AuditResponse objects.
-   *
-   * @return array of AuditResponse objects.
-   */
+    /**
+     * Get the results array of AuditResponse objects.
+     *
+     * @return array of AuditResponse objects.
+     */
     public function getResults()
     {
         return $this->results;
@@ -180,11 +180,11 @@ class Assessment
       $this->remediable;
     }
 
-  /**
-   * Get the uri of Assessment object.
-   *
-   * @return string uri.
-   */
+    /**
+     * Get the uri of Assessment object.
+     *
+     * @return string uri.
+     */
     public function uri()
     {
         return $this->uri;
@@ -198,5 +198,27 @@ class Assessment
     public function getStatsBySeverity()
     {
       return $this->statsBySeverity;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function export()
+    {
+      return [
+        'statsBySeverity' => $this->statsBySeverity,
+        'statsBySeverity' => $this->statsBySeverity,
+        'uri' => $this->uri,
+        'results' => $this->results,
+        'remediable' => $this->remediable,
+      ];
+    }
+
+    public function import(array $export)
+    {
+      $this->importUnserialized($export);
+      $this->container = drutiny();
+      $this->logger = drutiny()->get('logger');
+      $this->async = drutiny()->get('Async\AsyncRuntime');
     }
 }

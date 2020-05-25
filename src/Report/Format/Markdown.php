@@ -17,22 +17,22 @@ class Markdown extends HTML
 
     public function render(Profile $profile, Assessment $assessment)
     {
-        $output = parent::render($profile, $assessment);
-        // $markdown = \Twig\Extra\Markdown\twig_html_to_markdown($output);
-        $markdown = self::formatTables($output);
+        parent::render($profile, $assessment);
+
+        $markdown = self::formatTables($this->buffer->fetch());
 
         $lines = explode(PHP_EOL, $markdown);
-
         array_walk($lines, function (&$line) {
           $line = trim($line);
-          return preg_replace('/^\s+/', '', $line);
+          // return preg_replace('/^\s+/', '', $line);
         });
 
         $lines = array_filter($lines, function ($line) {
             return !preg_match(MarkdownHelper::CHART_REGEX, $line);
         });
 
-        return implode(PHP_EOL, $lines);
+        $this->buffer->write(implode(PHP_EOL, $lines));
+        return $this;
     }
 
     protected function prepareContent(Profile $profile, Assessment $assessment)

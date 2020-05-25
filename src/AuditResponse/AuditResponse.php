@@ -234,6 +234,9 @@ exception
         return implode(PHP_EOL, $summary);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function export()
     {
       return [
@@ -253,6 +256,9 @@ exception
       ];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function import($export)
     {
       $this->state = $export['state'];

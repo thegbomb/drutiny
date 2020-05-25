@@ -70,7 +70,7 @@ abstract class AbstractReportingCommand extends Command
         // If format is not out to console and the filepath isn't set, automate
         // what the filepath should be.
           if ($input->getOption('format') != 'terminal') {
-              $filepath = strtr('target-profile-date.ext', [
+              $filepath = strtr('target-profile-uri-date.ext', [
                'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
                'profile' => $input->getArgument('profile'),
                'date' => date('Ymd-His'),
@@ -79,55 +79,4 @@ abstract class AbstractReportingCommand extends Command
           }
           return $filepath;
       }
-
-  /**
-   * Write up the report.
-   */
-    protected function report(
-        Profile $profile,
-        InputInterface $input,
-        OutputInterface $output,
-        Target $target,
-        Array $results
-    ) {
-
-        $console = new SymfonyStyle($input, $output);
-        $filepath = $input->getOption('report-filename');
-        $format = $input->getOption('format');
-
-      // Setup the reporting format.
-        $format = $this->getApplication()
-        ->getKernel()
-        ->getContainer()
-        ->get('format.factory')
-        ->create($format, $profile->format[$format] ?? []);
-
-        $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
-
-        $report = $format->render($profile, reset($results));
-
-        if ($filepath == 'stdout') {
-            $output->write($report, true);
-        } else {
-            file_put_contents($filepath, $report);
-            $console->success('Report written to ' . $filepath);
-
-          // Additionally write a report per site if the profile required it.
-            if ($profile->reportPerSite()) {
-                $info = pathinfo($filepath);
-                foreach ($results as $uri => $result) {
-                    $info['uri'] = $uri;
-                    $site_report_filepath = strtr('dirname/filename/uri.extension', $info);
-                    if (!is_dir(dirname($site_report_filepath)) && !mkdir(dirname($site_report_filepath))) {
-                        continue;
-                    }
-                    $report = $format->render($profile, $result);
-                    file_put_contents($site_report_filepath, $report);
-                    $console->success('Report written to ' . $site_report_filepath);
-                }
-            }
-
-            passthru("open $filepath");
-        }
-    }
 }

@@ -49,6 +49,7 @@ class JSON extends Format
 
     public function render(Profile $profile, Assessment $assessment)
     {
-        return json_encode($this->prepareContent($profile, $assessment));
+        $this->buffer->write(json_encode($this->prepareContent($profile, $assessment)));
+        return $this;
     }
 }

@@ -13,12 +13,8 @@ class Terminal extends Markdown
 
     public function render(Profile $profile, Assessment $assessment)
     {
-        return (string) Renderer::createFromMarkdown(parent::render($profile, $assessment));
+        parent::render($profile, $assessment);
+        $this->buffer->write(Renderer::createFromMarkdown($this->buffer->fetch()));
+        return $this;
     }
-
-    // public function renderMultiResult(array $variables)
-    // {
-    //     $markdown = parent::renderMultiResult($variables);
-    //     return (string) Renderer::createFromMarkdown($markdown);
-    // }
 }

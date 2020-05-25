@@ -130,6 +130,6 @@ class ApplicationTest extends TestCase {
     $code = $this->application->run($input, $this->output);
     $this->assertIsInt($code);
     $this->assertEquals(Policy::SEVERITY_NORMAL, $code);
-    $this->assertStringContainsString('Drutiny\\\Audit\\\AlwaysPass', $this->output->fetch());
+    $this->assertStringContainsString('Drutiny\Audit\AlwaysPass', $this->output->fetch());
   }
 }
