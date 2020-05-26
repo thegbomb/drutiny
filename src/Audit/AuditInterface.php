@@ -3,6 +3,7 @@
 namespace Drutiny\Audit;
 
 use Drutiny\Sandbox\Sandbox;
+use Drutiny\Policy;
 
 /**
  * Audit interface.
@@ -65,5 +66,5 @@ interface AuditInterface
 
     public function configure();
     public function audit(Sandbox $sandbox);
-    public function execute(Sandbox $sandbox);
+    public function execute(Policy $policy, $remediate = false);
 }

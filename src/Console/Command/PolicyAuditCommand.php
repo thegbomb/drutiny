@@ -6,7 +6,7 @@ use Drutiny\Assessment;
 use Drutiny\Console\ProgressLogger;
 use Drutiny\PolicyFactory;
 use Drutiny\Profile;
-use Drutiny\RemediableInterface;
+use Drutiny\Audit\RemediableInterface;
 use Drutiny\Report\Format;
 use Drutiny\Entity\PolicyOverride;
 use Psr\Log\LoggerInterface;

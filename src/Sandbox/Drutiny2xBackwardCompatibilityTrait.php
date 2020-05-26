@@ -7,6 +7,18 @@ namespace Drutiny\Sandbox;
  */
 trait Drutiny2xBackwardCompatibilityTrait {
 
+  public function getTarget()
+  {
+      $this->audit->getLogger()->warning(__METHOD__ . ' is deprecated. Please use Drutiny\Audit::$logger object property instead.');
+      return $this->audit->getTarget();
+  }
+
+  public function logger()
+  {
+      $this->audit->getLogger()->warning(__METHOD__ . ' is deprecated. Please use Drutiny\Audit::$logger object property instead.');
+      return $this->audit->getLogger();
+  }
+
   public function exec($command)
   {
     $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getBridge("exec").');

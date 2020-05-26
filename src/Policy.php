@@ -84,7 +84,7 @@ class Policy implements ExportableInterface
 
         if (isset($new_properties['class'])) {
             $reflect = new \ReflectionClass($policyData['class']);
-            $this->remediable = $reflect->implementsInterface('\Drutiny\RemediableInterface');
+            $this->remediable = $reflect->implementsInterface('\Drutiny\Audit\RemediableInterface');
         }
 
         if (isset($new_properties['depends'])) {

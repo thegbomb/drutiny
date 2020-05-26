@@ -207,7 +207,6 @@ class ProfileRunCommand extends AbstractReportingCommand
         $profile->setProperties(['excluded_policies' => $excluded_policies]);
 
         // Setup the target.
-        $this->logger->debug("Loading target: " . $input->getArgument('target'));
         $target = $container->get('target.factory')->create($input->getArgument('target'));
         $this->logger->debug("Target " . $input->getArgument('target') . ' loaded.');
 

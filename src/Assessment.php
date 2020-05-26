@@ -8,7 +8,6 @@ use Drutiny\AuditResponse\NoAuditResponseFoundException;
 use Drutiny\Entity\ExportableInterface;
 use Drutiny\Entity\SerializableExportableTrait;
 use Drutiny\Sandbox\ReportingPeriodTrait;
-use Drutiny\Sandbox\Sandbox;
 use Drutiny\Target\TargetInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -76,14 +75,12 @@ class Assessment implements ExportableInterface
               'uri' => $this->uri,
             ]);
 
-          // Setup the sandbox to run the assessment.
-            $sandbox = $this->container
-            ->get('sandbox')
-            ->create($target, $policy)
-            ->setReportingPeriod($start, $end);
+            $audit = $this->container->get($policy->class);
+            $audit->setParameter('reporting_period_start', $start)
+                  ->setParameter('reporting_period_end', $end);
 
-            $this->async->run(function () use ($sandbox) {
-              return $sandbox->run();
+            $this->async->run(function () use ($audit, $policy, $remediate) {
+              return $audit->execute($policy, $remediate);
             });
         }
 

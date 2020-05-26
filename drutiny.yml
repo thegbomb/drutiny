@@ -166,9 +166,6 @@ services:
       class: 'Drutiny\ProfileFactory'
       arguments: ['@service_container', '@cache.filesystem']
 
-    sandbox:
-      class: Drutiny\Sandbox\Sandbox
-
     target.factory:
       class: Drutiny\Target\TargetFactory
 

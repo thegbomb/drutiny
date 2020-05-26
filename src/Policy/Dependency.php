@@ -4,7 +4,7 @@ namespace Drutiny\Policy;
 
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\ExpressionLanguage;
-use Drutiny\Audit;
+use Drutiny\Audit\AuditInterface;
 use Drutiny\Container;
 
 class Dependency
@@ -55,17 +55,17 @@ class Dependency
     {
         switch ($this->onFail) {
             case self::ON_FAIL_ERROR:
-                return Audit::ERROR;
+                return AuditInterface::ERROR;
 
             case self::ON_FAIL_REPORT_ONLY:
-                return Audit::NOT_APPLICABLE;
+                return AuditInterface::NOT_APPLICABLE;
 
             case self::ON_FAIL_OMIT:
-                return Audit::IRRELEVANT;
+                return AuditInterface::IRRELEVANT;
 
             case self::ON_FAIL_DEFAULT;
             default:
-            return Audit::FAIL;
+            return AuditInterface::FAIL;
         }
     }
 
@@ -94,22 +94,18 @@ class Dependency
   /**
    * Evaluate the dependency.
    */
-    public function execute(Sandbox $sandbox)
+    public function execute(AuditInterface $audit)
     {
-        $language = $sandbox->getContainer()->get('expression_language');
-        $logger = $sandbox->getContainer()->get('logger');
-        $logger->info("Evaluating expression: " . $language->compile($this->expression));
         try {
-            if ($return = $language->evaluate($this->expression)) {
-                $logger->debug(__CLASS__ . ": Expression PASSED: $return");
+            if ($return = $audit->evaluate($this->expression)) {
                 return $return;
             }
         } catch (\Exception $e) {
-            $logger->warning($e->getMessage());
+            $audit->getLogger()->warning($e->getMessage());
         }
-        $logger->debug(__CLASS__ . ": Expression FAILED.");
+        $audit->getLogger()->debug(__CLASS__ . ": Expression FAILED.");
 
-      // Execute the on fail behaviour.
+        // Execute the on fail behaviour.
         throw new DependencyException($this);
     }
 }

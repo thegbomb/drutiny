@@ -4,7 +4,7 @@ namespace Drutiny\Plugin\Drupal8\Audit;
 
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\RemediableInterface;
+use Drutiny\Audit\RemediableInterface;
 use Drutiny\Annotation\Param;
 
 /**

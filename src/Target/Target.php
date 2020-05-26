@@ -9,6 +9,7 @@ use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\Exception\NoSuchIndexException;
 use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException as SymfonyNoSuchPropertyException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -120,7 +121,12 @@ abstract class Target
    */
   public function getProperty($key)
   {
-    return $this->propertyAccessor->getValue($this->properties, $key);
+    try {
+        return $this->propertyAccessor->getValue($this->properties, $key);
+    }
+    catch (SymfonyNoSuchPropertyException $e) {
+        throw new NoSuchPropertyException($e->getMessage());
+    }
   }
 
   /**

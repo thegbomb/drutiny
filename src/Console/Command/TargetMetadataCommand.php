@@ -22,7 +22,7 @@ class TargetMetadataCommand extends Command
     protected function configure()
     {
         $this
-        ->setName('target:metadata')
+        ->setName('target:info')
         ->setDescription('Display metatdata about a target.')
         ->addArgument(
             'target',
@@ -36,10 +36,15 @@ class TargetMetadataCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $target = $this->getApplication()
+          ->getKernel()
+          ->getContainer()
+          ->get('target.factory')
+          ->create($input->getArgument('target'));
+
         $io = new SymfonyStyle($input, $output);
-        $target = TargetRegistry::loadTarget($input->getArgument('target'));
+        $io->comment(Yaml::dump($target->getPropertyList()));
 
-
-        $output->writeln('<comment>' . Yaml::dump($target->getMetadata()) . '</>');
+        return 0;
     }
 }

@@ -3,7 +3,7 @@
 namespace Drutiny\Audit\Template;
 
 use Drutiny\Audit;
-use Drutiny\RemediableInterface;
+use Drutiny\Audit\RemediableInterface;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Annotation\Param;
 use Drutiny\Annotation\Token;

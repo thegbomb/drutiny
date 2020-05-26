@@ -1,6 +1,6 @@
 <?php
 
-namespace Drutiny;
+namespace Drutiny\Audit;
 
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Audit\AuditInterface;

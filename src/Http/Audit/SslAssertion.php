@@ -6,7 +6,7 @@ use Drutiny\Sandbox\Sandbox;
 use Drutiny\Annotation\Param;
 use Drutiny\Annotation\Token;
 use Drutiny\Audit\AbstractAnalysis;
-use Drutiny\AuditValidationException;
+use Drutiny\Audit\AuditValidationException;
 
 /**
  *
