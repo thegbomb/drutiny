@@ -13,6 +13,7 @@ parameters:
   twig.cache: '%drutiny_config_dir%/twig'
   twig.debug: true
   twig.strict: true
+  async.enabled: false
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -54,8 +55,10 @@ services:
         tags: [drutiny.expression_language.function]
 
     async:
-        factory: [Async\AsyncRuntime, factory]
+        shared: false
         class: Async\AsyncRuntime
+        calls:
+          - [setEnabled, ['%async.enabled%']]
 
     cache.array:
         class: Symfony\Component\Cache\Adapter\ArrayAdapter
@@ -133,6 +136,7 @@ services:
 
     # The Drutiny Guzzle HTTP factory.
     http.client:
+      shared: false
       class: Drutiny\Http\Client
 
     # Middleware used in the Drutiny Guzzle HTTP client is tagged with the
@@ -159,6 +163,7 @@ services:
       arguments: ['@service_container', '@cache.filesystem']
 
     profile:
+      shared: false
       class: 'Drutiny\Profile'
       factory: ['Drutiny\Profile', create]
     # Factory for loading profiles from their sources.
@@ -232,6 +237,7 @@ services:
           - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
           - src/Console/Application.php
           - src/Event/*
+          - src/Upgrade/*
           - src/*/*Exception.php
           - src/Sandbox/Sandbox.php
           - src/ExpressionLanguage.php
@@ -246,6 +252,9 @@ services:
 
     Drutiny\Target\TargetInterface:
       alias: 'target'
+
+    Drutiny\Assessment:
+      shared: false
 
     Symfony\Contracts\Cache\CacheInterface:
       alias: 'cache.filesystem'

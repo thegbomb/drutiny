@@ -24,7 +24,6 @@ class Markdown extends HTML
         $lines = explode(PHP_EOL, $markdown);
         array_walk($lines, function (&$line) {
           $line = trim($line);
-          // return preg_replace('/^\s+/', '', $line);
         });
 
         $lines = array_filter($lines, function ($line) {
@@ -76,34 +75,6 @@ class Markdown extends HTML
       }
       return $sections;
     }
-
-
-    // protected function preprocessMultiResult(Profile $profile, Target $target, array $results)
-    // {
-    //     $vars = parent::preprocessMultiResult($profile, $target, $results);
-    //     $render = [
-    //     'title' => $profile->getTitle(),
-    //     'description' => $profile->getDescription(),
-    //     'summary' => 'Report audits policies over ' . count($results) . ' sites.',
-    //     'domain' => 'Multisite report'
-    //     ];
-    //     return array_merge($render, $vars);
-    // }
-    //
-    // protected function renderMultiResult(array $variables)
-    // {
-    //     return $this->processRender($this->renderTemplate('multisite', $variables), $variables);
-    // }
-    //
-    // protected function processRender($content, $render)
-    // {
-    //
-    //   // Render the header/footer etc.
-    //     $render['content'] = $content;
-    //     $content = $this->renderTemplate($this->getTemplate(), $render);
-    //
-    //     return $this->formatTables($content);
-    // }
 
     public static function formatTables($markdown)
     {

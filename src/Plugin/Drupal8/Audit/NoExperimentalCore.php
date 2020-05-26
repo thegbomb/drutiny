@@ -8,30 +8,30 @@ use Drutiny\Sandbox\Sandbox;
 /**
  * Generic module is disabled check.
  */
-class NoExperimentalCore extends Audit {
+class NoExperimentalCore extends Audit
+{
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
+    public function audit(Sandbox $sandbox)
+    {
 
-    $info = $sandbox->drush([
-      'format' => 'json',
-      'status' => 'Enabled',
-      'core',
-    ])->pmList();
+        $info = $sandbox->drush([
+        'format' => 'json',
+        'status' => 'Enabled',
+        'core',
+        ])->pmList();
 
-    $info = array_filter($info, function ($package) {
-      return strpos(strtolower($package['package']), 'experimental') !== FALSE;
-    });
+        $info = array_filter($info, function ($package) {
+            return strpos(strtolower($package['package']), 'experimental') !== false;
+        });
 
-    if (empty($info)) {
-      return TRUE;
+        if (empty($info)) {
+            return true;
+        }
+
+        $this->set('modules', array_values($info));
+        return false;
     }
-
-    $sandbox->setParameter('modules', array_values($info));
-    return FALSE;
-  }
-
 }

@@ -14,6 +14,14 @@ use Drutiny\Sandbox\Sandbox;
  */
 class AlwaysPass extends Audit
 {
+    public function configure()
+    {
+          $this->addParameter(
+              'custom_1',
+              static::PARAMETER_OPTIONAL,
+              ''
+          );
+    }
 
     public function audit(Sandbox $sandbox)
     {

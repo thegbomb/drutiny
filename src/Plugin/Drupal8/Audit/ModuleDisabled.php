@@ -5,48 +5,50 @@ namespace Drutiny\Plugin\Drupal8\Audit;
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Audit\RemediableInterface;
-use Drutiny\Driver\DrushFormatException;
-use Drutiny\Annotation\Param;
 
 /**
  * Generic module is disabled check.
- * @Param(
- *  name = "module",
- *  description = "The module to check is enabled.",
- *  type = "string"
- * )
  */
-class ModuleDisabled extends Audit implements RemediableInterface {
+class ModuleDisabled extends Audit implements RemediableInterface
+{
+
+
+    public function configure()
+    {
+           $this->addParameter(
+               'module',
+               static::PARAMETER_OPTIONAL,
+               'The module to check is enabled.',
+           );
+    }
 
   /**
    *
    */
-  public function audit(Sandbox $sandbox)
-  {
+    public function audit(Sandbox $sandbox)
+    {
 
-    $module = $sandbox->getParameter('module');
+        $module = $this->getParameter('module');
 
-    try {
-      $info = $sandbox->drush(['format' => 'json'])->pmList();
+        try {
+            $info = $sandbox->drush(['format' => 'json'])->pmList();
+        } catch (\Exception $e) {
+            return strpos($e->getOutput(), $module . ' was not found.') !== false;
+        }
+
+        if (!isset($info[$module])) {
+            return true;
+        }
+
+        $status = strtolower($info[$module]['status']);
+
+        return ($status != 'enabled');
     }
-    catch (DrushFormatException $e) {
-      return strpos($e->getOutput(), $module . ' was not found.') !== FALSE;
+
+    public function remediate(Sandbox $sandbox)
+    {
+        $module = $this->getParameter('module');
+        $sandbox->drush()->pmUninstall($module, '-y');
+        return $this->audit($sandbox);
     }
-
-    if (!isset($info[$module])) {
-      return TRUE;
-    }
-
-    $status = strtolower($info[$module]['status']);
-
-    return ($status != 'enabled');
-  }
-
-  public function remediate(Sandbox $sandbox)
-  {
-    $module = $sandbox->getParameter('module');
-    $sandbox->drush()->pmUninstall($module, '-y');
-    return $this->audit($sandbox);
-  }
-
 }

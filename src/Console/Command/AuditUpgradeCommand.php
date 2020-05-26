@@ -2,8 +2,7 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\Docs\AuditDocsGenerator;
-use Drutiny\Registry;
+use Drutiny\Upgrade\AuditUpgrade;
 use Fiasco\SymfonyConsoleStyleMarkdown\Renderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -39,48 +38,32 @@ class AuditUpgradeCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $reflection = new \ReflectionClass($input->getArgument('audit'));
 
-        preg_match_all('/\* @Param\(([^\)]+)/m', $reflection->getDocComment(), $matches);
-        $params = [];
-        foreach($matches[1] as $blob) {
-            $param = [];
-            foreach (explode(PHP_EOL, $blob) as $line) {
-                if (preg_match('/(name|type|default|description) = "(.*)",?/', $line, $result)) {
-                    $param[$result[1]] = $result[2];
-                }
-            }
-            $params[] = $param;
-        }
+        $reflection = new \ReflectionClass($input->getArgument('audit'));
+        $helper = new AuditUpgrade($reflection);
+
 
         $contents = file($reflection->getFileName());
         $replacements = [
           'use Drutiny\Annotation\Param;'.PHP_EOL => '',
           'use Drutiny\Annotation\Token;'.PHP_EOL => '',
+          'use Drutiny\Driver\DrushFormatException;'.PHP_EOL => '',
+          '\Drutiny\Driver\DrushFormatException $e' => '\Exception $e',
+          'Drutiny\Driver\DrushFormatException $e' => '\Exception $e',
+          'DrushFormatException $e' => '\Exception $e',
           '$sandbox->setParameter' => '$this->set',
-          '$sandbox->getParameter' => '$this->getParameter'
+          '$sandbox->getParameter' => '$this->getParameter',
+        //  'getParameterTokens()' => 'get("parameters")->all()'
         ];
 
-        foreach ($matches[0] as $find) {
-          $replacements[$find.')'.PHP_EOL.' '] = '';
-        }
+        $replacements = array_merge($replacements, $helper->getParamAnnotationReplacements());
 
         $configure_code = [];
-        foreach ($params as $param) {
-          $configure_code[] = '      ->addParameter(';
-          $configure_code[] = "          '{$param['name']}',";
-          $configure_code[] = '          static::PARAMETER_OPTIONAL,';
-          $configure_code[] = "          '{$param['description']}'".(isset($param['default']) ? ',' : '');
-          if (isset($param['default'])) {
-            $configure_code[] = "          {$param['default']}";
-          }
-          $configure_code[] = '      )';
+        foreach ($helper->getParamAnnotations() as $param) {
+          $configure_code[] = $helper->getParameterDeclaration($param['name'], $param['description'], 'static::PARAMETER_OPTIONAL', $param['default'] ?? '');
         }
 
-        $new_code = '';
-        if (!empty($configure_code)) {
-          $new_code = '      $this'.PHP_EOL.implode(PHP_EOL, $configure_code).';'.PHP_EOL;
-        }
+        $new_code = implode('', $configure_code);
 
         $method = $reflection->getMethod('configure');
         if ($method->getDeclaringClass() == $reflection) {
@@ -92,8 +75,8 @@ class AuditUpgradeCommand extends Command
           $code = implode('', $code);
           $replacements[$code] = $code . $new_code;
         }
-        else {
-          $new_code = "public function configure()\n    {\n   $new_code\n    }\n";
+        elseif (!empty($new_code)) {
+          $new_code = "public function configure()\n    {\n   $new_code\n    }\n\n";
           $contents[$reflection->getStartLine()] .= "\n    $new_code";
         }
         $contents = implode('', $contents);

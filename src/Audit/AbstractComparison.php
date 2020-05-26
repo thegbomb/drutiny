@@ -4,7 +4,6 @@ namespace Drutiny\Audit;
 
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Annotation\Param;
 
 /**
  * Comparatively evaluate two values.
@@ -14,7 +13,7 @@ abstract class AbstractComparison extends Audit
 
     protected function compare($reading, $value, Sandbox $sandbox)
     {
-        $comp_type = $sandbox->getParameter('comp_type', '==');
+        $comp_type = $this->getParameter('comp_type', '==');
         $this->logger->warning(static::class.' extends '.__CLASS__.' and is deprecated. Please use Drutiny\Audit\AbstractAnalysis instead.');
 
         $params = [

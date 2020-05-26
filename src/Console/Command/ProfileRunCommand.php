@@ -153,6 +153,16 @@ class ProfileRunCommand extends AbstractReportingCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
 
+        // Set the filepath where the report will be written to (can be console).
+        $filepath = $input->getOption('report-filename') ?: 'stdout';
+
+        // If we're echoing to standard out, then we can run the logger and
+        // progress indicator without compromising output formats such as json
+        // and HTML.
+        if ($filepath != 'stdout' || $input->getOption('format') == 'terminal') {
+          $this->progressLogger->flushBuffer();
+        }
+
         $container = $this->getApplication()
         ->getKernel()
         ->getContainer();
@@ -179,13 +189,6 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         // Set the filepath where the report will be written to (can be console).
         $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
-
-        // If we're echoing to standard out, then we can run the logger and
-        // progress indicator without compromising output formats such as json
-        // and HTML.
-        if ($filepath != 'stdout' || $input->getOption('format') == 'terminal') {
-          $this->progressLogger->flushBuffer();
-        }
 
         // Don't allow multisite assessments to be handled in parallel as the output
         // to stdout will be messy.

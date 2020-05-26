@@ -12,10 +12,12 @@ use Drutiny\Policy\DependencyException;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Target\NoSuchPropertyException;
 use Drutiny\Target\TargetInterface;
+use Drutiny\Upgrade\AuditUpgrade;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -76,10 +78,8 @@ abstract class Audit implements AuditInterface
 
             $input = new ArrayInput($policy->getAllParameters(), $this->definition);
             $this->dataBag->get('parameters')->add($input->getArguments());
-
             // Run the audit over the policy.
             $outcome = $this->audit(new Sandbox($this));
-
             // If the audit wasn't successful and remediation is allowed, then
             // attempt to resolve the issue. TODO: Purge Cache
             if (($this instanceof RemediableInterface) && !$outcome && $remediate) {
@@ -87,31 +87,45 @@ abstract class Audit implements AuditInterface
             }
         }
         catch (DependencyException $e) {
-            $this->set('exception', $e->getMessage());
+            $outcome = AuditInterface::ERROR;
             $outcome = $e->getDependency()->getFailBehaviour();
+            $this->set('exception', $e->getMessage());
+            $this->set('exception_type', get_class($e));
         }
         catch (AuditValidationException $e) {
-            $this->set('exception', $e->getMessage());
-            $this->logger->warning($e->getMessage());
             $outcome = AuditInterface::NOT_APPLICABLE;
+            $this->set('exception', $e->getMessage());
+            $this->set('exception_type', get_class($e));
+            $this->logger->warning($e->getMessage());
         }
         catch (NoSuchPropertyException $e)  {
-            $this->set('exception', $e->getMessage());
-            $this->logger->warning($e->getMessage());
             $outcome = AuditInterface::NOT_APPLICABLE;
+            $this->set('exception', $e->getMessage());
+            $this->set('exception_type', get_class($e));
+            $this->logger->warning($e->getMessage());
+        }
+        catch (InvalidArgumentException $e) {
+            $outcome = AuditInterface::ERROR;
+            $this->set('exception_type', get_class($e));
+            $this->logger->warning($e->getMessage());
+
+            $helper = AuditUpgrade::fromAudit($this);
+            $helper->addParameterFromException($e);
+            $this->set('exception', $helper->getParamUpgradeMessage());
         }
         catch (\Exception $e) {
+            $outcome = AuditInterface::ERROR;
             $message = $e->getMessage();
             if ($this->container->get('verbosity')->get() > OutputInterface::VERBOSITY_NORMAL) {
                 $message .= PHP_EOL . $e->getTraceAsString();
             }
             $this->set('exception', $message);
+            $this->set('exception_type', get_class($e));
             $this->logger->error($message);
-            $outcome = AuditInterface::ERROR;
         }
         finally {
           // Log the parameters output.
-          $this->logger->debug("Tokens:\n" . Yaml::dump($this->dataBag->all(), 4));
+          $this->logger->debug("Tokens:\n" . Yaml::dump($this->dataBag->all(), 4, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
 
           // Set the response.
           $response->set($outcome, $this->dataBag->all());
@@ -120,31 +134,84 @@ abstract class Audit implements AuditInterface
         return $response;
     }
 
+    /**
+     * Evaluate an expression using the Symfony ExpressionLanguage engine.
+     */
     public function evaluate($expression)
     {
-      $tokens = $this->dataBag->all();
-      $tokens['target'] = $this->target;
-      return $this->expressionLanguage->evaluate($expression, $tokens);
+      return $this->expressionLanguage->evaluate($expression, $this->getContexts());
     }
 
-    public function setParameter($name, $value)
+    /**
+     * Allow strings to utilise Audit and Target contexts.
+     */
+    public function interpolate(string $string, array $contexts = []):string
+    {
+      return $this->_interpolate($string, array_merge($contexts, $this->getContexts()));
+    }
+
+    /**
+     * Helper function for the public interpolate function.
+     */
+    private function _interpolate(string $string, iterable $vars, $key_prefix = ''):string
+    {
+        foreach ($vars as $key => $value) {
+          if (is_iterable($value)) {
+            $string = $this->_interpolate($string, $value, $key.'.');
+          }
+
+          $token = '{'.$key_prefix.$key.'}';
+          if (strpos($string, $token) === false) {
+            continue;
+          }
+
+          $value = (string) $value;
+          $string = str_replace($token, $value, $string);
+        }
+        return $string;
+    }
+
+    /**
+     * Get all contexts from the Audit class.
+     */
+    protected function getContexts():array
+    {
+      $contexts = $this->dataBag->all();
+      $contexts['target'] = $this->target;
+      foreach ($this->target->getPropertyList() as $key) {
+        $contexts[$key] = $this->target->getProperty($key);
+      }
+      return $contexts;
+    }
+
+    /**
+     * Set a parameter. Typically provided by a policy.
+     */
+    public function setParameter(string $name, $value):AuditInterface
     {
       $this->dataBag->get('parameters')->set($name, $value);
       return $this;
     }
 
-    public function getParameter($name)
+    public function getParameter(string $name)
     {
       return $this->dataBag->get('parameters')->get($name);
     }
 
-    public function set($name, $value)
+    /**
+     * Set a non-parameterized value such as a token.
+     *
+     * This function is used to communicate output data computed by the
+     * audit class. This is useful for policies to use to contextualize
+     * messaging.
+     */
+    public function set(string $name, $value):AuditInterface
     {
       $this->dataBag->set($name, $value);
       return $this;
     }
 
-    public function get($name)
+    public function get(string $name)
     {
       return $this->dataBag->get($name);
     }
@@ -169,8 +236,11 @@ abstract class Audit implements AuditInterface
 
     /**
      * Set information about a parameter.
+     *
+     * This is used exclusively when the configure() method is called.
+     * This allows the audit to specify and validate inputs from a policy.
      */
-    protected function addParameter(string $name, int $mode = null, string $description = '', $default = null)
+    protected function addParameter(string $name, int $mode = null, string $description = '', $default = null):AuditInterface
     {
         if (!isset($this->definition)) {
           $this->definition = new InputDefinition();

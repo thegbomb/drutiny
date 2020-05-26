@@ -8,13 +8,22 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Yaml\Yaml;
-use Drutiny\Target\Registry as TargetRegistry;
+use Drutiny\Console\ProgressLogger;
 
 /**
  *
  */
 class TargetMetadataCommand extends Command
 {
+
+    protected $progressLogger;
+
+
+    public function __construct(ProgressLogger $progressLogger)
+    {
+        $this->progressLogger = $progressLogger;
+        parent::__construct();
+    }
 
   /**
    * @inheritdoc
@@ -36,6 +45,7 @@ class TargetMetadataCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->progressLogger->flushBuffer();
         $target = $this->getApplication()
           ->getKernel()
           ->getContainer()
@@ -43,7 +53,15 @@ class TargetMetadataCommand extends Command
           ->create($input->getArgument('target'));
 
         $io = new SymfonyStyle($input, $output);
-        $io->comment(Yaml::dump($target->getPropertyList()));
+
+        $rows = [];
+
+        foreach ($target->getPropertyList() as $key) {
+          $value = $target->getProperty($key);
+          $value = is_object($value) ? '<object> (' . get_class($value) . ')'  : '<'.gettype($value) . '> ' . Yaml::dump($value, 4, 4);
+          $rows[] = [$key, $value];
+        }
+        $io->table(['Property', 'Value'], $rows);
 
         return 0;
     }

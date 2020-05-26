@@ -36,9 +36,18 @@ class DrushTarget extends Target implements TargetInterface
         }
 
         $this->setProperty('bridge.drush', new DrushBridge($execBridge));
+        $status = $this->getProperty('bridge.drush')
+           ->status(['format' => 'json'])
+           ->run(function ($output) {
+             return json_decode($output, TRUE);
+           });
+
+        foreach ($status as $key => $value) {
+          $this->setProperty('drush.'.$key, $value);
+        }
 
         $version = $this->getProperty('bridge.exec')->run('php -v | head -1 | awk \'{print $2}\'');
-        $this->setProperty('php_version', $version);
+        $this->setProperty('php_version', trim($version));
 
         return $this;
     }

@@ -4,22 +4,9 @@ namespace Drutiny\Audit\Drupal;
 
 use Drutiny\Audit\AbstractAnalysis;
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Annotation\Param;
-use Drutiny\Annotation\Token;
 
 /**
  * Audit the first row returned from a SQL query.
- * @Param(
- *  name = "query",
- *  description = "The SQL query to run. Can use other parameters for variable replacement.",
- *  type = "string"
- * )
- * @Param(
- *  name = "expression",
- *  description = "An expression language expression to evaluate a successful auditable outcome.",
- *  type = "string",
- *  default = true
- * )
  * @Token(
  *  name = "result",
  *  description = "The comparison operator to use for the comparison.",
@@ -34,50 +21,79 @@ use Drutiny\Annotation\Token;
 class SqlResultAudit extends AbstractAnalysis
 {
 
-  /**
-   *
-   */
+    /**
+     * {@inheritdoc}
+     */
+    public function configure()
+    {
+        $this->addParameter(
+            'query',
+            static::PARAMETER_REQUIRED,
+            'The SQL query to run. Can use the audit context for variable replace. E.g. {drush.db-name}.',
+        );
+        parent::configure();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function gather(Sandbox $sandbox)
     {
-        $query = $sandbox->getParameter('query');
+        $query = $this->getParameter('query');
 
-        $tokens = [];
-        foreach ($sandbox->getParameterTokens() as $key => $value) {
-            $tokens[':' . $key] = $value;
+        // Migrate 2.x queries to 3.x
+        $query = strtr($query, [
+          ':db-name' => '{drush.db-name}'
+        ]);
+        $query = $this->interpolate($query);
+        $this->logger->debug("Running SQL query '{query}'", ['query' => $query]);
+        $result = $this->target->getBridge('drush')
+          ->sqlq($query)
+          ->run(function ($output) {
+              $data = explode(PHP_EOL, $output);
+              array_walk($data, function (&$line) {
+                  $line = array_map('trim', explode("\t", $line));
+                  if (empty($line) || count(array_filter($line)) == 0) {
+                    $line = false;
+                  }
+              });
+              return array_filter($data);
+          });
+
+        $fields = $this->getFieldsFromSql($query);
+        if (!empty($fields)) {
+            $result = array_map(function ($row) use ($fields) {
+                return array_combine($fields, $row);
+            },
+            $result);
         }
-        foreach ($sandbox->drush(['format' => 'json'])->status() as $key => $value) {
-            if (!is_array($value)) {
-                $tokens[':' . $key] = $value;
-            }
-          // TODO: Support array values.
-        }
-        $query = strtr($query, $tokens);
+        $this->set('count', count($result));
+        $this->set('results', $result);
+        $this->set('first_row', array_shift($result));
+    }
 
-        if (!preg_match_all('/^SELECT( DISTINCT)? (.*) FROM/', $query, $fields)) {
-            throw new \Exception("Could not parse fields from SQL query: $query.");
-        }
-        $fields = array_map('trim', explode(',', $fields[2][0]));
-        foreach ($fields as &$field) {
-            if ($idx = strpos($field, ' as ')) {
-                $field = substr($field, $idx + 4);
-            } elseif (preg_match('/[ \(\)]/', $field)) {
-                throw new \Exception("SQL query contains an non-table field without an alias: '$field.'");
-            }
-        }
+    protected function getFieldsFromSql($query):array
+    {
+      // If we can parse fields out of the SQL query, we can make the result set
+      // become and associative array.
+      if (!preg_match_all('/^SELECT( DISTINCT)? (.*) FROM/', $query, $fields)) {
+        return [];
+      }
+      return array_map(function ($field) {
+              $field = trim($field);
 
-        $output = $sandbox->drush()->sqlq($query);
-        $results = [];
+              // If the field has an alias, use that instead.
+              if ($idx = strpos($field, ' as ')) {
+                  $field = substr($field, $idx + 4);
+              }
 
-        while ($line = array_shift($output)) {
-            $values = array_map('trim', explode("\t", $line));
-            $results[] = array_combine($fields, $values);
-        }
-
-        $sandbox->setParameter('count', count($results));
-        $sandbox->setParameter('results', $results);
-
-        $row = array_shift($results);
-
-        $sandbox->setParameter('first_row', $row);
+              // If the field is a function without an alias, raise a warning.
+              if (preg_match('/[ \(\)]/', $field)) {
+                  $this->logger->warning("SQL query contains an non-table field without an alias: '$field.'");
+              }
+              return $field;
+          },
+          explode(',', $fields[2][0])
+      );
     }
 }

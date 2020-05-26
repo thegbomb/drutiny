@@ -42,7 +42,7 @@ class DrushBridge implements DrushBridgeInterface {
 
     // Quote all arguments.
     array_walk($args, function (&$arg) {
-      $arg = sprintf("'%s'", $arg);
+        $arg = escapeshellarg($arg);
     });
 
     // Setup the options to pass into the command.
@@ -56,7 +56,7 @@ class DrushBridge implements DrushBridgeInterface {
       }
       $delimiter = $is_short ? ' ' : "=";
       // Key/value option. E.g. --format='json'
-      $args[] = $opt.$delimiter.sprintf("'%s'", $value);
+      $args[] = $opt.$delimiter.escapeshellarg($value);
     }
 
     // Prepend the drush launcher to use.

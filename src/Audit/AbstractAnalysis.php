@@ -55,21 +55,17 @@ abstract class AbstractAnalysis extends Audit
     {
         $this->gather($sandbox);
 
-        $expressionLanguage = $this->container->get('expression_language');
-
-        $variables  = $sandbox->getParameterTokens();
-        $this->logger->debug(__CLASS__ . ':TOKENS ' . Yaml::dump($variables));
-
-        $expression = $sandbox->getParameter('not_applicable', 'false');
+        $expression = $this->getParameter('not_applicable', 'false');
         $this->logger->debug(__CLASS__ . ':INAPPLICABILITY ' . $expression);
-        if (@$expressionLanguage->evaluate($expression, $variables)) {
+        if ($this->evaluate($expression)) {
             return self::NOT_APPLICABLE;
         }
 
-        $expression = $sandbox->getParameter('expression', 'true');
-        $this->logger->info(__CLASS__ . ':EXPRESSION: ' . $expression);
-        $output = @$expressionLanguage->evaluate($expression, $variables);
-        $this->logger->info(__CLASS__ . ':EVALUATION: ' . json_encode($output));
+        $expression = $this->getParameter('expression', 'true');
+        $this->logger->debug(__CLASS__ . ':EXPRESSION: ' . $expression);
+
+        $output = $this->evaluate($expression);
+        $this->logger->debug(__CLASS__ . ':EVALUATION: ' . json_encode($output));
         return $output;
     }
 }
