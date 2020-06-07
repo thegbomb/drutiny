@@ -117,7 +117,7 @@ class PolicyAuditCommand extends AbstractReportingCommand
         $parameters = [];
         foreach ($input->getOption('set-parameter') as $option) {
             list($key, $value) = explode('=', $option, 2);
-          // Using Yaml::parse to ensure datatype is correct.
+            // Using Yaml::parse to ensure datatype is correct.
             $parameters[$key] = Yaml::parse($value);
         }
 

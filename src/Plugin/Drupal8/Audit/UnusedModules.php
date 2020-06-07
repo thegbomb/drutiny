@@ -17,40 +17,58 @@ class UnusedModules extends Audit {
   public function audit(Sandbox $sandbox) {
 
     try {
-      $list = $sandbox->drush(['format' => 'json'])->pmInfo();
+      $list = $sandbox->drush(['format' => 'json', 'no-core'])->pmList();
     }
     catch (DrushFormatException $e) {
       return FALSE;
     }
 
-    $installed_paths = [];
-    $disabled = [];
-    foreach ($list as $project => $info) {
+    $root = $this->getTarget()->getProperty('drush.root');
 
-      if (strpos($info['package'], 'Core') !== FALSE) {
-        continue;
-      }
-      if ($info['type'] == 'theme') {
-        continue;
-      }
-      if ($info['status'] == 'enabled') {
-        $installed_paths[] = $info['path'];
-        continue;
-      }
-      $disabled[$project] = $info;
-    }
+    $filepaths = $this->getTarget()
+      ->getBridge('exec')
+      ->run('find  $DRUSH_ROOT/modules -name \*.info.yml', function ($output) use ($root) {
+          $lines = array_map('trim', explode(PHP_EOL, $output));
+          array_walk($lines, function (&$line) use ($root) {
+              $line = str_replace($root.'/', '', $line);
+          });
+          return $lines;
+      });
 
-    $unused = [];
-    foreach ($disabled as $project => $info) {
-      foreach ($installed_paths as $path) {
-        if (strpos($info['path'], $path) !== FALSE) {
-          continue 2;
+    foreach ($list as $name => &$info) {
+        $filename = $name . '.info.yml';
+        $modules = array_filter($filepaths, function ($path) use ($filename) {
+            return strpos($path, $filename) !== FALSE;
+        });
+        $info['filepath'] = reset($modules);
+
+        if (empty($info['filepath'])) {
+          unset($list[$name]);
+          continue;
         }
-      }
-      $unused[] = $info['title'];
+        $info['name'] = $name;
     }
 
-    $sandbox->setParameter('unused_modules', $unused);
+    $enabled_paths = array_filter(array_map(function ($info) {
+        return $info['status'] == 'Enabled' ? dirname($info['filepath']) : false;
+    }, $list));
+
+    $unused = array_filter($list, function ($info) use ($enabled_paths) {
+        if ($info['status'] == 'Enabled') {
+            return false;
+        }
+        $enabled = array_filter($enabled_paths, function ($path) use ($info) {
+            return strpos($info['filepath'], $path) !== FALSE;
+        });
+        return !count($enabled);
+    });
+
+    $this->setParameter('unused_modules', array_map(function ($info) {
+        return $info['display_name'];
+    }, $unused));
+
+    $this->setParameter('unused_modules_info', $unused);
+    $this->setParameter('enabled_paths', $enabled_paths);
 
     return !count($unused);
   }

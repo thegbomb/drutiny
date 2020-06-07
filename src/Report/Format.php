@@ -153,7 +153,7 @@ abstract class Format implements FormatInterface
 
     public static function convertMustache2TwigSyntax($sample) {
       $tokens = [];
-      while (preg_match_all('/({?{{)\s*([\#\^\/ ])?\s*([a-zA-Z0-9]+|\.)\s?(}}}?)/', $sample, $matches)) {
+      while (preg_match_all('/({?{{)\s*([\#\^\/ ])?\s*([a-zA-Z0-9_]+|\.)\s?(}}}?)/', $sample, $matches)) {
         foreach ($matches[3] as $idx => $variable) {
           $operator = $matches[2][$idx];
           $is_raw = (strlen($matches[1][$idx]) == 3);

@@ -78,6 +78,8 @@ abstract class Audit implements AuditInterface
 
             $input = new ArrayInput($policy->getAllParameters(), $this->definition);
             $this->dataBag->get('parameters')->add($input->getArguments());
+            $this->dataBag->add($input->getArguments());
+
             // Run the audit over the policy.
             $outcome = $this->audit(new Sandbox($this));
             // If the audit wasn't successful and remediation is allowed, then
@@ -125,10 +127,12 @@ abstract class Audit implements AuditInterface
         }
         finally {
           // Log the parameters output.
-          $this->logger->debug("Tokens:\n" . Yaml::dump($this->dataBag->all(), 4, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
-
+          $tokens = $this->dataBag->export();
+          $parameters = $this->dataBag->get('parameters')->export();
+          $this->logger->debug("Tokens:\n" . Yaml::dump($tokens, 4, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+          // $this->logger->debug("Parameters:\n" . Yaml::dump($this->dataBag->get('parameters')->all(), 4, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
           // Set the response.
-          $response->set($outcome, $this->dataBag->all());
+          $response->set($outcome, $parameters);
         }
 
         return $response;
@@ -193,9 +197,9 @@ abstract class Audit implements AuditInterface
       return $this;
     }
 
-    public function getParameter(string $name)
+    public function getParameter(string $name, $default_value = null)
     {
-      return $this->dataBag->get('parameters')->get($name);
+      return $this->dataBag->get('parameters')->get($name) ?? $default_value;
     }
 
     /**

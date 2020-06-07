@@ -59,10 +59,10 @@ class ProgressLogger implements LoggerInterface {
     $outputStyle = new OutputFormatterStyle('yellow');
     $output->getFormatter()->setStyle('warning', $outputStyle);
 
-    $outputStyle = new OutputFormatterStyle('green');
+    $outputStyle = new OutputFormatterStyle('cyan');
     $output->getFormatter()->setStyle('notice', $outputStyle);
 
-    $outputStyle = new OutputFormatterStyle('cyan');
+    $outputStyle = new OutputFormatterStyle('green');
     $output->getFormatter()->setStyle('info', $outputStyle);
 
     $outputStyle = new OutputFormatterStyle('default');
@@ -99,6 +99,7 @@ class ProgressLogger implements LoggerInterface {
    */
   public function log($level, $message, array $context = array())
   {
+      static $last_message = '';
       if (!isset($this->verbosityLevelMap[$level])) {
           throw new InvalidArgumentException(sprintf('The log level "%s" does not exist.', $level));
       }
@@ -111,8 +112,20 @@ class ProgressLogger implements LoggerInterface {
       if ($output->getVerbosity() < $this->verbosityLevelMap[$level]) {
           return;
       }
+      $debug = '';
+      if ($output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {
+          $stack = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+          $stack = $stack[2];
+          $stack['line'] = $stack['line'] ?? '';
+          $debug = sprintf(':%s%s%s:%s', $stack['class'], $stack['type'], $stack['function'], $stack['line']);
+      }
 
-      $message = sprintf('<%1$s>%2$s->[%3$s] %4$s</%1$s>', $level, getmypid(), $level, $this->interpolate($message, $context));
+      $message = sprintf('<%1$s>%2$s->[%1$s%3$s] %4$s</%1$s>', $level, getmypid(), $debug, $this->interpolate($message, $context));
+
+      if ($last_message == $message) {
+        return;
+      }
+      $last_message = $message;
 
       if (in_array($level, [LogLevel::EMERGENCY, LogLevel::ALERT, LogLevel::CRITICAL])) {
           $output->write($message, $this->verbosityLevelMap[$level]);
