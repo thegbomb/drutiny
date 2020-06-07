@@ -63,12 +63,12 @@ class UnusedModules extends Audit {
         return !count($enabled);
     });
 
-    $this->setParameter('unused_modules', array_map(function ($info) {
+    $this->set('unused_modules', array_map(function ($info) {
         return $info['display_name'];
     }, $unused));
 
-    $this->setParameter('unused_modules_info', $unused);
-    $this->setParameter('enabled_paths', $enabled_paths);
+    $this->set('unused_modules_info', $unused);
+    $this->set('enabled_paths', $enabled_paths);
 
     return !count($unused);
   }

@@ -42,7 +42,6 @@ class AuditUpgradeCommand extends Command
         $reflection = new \ReflectionClass($input->getArgument('audit'));
         $helper = new AuditUpgrade($reflection);
 
-
         $contents = file($reflection->getFileName());
         $replacements = [
           'use Drutiny\Annotation\Param;'.PHP_EOL => '',
