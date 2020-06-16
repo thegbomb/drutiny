@@ -1,6 +1,6 @@
 <?php
 
-namespace Drutiny\Target\Bridge;
+namespace Drutiny\Target\Service;
 
 interface ExecutionInterface {
   /**

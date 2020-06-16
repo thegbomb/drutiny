@@ -1,12 +1,11 @@
 <?php
 
-namespace Drutiny\Target\Bridge\Drush;
+namespace Drutiny\Target\Service;
 
-use Drutiny\Target\Bridge\ExecutionInterface;
-use Drutiny\Target\Bridge\ExecutionBridgeTrait;
+use Drutiny\Target\Service\ExecutionInterface;
+use Drutiny\Target\Service\RemoteService;
 
-class DrushBridge implements DrushBridgeInterface {
-  use ExecutionBridgeTrait;
+class DrushService {
 
   protected const LAUNCHERS = ['drush-launcher', 'drush.launcher', 'drush'];
   protected $supportedCommandMap = [
@@ -18,9 +17,14 @@ class DrushBridge implements DrushBridgeInterface {
     'userInformation' => 'user:information',
     'sqlq' => 'sqlq',
   ];
-  public function __construct(ExecutionInterface $bridge)
+  public function __construct(ExecutionInterface $service)
   {
-    $this->execBridge = $bridge;
+    $this->execService = $service;
+  }
+
+  public function isRemote()
+  {
+      return $this->execService instanceof RemoteService;
   }
 
   /**
@@ -67,17 +71,17 @@ class DrushBridge implements DrushBridgeInterface {
 
     // Return an object ready to run the command. This allows the caller
     // of this command to be able to specify the preprocess function easily.
-    return new class($command, $this->execBridge) {
+    return new class($command, $this->execService) {
       protected $cmd;
-      protected $bridge;
-      public function __construct($cmd, ExecutionInterface $bridge)
+      protected $service;
+      public function __construct($cmd, ExecutionInterface $service)
       {
         $this->cmd = $cmd;
-        $this->bridge = $bridge;
+        $this->service = $service;
       }
       public function run(callable $outputProcessor = NULL)
       {
-        return $this->bridge->run($this->cmd, $outputProcessor);
+        return $this->service->run($this->cmd, $outputProcessor);
       }
     };
   }

@@ -20,7 +20,8 @@ class Profile implements ExportableInterface
     public function __construct(LoggerInterface $logger)
     {
       $this->logger = $logger;
-      $this->dataBag = new DataBag([
+      $this->dataBag = new DataBag();
+      $this->dataBag->add([
         // Ensure is available for twig template.
         'description' => '',
       ]);
@@ -50,10 +51,9 @@ class Profile implements ExportableInterface
     public function setProperties(array $data)
     {
       $data = array_merge($this->dataBag->all(), $data);
-      $data['policies'] = $data['policies'] ?? new DataBag();
-      if (is_array($data['policies'])) {
-        $data['policies'] = new DataBag($data['policies']);
-      }
+
+      $data['policies'] = (new DataBag())->add($data['policies']);
+
       $keys = array_keys($data['policies']->all());
       foreach ($data['policies']->all() as $name => $policy_override) {
           $weight = array_search($name, $keys);

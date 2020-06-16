@@ -13,7 +13,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  *
  */
-class PluginListCommand extends Command
+class PluginSetupCommand extends Command
 {
     protected $container;
 
@@ -29,8 +29,13 @@ class PluginListCommand extends Command
     protected function configure()
     {
         $this
-        ->setName('plugin:list')
-        ->setDescription('List all available plugins.');
+        ->setName('plugin:setup')
+        ->setDescription('Register credentials against an API drutiny integrates with.')
+        ->addArgument(
+            'namespace',
+            InputArgument::REQUIRED,
+            'The service to authenticate against.',
+        );
     }
 
   /**
@@ -39,14 +44,23 @@ class PluginListCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
+        $namespace = $input->getArgument('namespace');
 
-        $rows = [];
         foreach ($this->container->findTaggedServiceIds('plugin') as $id => $info) {
             $plugin = $this->container->get($id);
-            $rows[] = [$plugin->getName(), $plugin->load() ? 'Installed' : 'Uninstalled'];
+            if ($plugin->getName() == $namespace) {
+              break;
+            }
         }
 
-        $io->table(['Namespace', 'Status'], $rows);
+        if ($plugin->getName() != $namespace) {
+            $io->error("No such plugin found: $namespace.");
+            return 1;
+        }
+
+        $plugin->setup();
+
+        $io->success("Credentials for $namespace have been saved.");
         return 0;
     }
 }

@@ -77,8 +77,8 @@ class PolicyFactory
                         $item['source'] = $source->getName();
                         $list[$name] = $item;
                     }
-                } catch (\GuzzleHttp\Exception\ClientException $e) {
-                    $this->container->get('logger')->info(strtr("Failed to load policies from source: @name: @error", [
+                } catch (\Exception $e) {
+                    $this->container->get('logger')->error(strtr("Failed to load policies from source: @name: @error", [
                     '@name' => $source->getName(),
                     '@error' => $e->getMessage(),
                     ]));
@@ -115,8 +115,8 @@ class PolicyFactory
             $sources[] = $this->container->get($id);
         }
 
-      // If multiple sources provide the same policy by name, then the policy from
-      // the first source in the list will by used.
+        // If multiple sources provide the same policy by name, then the policy from
+        // the first source in the list will by used.
         usort($sources, function ($a, $b) {
             if ($a->getWeight() == $b->getWeight()) {
                 return 0;

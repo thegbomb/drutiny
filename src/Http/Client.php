@@ -26,9 +26,9 @@ class Client
         $this->cache = $cache;
     }
 
-  /**
-   * Factory method to create a new guzzle client instance.
-   */
+    /**
+     * Factory method to create a new guzzle client instance.
+     */
     public function create(array $config = [])
     {
         if (!isset($config['handler'])) {

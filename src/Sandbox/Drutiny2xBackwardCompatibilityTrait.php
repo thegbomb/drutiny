@@ -21,15 +21,15 @@ trait Drutiny2xBackwardCompatibilityTrait {
 
   public function exec($command)
   {
-    $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getBridge("exec").');
+    $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getService("exec").');
 
-    return $this->getTarget()->getBridge('exec')->run($command);
+    return $this->getTarget()->getService('exec')->run($command);
   }
 
   public function drush($opts = [])
   {
-    $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getBridge("drush").');
-    //return $this->getTarget()->getBridge('drush');
+    $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getService("drush").');
+    //return $this->getTarget()->getService('drush');
 
     return new class ($this->getTarget(), $opts) {
       protected $target;
@@ -53,7 +53,7 @@ trait Drutiny2xBackwardCompatibilityTrait {
           $args[] = '--' . $key . '=' . sprintf('%s', $value);
         }
 
-        $exec = call_user_func_array([$this->target->getBridge('drush'), $method], $args);
+        $exec = call_user_func_array([$this->target->getService('drush'), $method], $args);
         return $exec->run(function ($output) use ($args) {
           if (in_array("--format=json", $args)) {
             return json_decode($output, TRUE);

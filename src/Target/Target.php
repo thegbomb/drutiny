@@ -2,20 +2,18 @@
 
 namespace Drutiny\Target;
 
-use Drutiny\Event\TargetPropertyBridgeEvent;
 use Drutiny\Entity\DataBag;
-use Drutiny\Target\Bridge\ExecutionInterface;
+use Drutiny\Entity\EventDispatchedDataBag;
+use Drutiny\Entity\Exception\DataNotFoundException;
+use Drutiny\Target\Service\ExecutionInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\Exception\NoSuchIndexException;
-use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException;
-use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException as SymfonyNoSuchPropertyException;
 use Psr\Log\LoggerInterface;
 
 /**
  * Basic function of a Target.
  */
-abstract class Target
+abstract class Target implements \ArrayAccess
 {
 
   /* @var PropertyAccess */
@@ -25,26 +23,19 @@ abstract class Target
   protected $logger;
   protected $dispatcher;
 
-  public function __construct(Bridge\LocalBridge $local, LoggerInterface $logger, EventDispatcher $dispatcher)
+  public function __construct(ExecutionInterface $local, LoggerInterface $logger, EventDispatchedDataBag $databag)
   {
-    $this->dispatcher = $dispatcher;
     $this->logger = $logger;
     $this->propertyAccessor = PropertyAccess::createPropertyAccessorBuilder()
       ->enableExceptionOnInvalidIndex()
       ->getPropertyAccessor();
-    $this->properties = new DataBag();
-    $this->properties->onSet(function ($k, $v) {
-      return $this->emitProperty($k, $v);
-    });
+
+    $this->properties = $databag->setObject($this);
 
     $local->setTarget($this);
 
-    $bridge = $this->createProperty('bridge');
-    $bridge->add([
-      'local' => $local,
-      'exec' => $local
-    ]);
-
+    $this['service.local'] = $local;
+    $this['service.exec'] = $local;
   }
 
   /**
@@ -66,52 +57,80 @@ abstract class Target
   /**
    * {@inheritdoc}
    */
-  public function getBridge($key)
+  public function getService($key)
   {
-    return $this->getProperty('bridge.'.$key);
+    return $this->getProperty('service.'.$key);
   }
 
   /**
-   * Allow the execution bridge to change depending on the target environment.
+   * Allow the execution service to change depending on the target environment.
    */
-  public function setExecBridge(ExecutionInterface $bridge)
+  public function setExecService(ExecutionInterface $service)
   {
-    return $this->setProperty('bridge.exec', $bridge);
-  }
-
-  protected function createProperty($key)
-  {
-    $bag = new DataBag();
-    $bag->onSet(function ($k, $v) use ($key) {
-      return $this->emitProperty($key.'.'.$k, $v);
-    });
-
-    $this->properties->set($key, $bag);
-
-    return $bag;
-  }
-
-  private function emitProperty($key, $value)
-  {
-    // Allow property bridges to change the value.
-    $event = new TargetPropertyBridgeEvent($this, $key, $value);
-    $event_name = 'target.property.'.$key;
-
-    $this->logger->debug("Firing event '$event_name' from ".static::class);
-    $this->dispatcher->dispatch($event, $event_name);
-    $value = $event->getValue();
-    // $this->logger->debug("Setting ".static::class." property '$key' with value of type " . gettype($value));
-
-    return $value;
+    return $this->setProperty('service.exec', $service);
   }
 
   /**
    * Set a property.
    */
-  protected function setProperty($key, $value)
+  public function setProperty($key, $value)
   {
+    $this->confirmPropertyPath($key);
     $this->propertyAccessor->setValue($this->properties, $key, $value);
     return $this;
+  }
+
+  /**
+   * Ensure the property pathway exists.
+   */
+  protected function confirmPropertyPath($path)
+  {
+      // Handle top level properties.
+      if (strpos($path, '.') === FALSE) {
+        return $this;
+      }
+
+      $bits = explode('.', $path);
+      $new_paths = [];
+      do {
+          $pathway = implode('.', $bits);
+
+          if (empty($pathway)) {
+              break;
+          }
+
+          // If the pathway doesn't exist yet, create it as a new DataBag.
+          if ($this->hasProperty($pathway)) {
+              break;
+          }
+
+          // If the parent is a DataBag then the pathway is settable.
+          if ($this->getParentProperty($pathway) instanceof DataBag) {
+              break;
+          }
+
+          $new_paths[] = $pathway;
+      }
+      while (array_pop($bits));
+
+      foreach (array_reverse($new_paths) as $pathway) {
+        $this->setProperty($pathway, $this->properties->create()->setEventPrefix($pathway));
+      }
+      return $this;
+  }
+
+  /**
+   * Find the parent value.
+   */
+  private function getParentProperty($path)
+  {
+      if (strpos($path, '.') === FALSE) {
+          return false;
+      }
+      $bits = explode('.', $path);
+      array_pop($bits);
+      $path = implode('.', $bits);
+      return $this->hasProperty($path) ? $this->getProperty($path) : false;
   }
 
   /**
@@ -121,12 +140,7 @@ abstract class Target
    */
   public function getProperty($key)
   {
-    try {
-        return $this->propertyAccessor->getValue($this->properties, $key);
-    }
-    catch (SymfonyNoSuchPropertyException $e) {
-        throw new NoSuchPropertyException($e->getMessage());
-    }
+      return $this->propertyAccessor->getValue($this->properties, $key);
   }
 
   /**
@@ -139,6 +153,9 @@ abstract class Target
     return $paths;
   }
 
+  /**
+   * Traverse DataBags to obtain a list of property pathways.
+   */
   private function getDataPaths(Databag $bag, $prefix = '') {
     $keys = [];
     foreach ($bag->all() as $key => $value) {
@@ -157,12 +174,46 @@ abstract class Target
   {
     try {
       $this->propertyAccessor->getValue($this->properties, $key);
-      return TRUE;
+      return true;
     }
     catch (NoSuchIndexException $e) {
-      return FALSE;
+      return false;
+    }
+    catch (DataNotFoundException $e) {
+      return false;
     }
   }
 
-  abstract public function parse($data):TargetInterface;
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetSet($offset, $value) {
+        if (is_null($offset)) {
+            throw new \Exception(__CLASS__ . ' does not support numeric indexes as properties.');
+        }
+        return $this->setProperty($offset, $value);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetExists($offset) {
+        return $this->hasProperty($offset);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetUnset($offset) {
+        throw new \Exception("Cannot unset $offset. Properties cannot be removed. Please set to null instead.");
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetGet($offset) {
+        return $this->hasProperty($offset) ? $this->getProperty($offset) : null;
+    }
+
+    abstract public function parse($data):TargetInterface;
 }

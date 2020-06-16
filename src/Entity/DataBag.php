@@ -12,27 +12,12 @@ class DataBag implements ExportableInterface
 {
     protected $data = [];
     protected $resolved = false;
-    protected $onSetCallback;
-    protected $onClearCallback;
-    protected $onRemoveCallback;
-    protected $onAddCallback;
-
-    /**
-     * @param array $data An array of data
-     */
-    public function __construct(array $data = [])
-    {
-        $this->add($data);
-    }
 
     /**
      * Clears all data.
      */
     public function clear()
     {
-        if ($this->onClearCallback) {
-            $this->onClearCallback(array_keys($this->data));
-        }
         $this->data = [];
     }
 
@@ -43,13 +28,10 @@ class DataBag implements ExportableInterface
      */
     public function add(array $data)
     {
-        if ($this->onAddCallback) {
-          $result = call_user_func($this->onAddCallback, $data);
-          $data = ($result !== null) ? $result : $data;
-        }
         foreach ($data as $key => $value) {
-            $this->data[$key] = $value;
+            $this->set($key, $value);
         }
+        return $this;
     }
 
     /**
@@ -136,11 +118,6 @@ class DataBag implements ExportableInterface
      */
     public function set(string $name, $value)
     {
-
-        if ($this->onSetCallback) {
-          $result = call_user_func($this->onSetCallback, $name, $value);
-          $value = ($result !== null) ? $result : $value;
-        }
         $this->data[$name] = $value;
     }
 
@@ -160,9 +137,6 @@ class DataBag implements ExportableInterface
     public function remove(string $name)
     {
         unset($this->data[$name]);
-        if ($this->onRemoveCallback) {
-          $this->onRemoveCallback($name);
-        }
     }
 
     /**
@@ -317,22 +291,5 @@ class DataBag implements ExportableInterface
         }
 
         return $value;
-    }
-
-    public function onSet(callable $func)
-    {
-      $this->onSetCallback = $func;
-    }
-    public function onAdd(callable $func)
-    {
-      $this->onAddCallback = $func;
-    }
-    public function onRemove(callable $func)
-    {
-      $this->onRemoveCallback = $func;
-    }
-    public function onClear(callable $func)
-    {
-      $this->onClearCallback = $func;
     }
 }

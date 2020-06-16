@@ -26,7 +26,7 @@ class UnusedModules extends Audit {
     $root = $this->getTarget()->getProperty('drush.root');
 
     $filepaths = $this->getTarget()
-      ->getBridge('exec')
+      ->getService('exec')
       ->run('find  $DRUSH_ROOT/modules -name \*.info.yml', function ($output) use ($root) {
           $lines = array_map('trim', explode(PHP_EOL, $output));
           array_walk($lines, function (&$line) use ($root) {

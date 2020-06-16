@@ -4,8 +4,8 @@ namespace Drutiny\Http\Middleware;
 
 use Drutiny\Http\MiddlewareInterface;
 use Psr\Http\Message\RequestInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+
 
 class Authorization implements MiddlewareInterface
 {
@@ -15,10 +15,9 @@ class Authorization implements MiddlewareInterface
    * @param $container ContainerInterface
    * @param $config @config service.
    */
-    public function __construct(ContainerInterface $container, array $config = [])
+    public function __construct(ContainerInterface $container)
     {
-        $this->setContainer($container);
-        $this->config = $config['http']['authorization'] ?? [];
+        $this->config = $container->get('config')->setNamespace('http')->authorization ?? [];
     }
 
   /**

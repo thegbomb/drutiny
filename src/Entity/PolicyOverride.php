@@ -8,26 +8,14 @@ use Drutiny\Entity\DataBag;
 use Symfony\Component\Config\Definition\Processor;
 use Drutiny\Config\PolicyOverrideConfiguration;
 
-class PolicyOverride extends DataBag
+class PolicyOverride extends EventDispatchedDataBag
 {
-    public function __construct(array $parameters = [])
+
+    public function validate()
     {
-      $processor = new Processor();
-      $configuration = new PolicyOverrideConfiguration();
-
-      // Validate the new key is inline with the schema.
-      $this->onSet(function ($k, $v) use ($processor, $configuration){
-        $data = $this->all();
-        $data[$k] = $v;
-        $processor->processConfiguration($configuration, ['policy_override' => $data]);
-      });
-
-      $this->onAdd(function ($data) use ($processor, $configuration) {
-        $data = array_merge($this->all(), $data);
-        $processor->processConfiguration($configuration, ['policy_override' => $data]);
-      });
-
-      parent::__construct($parameters);
+        $processor = new Processor();
+        $configuration = new PolicyOverrideConfiguration();
+        $processor->processConfiguration($configuration, ['policy_override' => $this->all()]);
     }
 
     /**
@@ -35,6 +23,7 @@ class PolicyOverride extends DataBag
      */
     public function getPolicy(PolicyFactory $factory)
     {
+        $this->validate();
         $policy = $factory->loadPolicyByName($this->get('name'));
 
         $overrides = $this->all();

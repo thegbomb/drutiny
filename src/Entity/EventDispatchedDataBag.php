@@ -1,0 +1,86 @@
+<?php
+
+namespace Drutiny\Entity;
+
+use Drutiny\Entity\Exception\DataCircularReferenceException;
+use Drutiny\Entity\Exception\DataNotFoundException;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Drutiny\Event\DataBagEvent;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Holds data.
+ */
+class EventDispatchedDataBag extends DataBag
+{
+
+    protected $eventDispatcher;
+    protected $logger;
+    protected $eventPrefix = '';
+    protected $object;
+
+    public function __construct(EventDispatcher $eventDispatcher, LoggerInterface $logger)
+    {
+        $this->eventDispatcher = $eventDispatcher;
+        $this->logger = $logger;
+    }
+
+    public function create(array $data = [])
+    {
+        return (new static($this->eventDispatcher, $this->logger))->setObject($this->object ?? $this)->add($data);
+    }
+
+    public function setEventPrefix($prefix)
+    {
+        $this->eventPrefix = $prefix;
+        return $this;
+    }
+
+    protected function dispatch($action, $key = null, $value = null)
+    {
+      $event = new DataBagEvent($this, $key, $value);
+      $event_name = array_filter([$this->eventPrefix, $key]);
+      $event_name = $action . ':' . implode('.', $event_name);
+
+      $this->logger->debug("Firing event '$event_name' from ".static::class);
+      $this->eventDispatcher->dispatch($event, $event_name);
+      return $event->getValue();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function clear()
+    {
+        $this->dispatch('clear');
+        parent::clear();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function set(string $name, $value)
+    {
+        parent::set($name, $this->dispatch('set', $name, $value));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function remove(string $name)
+    {
+        $this->dispatch('remove', $name);
+        parent::remove($name);
+    }
+
+    public function setObject(object $object)
+    {
+        $this->object = $object;
+        return $this;
+    }
+
+    public function getObject()
+    {
+        return $this->object;
+    }
+}

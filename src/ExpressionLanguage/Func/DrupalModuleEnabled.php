@@ -28,7 +28,7 @@ class DrupalModuleEnabled extends ExpressionFunction implements ContainerDepende
     public function getEvaluator()
     {
         return function ($args, $module_name) {
-          $list = $this->target->getBridge('drush')
+          $list = $this->target->getService('drush')
             ->pmList(['format' => 'json'])
             ->run(function($output) {
               return json_decode($output, TRUE);

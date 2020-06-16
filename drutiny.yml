@@ -9,7 +9,7 @@ parameters:
   cache.ttl: 3600
   config.local: '%drutiny_config_dir%/config.yml'
   config.credentials: '%drutiny_config_dir%/.credentials.yml'
-  twig.templates: twig
+  twig.templates: '%drutiny_core_dir%/twig'
   twig.cache: '%drutiny_config_dir%/twig'
   twig.debug: true
   twig.strict: true
@@ -38,6 +38,10 @@ services:
       Drutiny\PolicySource\PolicySourceInterface:
         tags: [policy.source]
 
+      # Auto register any plugins.
+      Drutiny\Plugin:
+        tags: [plugin]
+
       # Drutiny pulls any class tagged as "format" as a source to load
       # reporting formats from (e.g. json, html, markdown, etc).
       Drutiny\Report\FormatInterface:
@@ -53,6 +57,9 @@ services:
 
       Drutiny\ExpressionLanguage\Func\ContainerDependentFunctionInterface:
         tags: [drutiny.expression_language.function]
+
+      Drutiny\Http\MiddlewareInterface:
+        tags: [http.middleware]
 
     async:
         shared: false
@@ -79,14 +86,18 @@ services:
 
     yaml:
       class: Symfony\Component\Yaml\Yaml
-      public: false
 
     # Parse a local config file to use as config overrides for the local
     # instance of drutiny.
     config:
-      class: Drutiny\ImmuntableConfig
-      arguments: ['@=service("yaml").parseFile("%config.local%")']
-      autowire: false
+      class: Drutiny\ConfigFile
+      arguments: ['%config.local%']
+      # autowire: false
+
+    credentials:
+      class: Drutiny\ConfigFile
+      arguments: ['%config.credentials%']
+      # autowire: false
 
     # DomainList provider using YAML files.
     # This is manually mentioned to associate the name "yaml" with the
@@ -139,14 +150,6 @@ services:
       shared: false
       class: Drutiny\Http\Client
 
-    # Middleware used in the Drutiny Guzzle HTTP client is tagged with the
-    # tag "http.middleware".
-    http.middleware:
-      namespace: Drutiny\Http\Middleware\
-      resource: 'src/Http/Middleware/*'
-      arguments: ['@service_container', '@config']
-      tags: [http.middleware]
-
     # Default logger echoes logs out to the console.
     logger:
       alias: Drutiny\Console\ProgressLogger
@@ -157,10 +160,17 @@ services:
       arguments:
         - '@=service("verbosity").get()'
 
+    input:
+      class: Symfony\Component\Console\Input\ArgvInput
+
     # Factory for loading policies from their sources.
     policy.factory:
       class: 'Drutiny\PolicyFactory'
       arguments: ['@service_container', '@cache.filesystem']
+
+    policy.override:
+      class: 'Drutiny\Entity\PolicyOverride'
+      shared: false
 
     profile:
       shared: false
@@ -227,7 +237,7 @@ services:
       class: Drutiny\Process\ProcessManager
 
     verbosity:
-        class: Drutiny\Console\Verbosity
+      class: Drutiny\Console\Verbosity
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -247,8 +257,14 @@ services:
     Async\AsyncRuntime:
       alias: 'async'
 
-    Drutiny\Target\Bridge\ExecutionInterface:
-      alias: 'Drutiny\Target\Bridge\LocalBridge'
+    Drutiny\Target\Service\ExecutionInterface:
+      alias: 'Drutiny\Target\Service\LocalService'
+
+    Drutiny\Entity\EventDispatchedDataBag:
+      shared: false
+
+    Drutiny\ConfigFile:
+      alias: config
 
     Drutiny\Target\TargetInterface:
       alias: 'target'
@@ -261,6 +277,9 @@ services:
 
     Symfony\Component\Console\Output\OutputInterface:
       alias: output
+
+    Symfony\Component\Console\Input\InputInterface:
+      alias: input
 
     Symfony\Component\Cache\Adapter\FilesystemAdapter:
       alias: cache.filesystem

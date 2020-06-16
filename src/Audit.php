@@ -47,7 +47,8 @@ abstract class Audit implements AuditInterface
       $this->logger = $logger;
       $this->definition = new InputDefinition();
       $this->expressionLanguage = $expressionLanguage;
-      $this->dataBag = new DataBag([
+      $this->dataBag = new DataBag();
+      $this->dataBag->add([
         'parameters' => new DataBag()
       ]);
       $this->configure();

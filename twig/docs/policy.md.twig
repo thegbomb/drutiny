@@ -19,7 +19,8 @@ drutiny policy:audit {{ name }} <target>
 Parameter | Default Value
 --------- | -----------
 {% for key in parameters|keys %}
-{{ key }} | {{ parameters[key] }}
+{{ key }} | {% if parameters[key] is iterable %}<array>{% else %}{{ parameters[key] }}{% endif %}
+
 {% endfor %}
 {% endif %}
 

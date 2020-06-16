@@ -1,6 +1,6 @@
 <?php
 
-namespace Drutiny\Target\Bridge;
+namespace Drutiny\Target\Service;
 
 use Drutiny\Target\TargetInterface;
 use Symfony\Component\Process\Process;
@@ -10,7 +10,7 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Psr\Log\LoggerInterface;
 
-class LocalBridge implements ExecutionInterface {
+class LocalService implements ExecutionInterface {
 
   protected $target;
   protected $isWin = FALSE;

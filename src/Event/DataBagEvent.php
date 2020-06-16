@@ -2,22 +2,20 @@
 
 namespace Drutiny\Event;
 
-use Drutiny\Target\TargetInterface;
-use Drutiny\Target\Bridge\TargetBridgeInterface;
+use Drutiny\Entity\DataBag;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class TargetPropertyBridgeEvent extends Event {
-  public const NAME = 'target.bridge';
+class DataBagEvent extends Event {
 
   protected $value;
   protected $path;
-  protected $target;
+  protected $databag;
 
-  public function __construct(TargetInterface $target, $property_path, $value)
+  public function __construct(DataBag $databag, $property_path, $value)
   {
     $this->path = $property_path;
     $this->value = $value;
-    $this->target = $target;
+    $this->databag = $databag;
   }
 
   public function getPropertyPath() {
@@ -32,8 +30,8 @@ class TargetPropertyBridgeEvent extends Event {
     return $this->value;
   }
 
-  public function getTarget() {
-    return $this->target;
+  public function getDatabag() {
+    return $this->databag;
   }
 }
 

@@ -18,7 +18,7 @@ interface TargetInterface
     public function parse($data):TargetInterface;
 
     /**
-     * Get a bridged object.
+     * Get a serviced object.
      */
-    public function getBridge($key);
+    public function getService($key);
 }

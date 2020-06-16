@@ -47,7 +47,7 @@ class SqlResultAudit extends AbstractAnalysis
         ]);
         $query = $this->interpolate($query);
         $this->logger->debug("Running SQL query '{query}'", ['query' => $query]);
-        $result = $this->target->getBridge('drush')
+        $result = $this->target->getService('drush')
           ->sqlq($query)
           ->run(function ($output) {
               $data = explode(PHP_EOL, $output);

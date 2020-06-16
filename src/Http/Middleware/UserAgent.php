@@ -3,7 +3,7 @@
 namespace Drutiny\Http\Middleware;
 
 use Drutiny\Http\MiddlewareInterface;
-use Drutiny\ImmuntableConfig;
+use Drutiny\ConfigFile;
 use Psr\Http\Message\RequestInterface;
 
 class UserAgent implements MiddlewareInterface
@@ -14,9 +14,9 @@ class UserAgent implements MiddlewareInterface
   /**
    * @param $config @config service.
    */
-    public function __construct(ImmuntableConfig $config)
+    public function __construct(ConfigFile $config)
     {
-        $this->config = $config->getConfig('http');
+        $this->config = $config->setNamespace('http');
     }
 
   /**

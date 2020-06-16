@@ -123,12 +123,13 @@ class PolicyAuditCommand extends AbstractReportingCommand
 
         $name = $input->getArgument('policy');
         $profile = $container->get('profile');
+
         $profile->setProperties([
           'title' => 'Policy Audit: ' . $name,
           'name' => $name,
           'uuid' => '/dev/null',
           'policies' => [
-            $name => new PolicyOverride([
+            $name => $container->get('policy.override')->add([
               'name' => $name,
               'parameters' => $parameters
             ])

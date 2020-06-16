@@ -5,17 +5,9 @@ namespace Drutiny\Audit\Filesystem;
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\AuditResponse\AuditResponse;
-use Drutiny\Annotation\Param;
-use Drutiny\Annotation\Token;
 
 /**
  * Large files
- * @Param(
- *  name = "max_size",
- *  description = "Report files larger than this value measured in megabytes.",
- *  type = "integer",
- *  default = 20
- * )
  * @Token(
  *  name = "issues",
  *  description = "A list of files that reach the max file size.",
@@ -30,45 +22,57 @@ use Drutiny\Annotation\Token;
  */
 class LargeFiles extends Audit
 {
+    /**
+     * @inheritdoc
+     */
+    public function configure()
+    {
+        $this->addParameter(
+          'max_size',
+          static::PARAMETER_OPTIONAL,
+          'Report files larger than this value measured in megabytes.'
+        );
+    }
 
-  /**
-   * @inheritdoc
-   */
+    /**
+     * @inheritdoc
+     */
     public function audit(Sandbox $sandbox)
     {
-        $stat = $sandbox->drush(['format' => 'json'])->status();
+        $max_size = (int) $this->getParameter('max_size', 20);
 
-        $root = $stat['root'];
-        $files = $stat['files'];
-
-        $max_size = (int) $sandbox->getParameter('max_size', 20);
-
-        $command = "find @location -type f -size +@sizeM -printf '@print-format'";
-        $command .= " | sort -nr";
+        $command = "find \$DRUSH_ROOT/\$DRUSH_FILES/ -type f -size +@sizeM -printf '@print-format' | sort -nr";
         $command = strtr($command, [
-        '@location' => "{$root}/{$files}/",
-        '@size' => $max_size,
-        '@print-format' => '%k\t%p\n',
+          '@size' => $max_size,
+          '@print-format' => '%k\t%p\n',
         ]);
 
-        $output = $sandbox->exec($command);
+        $files = $this->target->getService('exec')->run($command, function ($output) {
+            $lines = array_filter(explode("\n", $output));
+            return array_map(function ($line) {
+                $parts = array_map('trim', explode("\t", $line));
+                $size = number_format((float) $parts[0] / 1024, 2);
+                $filename = trim($parts[1]);
 
-        if (empty($output)) {
-            return true;
-        }
+                return [
+                  'filename' => str_replace($this->target['drush.root'].'/', '', $filename),
+                  'filepath' => $filename,
+                  'size' => $size,
+                  'unit' => 'MB',
+                ];
+                return "{$filename} [{$size} MB]";
+            }, $lines);
+        });
 
-      // Output from find is a giant string with newlines to seperate the files.
-        $rows = array_map(function ($line) {
-            $parts = array_map('trim', explode("\t", $line));
-            $size = number_format((float) $parts[0] / 1024, 2);
-            $filename = trim($parts[1]);
-            return "{$filename} [{$size} MB]";
-        },
-        array_filter(explode("\n", $output)));
+        // Setting legacy 2.x values.
+        $this->set('issues', array_map(function ($file) {
+            return strtr('filename [size unit]', $file);
+        }, $files));
+        $this->set('plural', count($files) > 1 ? 's' : '');
 
-        $sandbox->setParameter('issues', $rows);
-        $sandbox->setParameter('plural', count($rows) > 1 ? 's' : '');
+        // Setting more structured data available.
+        $this->set('files', $files);
 
-        return Audit::WARNING;
+        return count($files) ? Audit::WARNING : true;
     }
 }

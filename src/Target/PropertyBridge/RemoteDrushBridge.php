@@ -2,41 +2,75 @@
 
 namespace Drutiny\Target\PropertyBridge;
 
-use Drutiny\Event\TargetPropertyBridgeEvent;
-use Drutiny\Target\Bridge\RemoteBridge;
-use Drutiny\Target\Bridge\Drush\DrushBridge;
+use Drutiny\Event\DataBagEvent;
+use Drutiny\Target\Service\RemoteService;
+use Drutiny\Target\Service\DrushService;
 use Drutiny\Entity\Exception\DataNotFoundException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class RemoteDrushBridge implements EventSubscriberInterface {
   public static function getSubscribedEvents()
   {
-    return ['target.property.bridge.drush' => 'loadRemoteBridge'];
+    return [
+    //  'set:service.drush' => 'loadRemoteDrushService',
+      'set:drush.remote-user' => 'loadRemoteService',
+      'set:drush.remote-host' => 'loadRemoteService'
+    ];
+  }
+
+  public static function loadRemoteService(DataBagEvent $event)
+  {
+      $target = $event->getDatabag()->getObject();
+      $value = $event->getValue();
+      try {
+          switch ($event->getPropertyPath()) {
+              case 'remote-user':
+                  $user = $value;
+                  $host = $target['drush.remote-host'];
+                  break;
+              case 'remote-host':
+                  $user = $target['drush.remote-user'];
+                  $host = $value;
+                  break;
+              default:
+                  return;
+          }
+      }
+      catch (DataNotFoundException $e) {
+        return;
+      }
+      catch (\InvalidArgumentException $e) {
+        return;
+      }
+
+      $remoteService = new RemoteService($target['service.local']);
+      $remoteService->setConfig('User', $user);
+      $remoteService->setConfig('Host', $host);
+      $target['service.exec'] = $remoteService;
   }
 
   /**
    * Search drush config for remote ssh config.
    */
-  public static function loadRemoteBridge(TargetPropertyBridgeEvent $event)
+  public static function loadRemoteDrushService(DataBagEvent $event)
   {
-    $bridge = $event->getValue();
+    $service = $event->getValue();
 
-    if (!($bridge instanceof DrushBridge)) {
+    if (!($service instanceof DrushService)) {
       return;
     }
-    if ($bridge->getExecBridge() instanceof RemoteBridge) {
+    if ($service->isRemote()) {
       return;
     }
 
-    $target = $event->getTarget();
+    $target = $event->getDatabag()->getObject();
 
     try {
-      $remoteBridge = new RemoteBridge($target->getBridge('exec'));
-      $remoteBridge->setConfig('User', $target->getProperty('drush.remote-user'));
-      $remoteBridge->setConfig('Host', $target->getProperty('drush.remote-host'));
-      // TODO: ssh-options
-      $bridge->setExecBridge($remoteBridge);
-      $target->setExecBridge($remoteBridge);
+      $remoteService = new RemoteService($target['service.local']);
+      $remoteService->setConfig('User', $target['drush.remote-user']);
+      $remoteService->setConfig('Host', $target['drush.remote-host']);
+      $target['service.exec'] = $remoteService;
+      $event->setValue(new DrushService($remoteService));
     }
     // If the config doesn't exist then do nothing.
     catch (DataNotFoundException $e) {}

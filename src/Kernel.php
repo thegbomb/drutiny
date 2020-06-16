@@ -18,7 +18,6 @@ use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
 
 class Kernel
 {
-
     private const CONFIG_EXTS = '.{php,yaml,yml}';
     private $container;
     private $environment;
@@ -28,8 +27,8 @@ class Kernel
     public function __construct($environment)
     {
       $this->environment = $environment;
-      $this->addServicePath(DRUTINY_LIB);
-      $this->addServicePath('vendor/*/');
+      $this->addServicePath($this->getProjectDir());
+      $this->addServicePath('./vendor/*/*');
     }
 
     public function addServicePath($path)
@@ -51,7 +50,7 @@ class Kernel
 
     public function getProjectDir(): string
     {
-        return \dirname(__DIR__);
+        return DRUTINY_LIB;
     }
 
   /**
@@ -85,11 +84,11 @@ class Kernel
         $container->addCompilerPass(new RegisterListenersPass('event_dispatcher', 'kernel.event_listener', 'drutiny.event_subscriber'));
 
         $container->setParameter('user_home_dir', getenv('HOME'));
+        $container->setParameter('drutiny_core_dir', \dirname(__DIR__));
 
         foreach ($this->loadingPaths as $path) {
           $loading_path = [
-            $this->getProjectDir(),
-            '/', $path, '{drutiny}'.self::CONFIG_EXTS,
+            $this->getProjectDir(), $path, '{drutiny}'.self::CONFIG_EXTS,
           ];
           $loader->load(implode('/', $loading_path), 'glob');
         }

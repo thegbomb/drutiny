@@ -52,6 +52,8 @@ class AuditUpgradeCommand extends Command
           'DrushFormatException $e' => '\Exception $e',
           '$sandbox->setParameter' => '$this->set',
           '$sandbox->getParameter' => '$this->getParameter',
+          '$sandbox->exec' => '$this->target->getService(\'exec\')->run',
+          'Drutiny\RemediableInterface' => 'Drutiny\Audit\RemediableInterface',
         //  'getParameterTokens()' => 'get("parameters")->all()'
         ];
 

@@ -64,6 +64,7 @@ class AuditListCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Drutiny Audit Classes');
         $io->listing($audits);
+        return 0;
     }
 
   /**
