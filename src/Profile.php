@@ -51,8 +51,11 @@ class Profile implements ExportableInterface
     public function setProperties(array $data)
     {
       $data = array_merge($this->dataBag->all(), $data);
-
-      $data['policies'] = (new DataBag())->add($data['policies']);
+      $policies = [];
+      if (isset($data['policies'])) {
+          $policies = $data['policies'] instanceof DataBag ? $data['policies']->export() : $data['policies'];
+      }
+      $data['policies'] = (new DataBag())->add($policies);
 
       $keys = array_keys($data['policies']->all());
       foreach ($data['policies']->all() as $name => $policy_override) {
@@ -63,7 +66,7 @@ class Profile implements ExportableInterface
           }
           $policy_override['weight'] = $weight;
           $policy_override['name'] = $name;
-          $data['policies']->set($name, new PolicyOverride($policy_override));
+          $data['policies']->set($name, drutiny()->get('policy.override')->add($policy_override));
       }
       $this->dataBag->add($data);
       return $this;

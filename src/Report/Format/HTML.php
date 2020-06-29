@@ -2,7 +2,7 @@
 
 namespace Drutiny\Report\Format;
 
-use Drutiny\Assessment;
+use Drutiny\AssessmentInterface;
 use Drutiny\Profile;
 use Drutiny\Report\Format;
 use Drutiny\Report\FormatInterface;
@@ -39,7 +39,7 @@ class HTML extends Format
     }
 
 
-    protected function prepareContent(Profile $profile, Assessment $assessment)
+    protected function prepareContent(Profile $profile, AssessmentInterface $assessment)
     {
       $variables = ['profile' => $profile, 'assessment' => $assessment];
       $sections = [];

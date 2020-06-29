@@ -2,8 +2,6 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\Docs\AuditDocsGenerator;
-use Drutiny\Registry;
 use Fiasco\SymfonyConsoleStyleMarkdown\Renderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -39,11 +37,6 @@ class AuditInfoCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-
-        $docs = new AuditDocsGenerator();
-        $markdown = $docs->buildAuditDocumentation($input->getArgument('audit'));
-
-        $formatted_output = Renderer::createFromMarkdown($markdown);
-        $output->writeln((string) $formatted_output);
+        $reflection = new \ReflectionClass($input->getArgument('audit'));
     }
 }

@@ -3,7 +3,7 @@
 namespace Drutiny\Report\Format;
 
 use Drutiny\Profile;
-use Drutiny\Assessment;
+use Drutiny\AssessmentInterface;
 use Drutiny\Report\FormatInterface;
 use Twig\Extra\Markdown\twig_html_to_markdown;
 use Twig\TemplateWrapper;
@@ -15,7 +15,7 @@ class Markdown extends HTML
     protected $format = 'markdown';
     protected $extension = 'md';
 
-    public function render(Profile $profile, Assessment $assessment)
+    public function render(Profile $profile, AssessmentInterface $assessment)
     {
         parent::render($profile, $assessment);
 
@@ -34,7 +34,7 @@ class Markdown extends HTML
         return $this;
     }
 
-    protected function prepareContent(Profile $profile, Assessment $assessment)
+    protected function prepareContent(Profile $profile, AssessmentInterface $assessment)
     {
       $variables = ['profile' => $profile, 'assessment' => $assessment];
       $sections = [];

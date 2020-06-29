@@ -91,6 +91,7 @@ abstract class Target implements \ArrayAccess
       }
 
       $bits = explode('.', $path);
+      $total_bits = count($bits);
       $new_paths = [];
       do {
           $pathway = implode('.', $bits);
@@ -105,10 +106,9 @@ abstract class Target implements \ArrayAccess
           }
 
           // If the parent is a DataBag then the pathway is settable.
-          if ($this->getParentProperty($pathway) instanceof DataBag) {
+          if ($total_bits == count($bits) && $this->getParentProperty($pathway) instanceof DataBag) {
               break;
           }
-
           $new_paths[] = $pathway;
       }
       while (array_pop($bits));

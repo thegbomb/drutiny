@@ -31,6 +31,7 @@ class DataBag implements ExportableInterface
         foreach ($data as $key => $value) {
             $this->set($key, $value);
         }
+
         return $this;
     }
 
@@ -47,17 +48,18 @@ class DataBag implements ExportableInterface
      */
     public function export()
     {
-      return array_map(function ($data) {
-        if ($data instanceof ExportableInterface) {
-          return $data->export();
-        }
-        return $data;
-      }, $this->data);
+        return array_map(function ($data) {
+            if ($data instanceof ExportableInterface) {
+                return $data->export();
+            }
+
+            return $data;
+        }, $this->data);
     }
 
     public function __get(string $name)
     {
-      return $this->get($name);
+        return $this->get($name);
     }
 
     public function __isset(string $name)
@@ -174,7 +176,7 @@ class DataBag implements ExportableInterface
      *
      * @throws DataNotFoundException          if a placeholder references a data that does not exist
      * @throws DataCircularReferenceException if a circular reference if detected
-     * @throws RuntimeException                    when a given data has a type problem
+     * @throws RuntimeException               when a given data has a type problem
      */
     public function resolveValue($value, array $resolving = [])
     {
@@ -203,7 +205,7 @@ class DataBag implements ExportableInterface
      *
      * @throws DataNotFoundException          if a placeholder references a data that does not exist
      * @throws DataCircularReferenceException if a circular reference if detected
-     * @throws RuntimeException                    when a given data has a type problem
+     * @throws RuntimeException               when a given data has a type problem
      */
     public function resolveString(string $value, array $resolving = [])
     {

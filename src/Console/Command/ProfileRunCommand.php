@@ -3,6 +3,7 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
+use Drutiny\AssessmentManager;
 use Drutiny\Console\ProgressLogger;
 use Drutiny\Entity\PolicyOverride;
 use Drutiny\DomainSource;
@@ -15,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Application;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Run a profile and generate a report.
@@ -109,7 +111,13 @@ class ProfileRunCommand extends AbstractReportingCommand
             'domain-source',
             'd',
             InputOption::VALUE_OPTIONAL,
-            'Use a domain source to preload uri options. Defaults to yaml filepath.'
+            'Use a domain source to preload uri options. Defaults to yaml filepath.',
+            'yaml'
+        )->addOption(
+            'domain-filepath',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'Filepath to yaml file.'
         )->addOption(
             'domain-source-blacklist',
             null,
@@ -172,7 +180,7 @@ class ProfileRunCommand extends AbstractReportingCommand
         ->set($output->getVerbosity());
 
         $console = new SymfonyStyle($input, $output);
-        $async = $container->get('async')::factory($this->logger);
+        $async = $container->get('async');
 
         $profile = $container->get('profile.factory')
         ->loadProfileByName($input->getArgument('profile'))
@@ -200,7 +208,9 @@ class ProfileRunCommand extends AbstractReportingCommand
         $included_policies = $input->getOption('include-policy');
         foreach ($included_policies as $policy_name) {
             $this->logger->debug("Loading policy definition: $policy_name");
-            $profile->policies->set($policy_name, new PolicyOverride(['name' => $policy_name]));
+            $profile->policies->set(
+              $policy_name,
+              $container->get('policy.override')->add(['name' => $policy_name]));
         }
 
         // Allow command line omission of policies highlighted in the profile.
@@ -244,39 +254,59 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         foreach ($uris as $uri) {
             try {
-                $this->logger->setTopic("Evaluating ".$profile->name." against $uri.");
                 $target->setUri($uri);
             } catch (\Drutiny\Target\InvalidTargetException $e) {
                 $this->logger->warning("Target cannot be evaluated: " . $e->getMessage());
                 continue;
             }
 
-            $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
-            $async->run(function () use ($console, $filepath, $assessment, $profile, $format, $target, $policies, $start, $end, $input, $output) {
-
+            $async->run(function () use ($target, $policies, $start, $end, $input, $container, $uri) {
+              $this->logger->setTopic("Evaluating $uri.");
+              $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
               $assessment->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
-
-              // Write the report.
-              $report_filename = strtr($filepath, [
-                'uri' => $assessment->uri(),
-              ]);
-
-              $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($report_filename, 'w')) : $output);
-              $format->render($profile, $assessment)->write();
-
-              if ($filepath != 'stdout') {
-                $console->success(sprintf("%s report written to %s", $format->getFormat(), $report_filename));
-              }
-
-              // See $async->wait().
-              return $assessment->getSeverityCode();
+              return $assessment->export();
             });
         }
-        // $this->logger->clear();
 
-        $exit_codes = [];
-        foreach ($async->wait() as $exit) {
-          $exit_codes[] = $exit;
+        $exit_codes = [0];
+        $results = [];
+        $assessment_manager = new AssessmentManager();
+        foreach ($async->wait() as $export) {
+            $assessment = $container->get('Drutiny\Assessment');
+            $assessment->import($export);
+            $assessment_manager->addAssessment($assessment);
+
+            if ($input->getOption('report-per-site') || count($uris) == 1) {
+                // Write the report.
+                $report_filename = strtr($filepath, [
+                  'uri' => $assessment->uri(),
+                ]);
+
+                $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($report_filename, 'w')) : $output);
+                $format->render($profile, $assessment)->write();
+
+                if ($filepath != 'stdout') {
+                  $console->success(sprintf("%s report written to %s", $format->getFormat(), $report_filename));
+                }
+            }
+            $exit_codes[] = $assessment->getSeverityCode();
+        }
+
+        if (count($assessment_manager->getAssessments()) > 1) {
+
+            $report_filename = strtr($filepath, [
+              'uri' => 'multiple_target',
+            ]);
+
+            $format->setOptions([
+              'content' => $format->loadTwigTemplate('report/profile.multiple_target')
+            ]);
+            $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($report_filename, 'w')) : $output);
+            $format->render($profile, $assessment_manager)->write();
+
+            if ($filepath != 'stdout') {
+              $console->success(sprintf("%s report written to %s", $format->getFormat(), $report_filename));
+            }
         }
 
         // Do not use a non-zero exit code when no severity is set (Default).
@@ -291,6 +321,7 @@ class ProfileRunCommand extends AbstractReportingCommand
 
     protected function parseDomainSourceOptions(InputInterface $input):array
     {
+        $source = $input->getOption('domain-source');
       // Load additional uris from domain-source
         $sources = [];
         foreach ($input->getOptions() as $name => $value) {

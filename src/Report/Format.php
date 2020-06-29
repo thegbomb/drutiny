@@ -2,7 +2,7 @@
 
 namespace Drutiny\Report;
 
-use Drutiny\Assessment;
+use Drutiny\AssessmentInterface;
 use Drutiny\Profile;
 use Drutiny\Console\Verbosity;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -29,7 +29,7 @@ abstract class Format implements FormatInterface
         $this->logger = $logger;
     }
 
-    public function render(Profile $profile, Assessment $assessment)
+    public function render(Profile $profile, AssessmentInterface $assessment)
     {
         try {
           $this->buffer->write($this->twig->render($this->options['template'], [
@@ -55,12 +55,12 @@ abstract class Format implements FormatInterface
      *
      * @param $name the namespace for the template. E.g. "content/page"
      */
-    final protected function loadTwigTemplate($name)
+    final public function loadTwigTemplate($name)
     {
       return $this->twig->load(sprintf('%s.%s.twig', $name, $this->extension));
     }
 
-    abstract protected function prepareContent(Profile $profile, Assessment $assessment);
+    abstract protected function prepareContent(Profile $profile, AssessmentInterface $assessment);
 
     public function setOptions(array $options = []):FormatInterface
     {

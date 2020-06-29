@@ -31,6 +31,6 @@ class DomainListYamlFile extends AbstractDomainList
     public function getDomains(array $options = [])
     {
         $config = Yaml::parseFile($options['filepath']);
-        return $config['domains'];
+        return $config['domains'] ?? $config;
     }
 }

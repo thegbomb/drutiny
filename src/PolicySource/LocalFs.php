@@ -10,6 +10,7 @@ use Drutiny\Policy;
 use Drutiny\Policy\Dependency;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Finder\Finder;
 
 class LocalFs implements PolicySourceInterface
@@ -17,10 +18,10 @@ class LocalFs implements PolicySourceInterface
     protected $cache;
     protected $finder;
 
-    public function __construct(CacheInterface $cache, Finder $finder)
+    public function __construct(CacheInterface $cache, Finder $finder, ContainerInterface $container)
     {
         $this->cache = $cache;
-        $this->finder = $finder->files()->in('.');
+        $this->finder = $finder->files()->in($container->getParameter('drutiny_config_dir'));
     }
 
   /**

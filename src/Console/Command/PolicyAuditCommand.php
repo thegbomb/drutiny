@@ -133,6 +133,11 @@ class PolicyAuditCommand extends AbstractReportingCommand
               'name' => $name,
               'parameters' => $parameters
             ])
+          ],
+          'format' => [
+            'terminal' => [
+                'template' => 'report/policy.audit.md.twig'
+            ],
           ]
         ]);
 

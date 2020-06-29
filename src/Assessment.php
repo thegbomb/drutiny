@@ -12,7 +12,7 @@ use Drutiny\Target\TargetInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class Assessment implements ExportableInterface
+class Assessment implements ExportableInterface, AssessmentInterface
 {
     use ReportingPeriodTrait;
     use SerializableExportableTrait {
@@ -28,8 +28,6 @@ class Assessment implements ExportableInterface
     protected $severityCode = 1;
     protected $logger;
     protected $container;
-    protected $statsByResult = [];
-    protected $statsBySeverity = [];
     protected $remediable = [];
     protected $async;
 
@@ -37,7 +35,7 @@ class Assessment implements ExportableInterface
     {
         $this->logger = $logger;
         $this->container = $container;
-        $this->async = $async::factory($logger);
+        $this->async = $async;
     }
 
     public function setUri($uri = 'default')
@@ -85,12 +83,6 @@ class Assessment implements ExportableInterface
         }
 
         foreach ($this->async->wait() as $response) {
-            // $response = $sandbox->run();
-            $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
-            $this->statsByResult[$response->getType()]++;
-
-            $this->statsBySeverity[$response->getSeverity()][$response->getType()] = $this->statsBySeverity[$response->getSeverity()][$response->getType()] ?? 0;
-            $this->statsBySeverity[$response->getSeverity()][$response->getType()]++;
 
             // Omit irrelevant AuditResponses.
             if (!$response->isIrrelevant()) {
@@ -187,24 +179,12 @@ class Assessment implements ExportableInterface
         return $this->uri;
     }
 
-    public function getStatsByResult()
-    {
-      return $this->statsByResult;
-    }
-
-    public function getStatsBySeverity()
-    {
-      return $this->statsBySeverity;
-    }
-
     /**
      * {@inheritdoc}
      */
     public function export()
     {
       return [
-        'statsBySeverity' => $this->statsBySeverity,
-        'statsBySeverity' => $this->statsBySeverity,
         'uri' => $this->uri,
         'results' => $this->results,
         'remediable' => $this->remediable,

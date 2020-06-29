@@ -1,0 +1,23 @@
+{% block purpose %}
+## Purpose
+
+This report is designed to provide some feedback on the overall health of
+the web application by performing some deep dive analysis. The items
+surfaced in the report can help improve performance and stability.
+{% endblock %}
+
+{% block findings %}
+## Findings
+Policy | Success | Failure | Warning | Notice | Error | Not Applicable
+------ | ------- | ------- | ------- | ------ | ----- | --------------
+{% for policy_name in assessment.policyNames %}
+    {% set total_count   = assessment.getResultsByPolicy(policy_name)|length %}
+    {% set success_count = assessment.getResultsByPolicy(policy_name)|filter(p => p.isSuccessful)|length %}
+    {% set failure_count = assessment.getResultsByPolicy(policy_name)|filter(p => p.isFailure)|length %}
+    {% set warning_count = assessment.getResultsByPolicy(policy_name)|filter(p => p.hasWarning)|length %}
+    {% set notice_count = assessment.getResultsByPolicy(policy_name)|filter(p => p.isNotice)|length %}
+    {% set error_count = assessment.getResultsByPolicy(policy_name)|filter(p => p.hasError)|length %}
+    {% set na_count = assessment.getResultsByPolicy(policy_name)|filter(p => p.isNotApplicable)|length %}
+{{ policy_name }} | {{ success_count }} | {{ failure_count }} | {{ warning_count }} | {{ notice_count }} | {{ error_count }} | {{ na_count }}
+{% endfor %}
+{% endblock %}

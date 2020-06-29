@@ -4,7 +4,7 @@ namespace Drutiny\Report\Format;
 
 use Drutiny\Profile;
 use Drutiny\Report\Format;
-use Drutiny\Assessment;
+use Drutiny\AssessmentInterface;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -14,7 +14,7 @@ class JSON extends Format
     protected $extension = 'json';
     protected $data;
 
-    protected function prepareContent(Profile $profile, Assessment $assessment)
+    protected function prepareContent(Profile $profile, AssessmentInterface $assessment)
     {
         $json = [
           'date' => date('Y-m-d'),
@@ -47,7 +47,7 @@ class JSON extends Format
         return $this->data;
     }
 
-    public function render(Profile $profile, Assessment $assessment)
+    public function render(Profile $profile, AssessmentInterface $assessment)
     {
         $this->buffer->write(json_encode($this->prepareContent($profile, $assessment)));
         return $this;
