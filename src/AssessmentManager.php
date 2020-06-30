@@ -2,7 +2,9 @@
 
 namespace Drutiny;
 
-
+/**
+ *
+ */
 class AssessmentManager implements AssessmentInterface {
     protected $assessments;
 

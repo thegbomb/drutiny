@@ -3,18 +3,11 @@
 namespace Drutiny\Http\Audit;
 
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Annotation\Param;
-use Drutiny\Annotation\Token;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
  *
- * @Param(
- *  name = "header",
- *  description = "The HTTP header to check the value of.",
- *  type = "string"
- * )
  * @Token(
  *  name = "header_value",
  *  description = "The value to check against.",
@@ -29,6 +22,17 @@ use Psr\Http\Message\ResponseInterface;
 class HttpHeaderExists extends Http
 {
 
+    public function configure()
+    {
+         $this->addParameter(
+          'header',
+          static::PARAMETER_OPTIONAL,
+          'The HTTP header to check the value of.'
+        );
+        $this->HttpTrait_configure();
+    }
+
+
   /**
    *
    */
@@ -36,14 +40,14 @@ class HttpHeaderExists extends Http
     {
         try {
             $res = $this->getHttpResponse($sandbox);
-            if ($has_header = $res->hasHeader($sandbox->getParameter('header'))) {
-                $headers = $res->getHeader($sandbox->getParameter('header'));
-                $sandbox->setParameter('header_value', $headers[0]);
+            if ($has_header = $res->hasHeader($this->getParameter('header'))) {
+                $headers = $res->getHeader($this->getParameter('header'));
+                $this->set('header_value', $headers[0]);
             }
             return $has_header;
         } catch (RequestException $e) {
             $sandbox->logger()->error($e->getMessage());
-            $sandbox->setParameter('request_error', $e->getMessage());
+            $this->set('request_error', $e->getMessage());
         }
         return false;
     }

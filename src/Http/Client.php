@@ -43,7 +43,6 @@ class Client
         }
 
         $config['handler']->unshift(cache_middleware($this->cache), 'cache');
-      // $config['handler']->after('cache', $this->container->get('logger'), 'logger');
 
         return new GuzzleClient($config);
     }

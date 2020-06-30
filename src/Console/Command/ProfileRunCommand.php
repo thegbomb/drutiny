@@ -114,11 +114,6 @@ class ProfileRunCommand extends AbstractReportingCommand
             'Use a domain source to preload uri options. Defaults to yaml filepath.',
             'yaml'
         )->addOption(
-            'domain-filepath',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'Filepath to yaml file.'
-        )->addOption(
             'domain-source-blacklist',
             null,
             InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
@@ -321,7 +316,6 @@ class ProfileRunCommand extends AbstractReportingCommand
 
     protected function parseDomainSourceOptions(InputInterface $input):array
     {
-        $source = $input->getOption('domain-source');
       // Load additional uris from domain-source
         $sources = [];
         foreach ($input->getOptions() as $name => $value) {

@@ -10,6 +10,31 @@ use Psr\Http\Message\RequestInterface;
 
 trait HttpTrait
 {
+    public function configure()
+    {
+      $this->addParameter(
+        'use_cache',
+        static::PARAMETER_OPTIONAL,
+        'Indicator if Guzzle client should use cache middleware.'
+      );
+      $this->addParameter(
+        'options',
+        static::PARAMETER_OPTIONAL,
+        'An options array passed to the Guzzle client request method.'
+      );
+      $this->addParameter(
+        'force_ssl',
+        static::PARAMETER_OPTIONAL,
+        'Whether to force SSL',
+        true
+      );
+      $this->addParameter(
+        'method',
+        static::PARAMETER_OPTIONAL,
+        'Which method to use.',
+        'GET'
+      );
+    }
 
     protected function getHttpResponse(Sandbox $sandbox)
     {
@@ -30,8 +55,6 @@ trait HttpTrait
         $this->logger->info(__CLASS__ . ': ' . $method . ' ' . $url);
         $options = $this->getParameter('options', []);
 
-        $status_code = $this->getParameter('status_code');
-
         $handler = HandlerStack::create();
 
         $client = $this->container->get('http.client')->create([
@@ -39,7 +62,7 @@ trait HttpTrait
           'handler' => $handler,
         ]);
 
-        $handler->before('cache', Middleware::mapRequest(function (RequestInterface $request) use ($sandbox) {
+        $handler->unshift(Middleware::mapRequest(function (RequestInterface $request) use ($sandbox) {
             $this->set('req_headers', $request->getHeaders());
             return $request;
         }));

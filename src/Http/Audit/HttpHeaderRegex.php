@@ -3,33 +3,38 @@
 namespace Drutiny\Http\Audit;
 
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Annotation\Param;
 
 /**
  *
- * @Param(
- *  name = "header",
- *  description = "The HTTP header to check the value of.",
- *  type = "string"
- * )
- * @Param(
- *  name = "regex",
- *  description = "A regular expressions to validate the header value against.",
- *  type = "string"
- * )
  */
 class HttpHeaderRegex extends Http
 {
+
+    public function configure()
+    {
+        $this->addParameter(
+          'header',
+          static::PARAMETER_OPTIONAL,
+          'The HTTP header to check the value of.'
+        );
+        $this->addParameter(
+          'regex',
+          static::PARAMETER_OPTIONAL,
+          'A regular expressions to validate the header value against.'
+        );
+        $this->HttpTrait_configure();
+    }
+
 
   /**
    *
    */
     public function audit(Sandbox $sandbox)
     {
-        $regex = $sandbox->getParameter('regex');
+        $regex = $this->getParameter('regex');
         $regex = "/$regex/";
         $res = $this->getHttpResponse($sandbox);
-        $header = $sandbox->getParameter('header');
+        $header = $this->getParameter('header');
 
         if (!$res->hasHeader($header)) {
             return false;

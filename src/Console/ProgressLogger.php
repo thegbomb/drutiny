@@ -105,13 +105,17 @@ class ProgressLogger implements LoggerInterface {
       }
 
       $output = $this->tail ? $this->output : $this->section;
-      $output = $this->flushed ? $output : $this->buffer;
 
       // the if condition check isn't necessary -- it's the same one that $output will do internally anyway.
       // We only do it for efficiency here as the message formatting is relatively expensive.
       if ($output->getVerbosity() < $this->verbosityLevelMap[$level]) {
           return;
       }
+
+      if (!$this->flushed) {
+        $output = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $this->buffer;
+      }
+
       $debug = '';
       if ($output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {
           $stack = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);

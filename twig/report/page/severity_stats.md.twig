@@ -1,5 +1,10 @@
+{% set critical = assessment.results|filter(r => r.severity == 'Critical') %}
+{% set high = assessment.results|filter(r => r.severity == 'High') %}
+{% set medium = assessment.results|filter(r => r.severity == 'Medium') %}
+{% set low = assessment.results|filter(r => r.severity == 'Low') %}
 Severity | Pass | Fail | Error | Warning | Not Applicable | Notice
 -------- | ---- | ---- | ----- | ------- | -------------- | ------
-{% for severity, row in assessment.statsBySeverity  %}
-{{ severity }} ({{ row | sum }}) | {{row.success is defined ? row.success }} | {{ row.failure is defined ? row.failure }} | {{ row.error is defined ? row.error }} | {{ row.warning is defined ? row.warning }} | {{ row["not-applicable"] is defined ? row["not-applicable"] }} | {{row.notice is defined ? row.notice }}
-{% endfor %}
+Critical ({{ critical|length }}) | {{critical|filter(r => r.isSuccessful)|length}} | {{critical|filter(r => r.isFailure)|length}} | {{critical|filter(r => r.hasError)|length}} | {{critical|filter(r => r.hasWarning)|length}} | {{critical|filter(r => r.isNotApplicable)|length}} | {{critical|filter(r => r.isNotice)|length}}
+High ({{ high|length }}) | {{high|filter(r => r.isSuccessful)|length}} | {{high|filter(r => r.isFailure)|length}} | {{high|filter(r => r.hasError)|length}} | {{high|filter(r => r.hasWarning)|length}} | {{high|filter(r => r.isNotApplicable)|length}} | {{high|filter(r => r.isNotice)|length}}
+Medium ({{ medium|length }}) | {{medium|filter(r => r.isSuccessful)|length}} | {{medium|filter(r => r.isFailure)|length}} | {{medium|filter(r => r.hasError)|length}} | {{medium|filter(r => r.hasWarning)|length}} | {{medium|filter(r => r.isNotApplicable)|length}} | {{medium|filter(r => r.isNotice)|length}}
+Low ({{ low|length }}) | {{low|filter(r => r.isSuccessful)|length}} | {{low|filter(r => r.isFailure)|length}} | {{low|filter(r => r.hasError)|length}} | {{low|filter(r => r.hasWarning)|length}} | {{low|filter(r => r.isNotApplicable)|length}} | {{low|filter(r => r.isNotice)|length}}

@@ -5,7 +5,7 @@ namespace Drutiny\DomainList;
 /**
  * Abstract domain source provider
  */
-abstract class AbstractDomainList
+abstract class AbstractDomainList implements DomainListInterface
 {
 
     private $options;

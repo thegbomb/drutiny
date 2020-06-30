@@ -11,11 +11,13 @@ use Psr\Http\Message\ResponseInterface;
  */
 class HttpAnalysis extends AbstractAnalysis
 {
-    use HttpTrait;
+    use HttpTrait {
+        configure as HttpTrait_configure;
+    }
 
     public function configure()
     {
-         $this->addParameter(
+        $this->addParameter(
           'expression',
           static::PARAMETER_OPTIONAL,
           'The expression language to evaludate. See https://symfony.com/doc/current/components/expression_language/syntax.html',
@@ -32,35 +34,7 @@ class HttpAnalysis extends AbstractAnalysis
           static::PARAMETER_OPTIONAL,
           'Send a warming request and store headers into cold_headers parameter.'
         );
-        $this->addParameter(
-          'use_cache',
-          static::PARAMETER_OPTIONAL,
-          'Indicator if Guzzle client should use cache middleware.'
-        );
-        $this->addParameter(
-          'options',
-          static::PARAMETER_OPTIONAL,
-          'An options array passed to the Guzzle client request method.'
-        );
-        $this->addParameter(
-          'force_ssl',
-          static::PARAMETER_OPTIONAL,
-          'Whether to force SSL',
-          true
-        );
-        $this->addParameter(
-          'method',
-          static::PARAMETER_OPTIONAL,
-          'Which method to use.',
-          'GET'
-        );
-        $this->addParameter(
-          'status_code',
-          static::PARAMETER_OPTIONAL,
-          'The status_code to expect.',
-          200
-        );
-
+        $this->HttpTrait_configure();
     }
 
     protected function gather(Sandbox $sandbox)

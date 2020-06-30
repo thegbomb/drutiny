@@ -6,5 +6,7 @@ use Drutiny\Audit;
 
 abstract class Http extends Audit
 {
-    use HttpTrait;
+    use HttpTrait {
+        configure as HttpTrait_configure;
+    }
 }

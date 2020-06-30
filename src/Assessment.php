@@ -76,12 +76,12 @@ class Assessment implements ExportableInterface, AssessmentInterface
             $audit = $this->container->get($policy->class);
             $audit->setParameter('reporting_period_start', $start)
                   ->setParameter('reporting_period_end', $end);
+            $audit->getTarget()->setUri($this->uri);
 
             $this->async->run(function () use ($audit, $policy, $remediate) {
               return $audit->execute($policy, $remediate);
             });
         }
-
         foreach ($this->async->wait() as $response) {
 
             // Omit irrelevant AuditResponses.
@@ -95,7 +95,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
                 $this->setPolicyResult($sandbox->remediate());
             }
 
-            $this->logger->info(sprintf('Policy "%s" assessment completed: %s.', $response->getPolicy()->title, $response->getType()));
+            $this->logger->info(sprintf('Policy "%s" assessment on %s completed: %s.', $response->getPolicy()->title, $this->uri(), $response->getType()));
         }
         return $this;
     }
