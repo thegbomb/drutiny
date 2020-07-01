@@ -64,8 +64,6 @@ class PolicyListCommand extends Command
         $container->get('verbosity')
         ->set($output->getVerbosity());
 
-        $this->progressLogger->flushBuffer();
-
         $list = $this->policyFactory->getPolicyList();
 
         if ($source_filter = $input->getOption('source')) {

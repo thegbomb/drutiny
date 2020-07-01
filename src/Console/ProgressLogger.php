@@ -40,7 +40,6 @@ class ProgressLogger implements LoggerInterface {
   public function __construct(OutputInterface $output)
   {
     $this->output = $output;
-    $this->buffer = new BufferedOutput();
     $this->tail = $this->output->getVerbosity() > OutputInterface::VERBOSITY_NORMAL;
     $this->section = ($output instanceof ConsoleOutput) ? $output->section() : $output;
 
@@ -67,16 +66,6 @@ class ProgressLogger implements LoggerInterface {
 
     $outputStyle = new OutputFormatterStyle('default');
     $output->getFormatter()->setStyle('debug', $outputStyle);
-  }
-
-  /**
-   * Call when its safe to begin output to stdout.
-   */
-  public function flushBuffer()
-  {
-      $this->output->write($this->buffer->fetch());
-      $this->flushed = true;
-      return $this;
   }
 
   public function setMessage($message)
@@ -106,15 +95,11 @@ class ProgressLogger implements LoggerInterface {
 
       $output = $this->tail ? $this->output : $this->section;
 
-      // the if condition check isn't necessary -- it's the same one that $output will do internally anyway.
-      // We only do it for efficiency here as the message formatting is relatively expensive.
       if ($output->getVerbosity() < $this->verbosityLevelMap[$level]) {
           return;
       }
 
-      if (!$this->flushed) {
-        $output = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $this->buffer;
-      }
+      // $output = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
       $debug = '';
       if ($output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {

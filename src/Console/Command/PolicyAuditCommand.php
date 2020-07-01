@@ -111,8 +111,6 @@ class PolicyAuditCommand extends AbstractReportingCommand
         $container->get('verbosity')
         ->set($output->getVerbosity());
 
-        $this->progressLogger->flushBuffer();
-
         // Setup any parameters for the check.
         $parameters = [];
         foreach ($input->getOption('set-parameter') as $option) {

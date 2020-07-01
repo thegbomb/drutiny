@@ -53,7 +53,6 @@ class TargetMetadataCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->progressLogger->flushBuffer();
         $target = $this->getApplication()
           ->getKernel()
           ->getContainer()
