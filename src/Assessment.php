@@ -30,6 +30,8 @@ class Assessment implements ExportableInterface, AssessmentInterface
     protected $container;
     protected $remediable = [];
     protected $async;
+    protected $statsByResult = [];
+    protected $statsBySeverity = [];
 
     public function __construct(LoggerInterface $logger, ContainerInterface $container, AsyncRuntime $async)
     {
@@ -83,6 +85,11 @@ class Assessment implements ExportableInterface, AssessmentInterface
             });
         }
         foreach ($this->async->wait() as $response) {
+            $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
+            $this->statsByResult[$response->getType()]++;
+
+            $this->statsBySeverity[$response->getSeverity()][$response->getType()] = $this->statsBySeverity[$response->getSeverity()][$response->getType()] ?? 0;
+            $this->statsBySeverity[$response->getSeverity()][$response->getType()]++;
 
             // Omit irrelevant AuditResponses.
             if (!$response->isIrrelevant()) {
@@ -179,12 +186,24 @@ class Assessment implements ExportableInterface, AssessmentInterface
         return $this->uri;
     }
 
+    public function getStatsByResult()
+    {
+      return $this->statsByResult;
+    }
+
+    public function getStatsBySeverity()
+    {
+      return $this->statsBySeverity;
+    }
+
     /**
      * {@inheritdoc}
      */
     public function export()
     {
       return [
+        'statsBySeverity' => $this->statsBySeverity,
+        'statsBySeverity' => $this->statsBySeverity,
         'uri' => $this->uri,
         'results' => $this->results,
         'remediable' => $this->remediable,
