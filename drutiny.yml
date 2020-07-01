@@ -9,7 +9,9 @@ parameters:
   cache.ttl: 3600
   config.local: '%drutiny_config_dir%/config.yml'
   config.credentials: '%drutiny_config_dir%/.credentials.yml'
-  twig.templates: '%drutiny_core_dir%/twig'
+  twig.templates:
+    - '%drutiny_core_dir%/twig'
+    - '%drutiny_core_dir%/twig/report'
   twig.cache: '%drutiny_config_dir%/twig'
   twig.debug: true
   twig.strict: true
