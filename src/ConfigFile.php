@@ -48,4 +48,9 @@ class ConfigFile
       }
       $this->config[$this->namespace][$key] = $value;
     }
+
+    public function keys()
+    {
+        return $this->namespace ? array_keys($this->config[$this->namespace]) : array_keys($this->config);
+    }
 }
