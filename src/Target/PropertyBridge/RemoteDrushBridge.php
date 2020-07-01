@@ -14,8 +14,34 @@ class RemoteDrushBridge implements EventSubscriberInterface {
     return [
     //  'set:service.drush' => 'loadRemoteDrushService',
       'set:drush.remote-user' => 'loadRemoteService',
-      'set:drush.remote-host' => 'loadRemoteService'
+      'set:drush.remote-host' => 'loadRemoteService',
+      'set:drush.ssh-options' => 'parseSshOptions',
     ];
+  }
+
+  public static function parseSshOptions(DataBagEvent $event)
+  {
+      $options = [];
+      $value = $event->getValue();
+      $target = $event->getDatabag()->getObject();
+      // Port parsing.
+      if (preg_match('/-p (\d+)/', $value, $matches)) {
+          $target['service.exec']->setConfig('Port', $matches[1]);
+      }
+      // IdentifyFile
+      if (preg_match('/-i ([^ ]+)/', $value, $matches)) {
+          $target['service.exec']->setConfig('IdentityFile', $matches[1]);
+      }
+      if (preg_match_all('/-o "([^ "]+) ([^"]+)"/', $value, $matches)) {
+         foreach ($matches[1] as $idx => $key) {
+           $target['service.exec']->setConfig($key, $matches[2][$idx]);
+         }
+      }
+      if (preg_match_all('/-o ([^=]+)=([^ ]+)/', $value, $matches)) {
+         foreach ($matches[1] as $idx => $key) {
+           $target['service.exec']->setConfig($key, $matches[2][$idx]);
+         }
+      }
   }
 
   public static function loadRemoteService(DataBagEvent $event)
