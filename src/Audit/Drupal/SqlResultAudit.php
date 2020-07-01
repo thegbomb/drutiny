@@ -53,9 +53,9 @@ class SqlResultAudit extends AbstractAnalysis
               $data = explode(PHP_EOL, $output);
               array_walk($data, function (&$line) {
                   $line = array_map('trim', explode("\t", $line));
-                  if (empty($line) || count(array_filter($line)) == 0) {
+                if (empty($line) || count(array_filter($line)) == 0) {
                     $line = false;
-                  }
+                }
               });
               return array_filter($data);
           });
@@ -76,24 +76,23 @@ class SqlResultAudit extends AbstractAnalysis
     {
       // If we can parse fields out of the SQL query, we can make the result set
       // become and associative array.
-      if (!preg_match_all('/^SELECT( DISTINCT)? (.*) FROM/', $query, $fields)) {
-        return [];
-      }
-      return array_map(function ($field) {
+        if (!preg_match_all('/^SELECT( DISTINCT)? (.*) FROM/', $query, $fields)) {
+            return [];
+        }
+        return array_map(function ($field) {
               $field = trim($field);
 
               // If the field has an alias, use that instead.
-              if ($idx = strpos($field, ' as ')) {
-                  $field = substr($field, $idx + 4);
-              }
+            if ($idx = strpos($field, ' as ')) {
+                $field = substr($field, $idx + 4);
+            }
 
               // If the field is a function without an alias, raise a warning.
-              if (preg_match('/[ \(\)]/', $field)) {
-                  $this->logger->warning("SQL query contains an non-table field without an alias: '$field.'");
-              }
+            if (preg_match('/[ \(\)]/', $field)) {
+                $this->logger->warning("SQL query contains an non-table field without an alias: '$field.'");
+            }
               return $field;
-          },
-          explode(',', $fields[2][0])
-      );
+        },
+          explode(',', $fields[2][0]));
     }
 }

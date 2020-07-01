@@ -5,41 +5,9 @@ namespace Drutiny\Audit\Filesystem;
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\AuditResponse\AuditResponse;
-use Drutiny\Annotation\Param;
-use Drutiny\Annotation\Token;
 
 /**
  * Scan files in a directory for matching criteria.
- * @Param(
- *  name = "directory",
- *  description = "Absolute filepath to directory to scan",
- *  type = "string",
- *  default = "%root"
- * )
- * @Param(
- *  name = "exclude",
- *  description = "Absolute filepaths to directories omit from scanning",
- *  type = "array",
- *  default = {}
- * )
- * @Param(
- *  name = "filetypes",
- *  description = "file extensions to include in the scan",
- *  type = "array",
- *  default = {}
- * )
- * @Param(
- *   name = "patterns",
- *   description = "patterns to run over each matching file.",
- *   type = "array",
- *   default = {}
- * )
- * @Param(
- *   name = "whitelist",
- *   description = "Whitelist patterns which the 'patterns' parameter may yield false positives from",
- *   type = "array",
- *   default = {}
- * )
  * @Token(
  *   name = "results",
  *   description = "An array of results matching the scan criteria. Each match is an assoc array with the following keys: filepath, line, code, basename.",
@@ -50,19 +18,50 @@ use Drutiny\Annotation\Token;
 class CodeScan extends Audit
 {
 
+    public function configure()
+    {
+           $this->addParameter(
+               'directory',
+               static::PARAMETER_OPTIONAL,
+               'Absolute filepath to directory to scan',
+               '%root'
+           );
+        $this->addParameter(
+            'exclude',
+            static::PARAMETER_OPTIONAL,
+            'Absolute filepaths to directories omit from scanning',
+        );
+        $this->addParameter(
+            'filetypes',
+            static::PARAMETER_OPTIONAL,
+            'file extensions to include in the scan',
+        );
+        $this->addParameter(
+            'patterns',
+            static::PARAMETER_OPTIONAL,
+            'patterns to run over each matching file.',
+        );
+        $this->addParameter(
+            'whitelist',
+            static::PARAMETER_OPTIONAL,
+            'Whitelist patterns which the \'patterns\' parameter may yield false positives from',
+        );
+    }
+
+
   /**
    * @inheritdoc
    */
     public function audit(Sandbox $sandbox)
     {
-        $directory = $sandbox->getParameter('directory', '%root');
+        $directory = $this->getParameter('directory', '%root');
         $stat = $sandbox->drush(['format' => 'json'])->status();
 
         $directory =  strtr($directory, $stat['%paths']);
 
         $command = ['find', $directory, '-type f'];
 
-        $types = $sandbox->getParameter('filetypes', []);
+        $types = $this->getParameter('filetypes', []);
 
         if (!empty($types)) {
             $conditions = [];
@@ -72,15 +71,15 @@ class CodeScan extends Audit
             $command[] = '\( ' . implode(' -or ', $conditions) . ' \)';
         }
 
-        foreach ($sandbox->getParameter('exclude', []) as $filepath) {
+        foreach ($this->getParameter('exclude', []) as $filepath) {
             $filepath = strtr($filepath, $stat['%paths']);
             $command[] = "! -path '$filepath'";
         }
 
         $command[] = '| (xargs grep -nE';
-        $command[] = '"' . implode('|', $sandbox->getParameter('patterns', [])) . '" || exit 0)';
+        $command[] = '"' . implode('|', $this->getParameter('patterns', [])) . '" || exit 0)';
 
-        $whitelist = $sandbox->getParameter('whitelist', []);
+        $whitelist = $this->getParameter('whitelist', []);
         if (!empty($whitelist)) {
             $command[] = "| (grep -vE '" . implode('|', $whitelist) . "' || exit 0)";
         }
@@ -88,7 +87,7 @@ class CodeScan extends Audit
 
         $command = implode(' ', $command);
         $sandbox->logger()->info('[' . __CLASS__ . '] ' . $command);
-        $output = $sandbox->exec($command);
+        $output = $this->target->getService('exec')->run($command);
 
         if (empty($output)) {
             return true;
@@ -113,7 +112,7 @@ class CodeScan extends Audit
         }, $matches)))
         ];
 
-        $sandbox->setParameter('results', $results);
+        $this->set('results', $results);
 
         return empty($matches);
     }

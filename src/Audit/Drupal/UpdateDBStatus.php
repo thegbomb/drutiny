@@ -36,7 +36,7 @@ class UpdateDBStatus extends Audit
                 ];
                 next($lines);
             }
-            $sandbox->setParameter('updates', $updates);
+            $this->set('updates', $updates);
             return false;
         }
         return true;

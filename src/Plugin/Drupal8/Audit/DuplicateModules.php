@@ -9,38 +9,39 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Duplicate modules.
  */
-class DuplicateModules extends Audit {
+class DuplicateModules extends Audit
+{
 
   /**
    * @inheritdoc
    */
-  public function audit(Sandbox $sandbox) {
-    $config = $sandbox->drush(['format' => 'json'])
-      ->status();
+    public function audit(Sandbox $sandbox)
+    {
+        $config = $sandbox->drush(['format' => 'json'])
+        ->status();
 
-    $docroot = $config['root'];
+        $docroot = $config['root'];
 
-    $command = <<<CMD
+        $command = <<<CMD
 find $docroot -name '*.info.yml' -type f |\
 grep -Ev '/themes/|/test' |\
 grep -oe '[^/]*\.info.yml' | cut -d'.' -f1 | sort |\
 uniq -c | sort -nr | awk '{print $2": "$1}'
 CMD;
 
-    $output = $sandbox->exec($command);
+        $output = $this->target->getService('exec')->run($command);
 
-    if (empty($output)) {
-      return TRUE;
+        if (empty($output)) {
+            return true;
+        }
+
+      // Ignore modules where there are only 1 of them.
+        $module_count = array_filter(Yaml::parse($output), function ($count) {
+            return $count > 1;
+        });
+
+        $this->set('duplicate_modules', array_keys($module_count));
+
+        return count($module_count) == 0;
     }
-
-    // Ignore modules where there are only 1 of them.
-    $module_count = array_filter(Yaml::parse($output), function ($count) {
-      return $count > 1;
-    });
-
-    $sandbox->setParameter('duplicate_modules', array_keys($module_count));
-
-    return count($module_count) == 0;
-  }
-
 }

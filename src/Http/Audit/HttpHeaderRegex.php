@@ -13,14 +13,14 @@ class HttpHeaderRegex extends Http
     public function configure()
     {
         $this->addParameter(
-          'header',
-          static::PARAMETER_OPTIONAL,
-          'The HTTP header to check the value of.'
+            'header',
+            static::PARAMETER_OPTIONAL,
+            'The HTTP header to check the value of.'
         );
         $this->addParameter(
-          'regex',
-          static::PARAMETER_OPTIONAL,
-          'A regular expressions to validate the header value against.'
+            'regex',
+            static::PARAMETER_OPTIONAL,
+            'A regular expressions to validate the header value against.'
         );
         $this->HttpTrait_configure();
     }

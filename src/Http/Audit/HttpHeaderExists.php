@@ -25,10 +25,10 @@ class HttpHeaderExists extends Http
     public function configure()
     {
          $this->addParameter(
-          'header',
-          static::PARAMETER_OPTIONAL,
-          'The HTTP header to check the value of.'
-        );
+             'header',
+             static::PARAMETER_OPTIONAL,
+             'The HTTP header to check the value of.'
+         );
         $this->HttpTrait_configure();
     }
 

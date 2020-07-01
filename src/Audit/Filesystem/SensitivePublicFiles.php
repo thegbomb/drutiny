@@ -5,17 +5,10 @@ namespace Drutiny\Audit\Filesystem;
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\AuditResponse\AuditResponse;
-use Drutiny\Annotation\Param;
-use Drutiny\Annotation\Token;
 
 /**
  * Sensitive public files
  *
- * @Param(
- *  name = "extensions",
- *  description = "The sensitive file extensions to look for.",
- *  type = "string"
- * )
  * @Token(
  *  name = "issues",
  *  description = "A list of files that reach the max file size.",
@@ -31,6 +24,16 @@ use Drutiny\Annotation\Token;
 class SensitivePublicFiles extends Audit
 {
 
+    public function configure()
+    {
+           $this->addParameter(
+               'extensions',
+               static::PARAMETER_OPTIONAL,
+               'The sensitive file extensions to look for.',
+           );
+    }
+
+
   /**
    * @inheritdoc
    */
@@ -41,7 +44,7 @@ class SensitivePublicFiles extends Audit
         $root = $stat['root'];
         $files = $stat['files'];
 
-        $extensions = $sandbox->getParameter('extensions');
+        $extensions = $this->getParameter('extensions');
         $extensions = array_map('trim', explode(',', $extensions));
 
       // Output is in the format:
@@ -60,7 +63,7 @@ class SensitivePublicFiles extends Audit
         '@print-format' => '%k\t%p\n',
         ]);
 
-        $output = $sandbox->exec($command);
+        $output = $this->target->getService('exec')->run($command);
 
         if (empty($output)) {
             return Audit::SUCCESS;
@@ -75,8 +78,8 @@ class SensitivePublicFiles extends Audit
         },
         array_filter(explode("\n", $output)));
 
-        $sandbox->setParameter('issues', $rows);
-        $sandbox->setParameter('plural', count($rows) > 1 ? 's' : '');
+        $this->set('issues', $rows);
+        $this->set('plural', count($rows) > 1 ? 's' : '');
 
         return Audit::FAIL;
     }
