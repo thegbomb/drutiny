@@ -4,14 +4,17 @@ namespace Drutiny\Report\Format;
 
 use Drutiny\AssessmentInterface;
 use Drutiny\Profile;
+use Drutiny\Report\BackportTemplateHacks;
 use Drutiny\Report\Format;
 use Drutiny\Report\FormatInterface;
 use Symfony\Component\Yaml\Yaml;
-use Twig\TemplateWrapper;
 use Twig\Environment;
+use Twig\TemplateWrapper;
 
 class HTML extends Format
 {
+    // Support for 2.x templates.
+    use BackportTemplateHacks;
 
     protected $format = 'html';
     protected $extension = 'html';
@@ -57,14 +60,22 @@ class HTML extends Format
       // Backward compatible 2.x Yaml style.
       foreach ($this->options['content'] as $section) {
         foreach ($section as $attribute => $value) {
+          $template = $this->prefixTemplate($section[$attribute]);
+
+          $template = $this->preMapDrutiny2Variables($template);
+
+          // Map the old Drutiny 2.x variables to the Drutiny 3.x versions.
+          $template = $this->preMapDrutiny2Variables($template);
+
           // Convert from Mustache (supported in Drutiny 2.x) over to twig syntax.
-          $template = $this->convertMustache2TwigSyntax($section[$attribute]);
+          $template = $this->convertMustache2TwigSyntax($template);
 
           // Map the old Drutiny 2.x variables to the Drutiny 3.x versions.
           $template = $this->mapDrutiny2toDrutiny3variables($template);
 
           try {
             // Convert template into a Twig template and render into HTML.
+            $this->logger->debug("Creating section twig template for '$attribute' from string.");
             $template = $this->twig
               ->createTemplate($template)
               ->render($variables);
@@ -73,6 +84,7 @@ class HTML extends Format
             $this->logger->error($e->getMessage());
             $source = $e->getSourceContext();
             $this->logger->info($source->getCode());
+            $this->logger->debug($section[$attribute]);
           }
 
           // Convert any Markdown formatting over to HTML.
