@@ -15,11 +15,11 @@ class User1 extends Audit implements RemediableInterface
 
     public function configure()
     {
-           $this->addParameter(
-               'email',
-               static::PARAMETER_OPTIONAL,
-               'The email the user account should be.',
-           );
+        $this->addParameter(
+           'email',
+           static::PARAMETER_OPTIONAL,
+           'The email the user account should be.',
+        );
         $this->addParameter(
             'blacklist',
             static::PARAMETER_OPTIONAL,
@@ -38,10 +38,15 @@ class User1 extends Audit implements RemediableInterface
     public function audit(Sandbox $sandbox)
     {
       // Get the details for user #1.
-        $user = $sandbox->drush(['format' => 'json', 'uid' => 1])
-                    ->userInformation();
+        $user = $sandbox->drush(['format' => 'json'])
+                    ->userInformation(1);
 
         $user = (object) array_pop($user);
+
+        $this->set('user', $user);
+        $this->set('blacklist_fail', false);
+        $this->set('email_fail', false);
+        $this->set('status_fail', false);
 
         $errors = [];
         $fixups = [];
@@ -50,6 +55,7 @@ class User1 extends Audit implements RemediableInterface
         $pattern = $this->getParameter('blacklist');
         if (preg_match("#${pattern}#i", $user->name)) {
             $errors[] = "Username '$user->name' is too easy to guess.";
+            $this->set('blacklist_fail', true);
         }
         $this->set('username', $user->name);
 
@@ -58,12 +64,14 @@ class User1 extends Audit implements RemediableInterface
 
         if (!empty($email) && ($email !== $user->mail)) {
             $errors[] = "Email address '$user->mail' is not set correctly.";
+            $this->set('email_fail', true);
         }
 
       // Status.
         $status = (bool) $this->getParameter('status');
         if ($status !== (bool) $user->user_status) {
             $errors[] = 'Status is not set correctly. Should be ' . ($user->user_status ? 'active' : 'inactive') . '.';
+            $this->set('status_fail', true);
         }
 
         $this->set('errors', $errors);

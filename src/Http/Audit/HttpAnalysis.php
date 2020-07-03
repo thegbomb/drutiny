@@ -53,8 +53,8 @@ class HttpAnalysis extends AbstractAnalysis
 
       // Maintain for backwards compatibility.
         $this->set('headers', $this->gatherHeaders($response));
-
         $this->set('res_headers', $response->getHeaders());
+        $this->set('status_code', $response->getStatusCode());
     }
 
     protected function gatherHeaders(ResponseInterface $response)

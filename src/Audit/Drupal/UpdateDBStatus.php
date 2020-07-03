@@ -22,6 +22,7 @@ class UpdateDBStatus extends Audit
     public function audit(Sandbox $sandbox)
     {
         $output = $sandbox->drush()->updb('-n');
+        $output = implode(PHP_EOL, $output);
 
         if (strpos($output, self::AFFIRMATIVE_UPDATES_STRING) !== false) {
             $lines = array_filter(explode(PHP_EOL, $output));

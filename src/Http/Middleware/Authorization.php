@@ -10,6 +10,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class Authorization implements MiddlewareInterface
 {
     protected $config;
+    protected $logger;
 
   /**
    * @param $container ContainerInterface
@@ -17,7 +18,8 @@ class Authorization implements MiddlewareInterface
    */
     public function __construct(ContainerInterface $container)
     {
-        $this->config = $container->get('config')->setNamespace('http')->authorization ?? [];
+        $this->config = $container->get('credentials')->setNamespace('http')->authorization ?? [];
+        $this->logger = $container->get('logger');
     }
 
   /**
@@ -43,6 +45,8 @@ class Authorization implements MiddlewareInterface
         $password = $this->config[$host]['password'] ?? '';
         $header_value = 'Basic ' . base64_encode($username .':'. $password);
 
-        return $request->withHeader('Authorization', 'Basic ' . base64_encode($credential));
+        $this->logger->debug("Using HTTP Authorization for $host: $header_value.");
+
+        return $request->withHeader('Authorization', $header_value);
     }
 }
