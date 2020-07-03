@@ -16,6 +16,7 @@ class DrushService {
     'status' => 'status',
     'userInformation' => 'user:information',
     'sqlq' => 'sqlq',
+    'updb' => 'updb',
   ];
   public function __construct(ExecutionInterface $service)
   {
@@ -25,6 +26,58 @@ class DrushService {
   public function isRemote()
   {
       return $this->execService instanceof RemoteService;
+  }
+
+  public function runtime(\Closure $func, ...$args)
+  {
+      $reflection = new \ReflectionFunction($func);
+      $filename = $reflection->getFileName();
+
+      // it's actually - 1, otherwise you wont get the function() block
+      $start_line = $reflection->getStartLine();
+      $end_line = $reflection->getEndLine();
+      $length = $end_line - $start_line;
+      $source = file($filename);
+      $body = array_slice($source, $start_line, $length);
+      $body[0] = substr($body[0], strpos($body[0], 'function'));
+      array_pop($body);
+
+      $body = array_map('trim', $body);
+
+      // // Compress code.
+      $code = implode('', array_filter($body, function ($line) {
+        // Ignore empty lines.
+        if (empty($line)) {
+          return false;
+        }
+        // Ignore comments. /* style will still be allowed.
+        if (strpos($line, '//') === false) {
+          return true;
+        }
+        return false;
+      }));
+
+      // Build code to pass in parameters
+      $initCode = '';
+      foreach ($reflection->getParameters() as $idx => $param) {
+        $initCode .= strtr('$var = value;', [
+          'var' => $param->name,
+          'value' => var_export($args[$idx], true)
+        ]);
+      }
+      // Compress.
+      $initCode = str_replace(PHP_EOL, '', $initCode);
+      $wrapper = strtr('$f=function(){@code}; echo json_encode($f());', [
+        '@code' => $initCode.$code
+      ]);
+      $wrapper = base64_encode($wrapper);
+      $command = strtr('echo @code | base64 --decode | @launcher php-script -', [
+        '@code' => $wrapper,
+        '@launcher' => $launcher = '$(which ' . implode(' || which ', static::LAUNCHERS) . ')',
+      ]);
+      return $this->execService->run($command, function ($output) {
+        return json_decode($output, true);
+      });
   }
 
   /**
@@ -71,18 +124,20 @@ class DrushService {
 
     // Return an object ready to run the command. This allows the caller
     // of this command to be able to specify the preprocess function easily.
-    return new class($command, $this->execService) {
-      protected $cmd;
-      protected $service;
-      public function __construct($cmd, ExecutionInterface $service)
-      {
-        $this->cmd = $cmd;
-        $this->service = $service;
-      }
-      public function run(callable $outputProcessor = NULL)
-      {
-        return $this->service->run($this->cmd, $outputProcessor);
-      }
-    };
+    return new _helper($command, $this->execService);
+  }
+}
+
+class _helper {
+  protected $cmd;
+  protected $service;
+  public function __construct($cmd, ExecutionInterface $service)
+  {
+    $this->cmd = $cmd;
+    $this->service = $service;
+  }
+  public function run(callable $outputProcessor = NULL)
+  {
+    return $this->service->run($this->cmd, $outputProcessor);
   }
 }
