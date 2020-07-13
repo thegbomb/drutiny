@@ -2,6 +2,8 @@
 
 namespace Drutiny\ProfileSource;
 
+use Drutiny\LanguageManager;
+
 /**
  * Provide policies for Drutiny to use.
  */
@@ -18,8 +20,10 @@ interface ProfileSourceInterface
    *
    * Each definition should contain keys for name and description.
    * The definition is passed to the ::load() function to load a Policy object.
+   *
+   * @param \Drutiny\LanguageManager $languageManager
    */
-    public function getList();
+    public function getList(LanguageManager $languageManager);
 
   /**
    * Load a Drutiny\Policy object.

@@ -2,12 +2,9 @@
 
 namespace Drutiny\PolicySource;
 
-use Drutiny\Api;
-use Drutiny\Cache;
-use Drutiny\Config;
-use Drutiny\Container;
 use Drutiny\Policy;
 use Drutiny\Policy\Dependency;
+use Drutiny\LanguageManager;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -35,14 +32,20 @@ class LocalFs implements PolicySourceInterface
   /**
    * {@inheritdoc}
    */
-    public function getList()
+    public function getList(LanguageManager $languageManager)
     {
-        return $this->cache->get('localfs.policies', function ($item) {
+        $lang_code = $languageManager->getCurrentLanguage();
+        return $this->cache->get('localfs.policies.'.$lang_code, function ($item) use ($languageManager) {
             $finder = $this->finder->name('*.policy.yml');
             $list = [];
             foreach ($finder as $file) {
                 $policy = Yaml::parse($file->getContents());
                 $policy['uuid'] = $file->getPathname();
+                $policy['language'] = $policy['language'] ?? $languageManager->getDefaultLanguage();
+
+                if ($policy['language'] != $languageManager->getCurrentLanguage()) {
+                    continue;
+                }
                 $list[$policy['name']] = $policy;
             }
             return $list;

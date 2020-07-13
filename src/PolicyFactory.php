@@ -5,6 +5,7 @@ namespace Drutiny;
 use Drutiny\PolicySource\PolicySourceInterface;
 use Drutiny\Policy\UnavailablePolicyException;
 use Drutiny\Policy\UnknownPolicyException;
+use Drutiny\LanguageManager;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -17,12 +18,14 @@ class PolicyFactory
     use ContainerAwareTrait;
 
     protected $cache;
+    protected $languageManager;
 
-    public function __construct(ContainerInterface $container, CacheInterface $cache, LoggerInterface $logger)
+    public function __construct(ContainerInterface $container, CacheInterface $cache, LoggerInterface $logger, LanguageManager $languageManager)
     {
         $this->setContainer($container);
         $this->cache = $cache;
         $this->logger = $logger;
+        $this->languageManager = $languageManager;
     }
 
   /**
@@ -67,11 +70,12 @@ class PolicyFactory
         if (!empty($available_list)) {
             return $available_list;
         }
-        $policy_list = $this->cache->get('policy.list', function ($item) {
+        $lang = $this->languageManager->getCurrentLanguage();
+        $policy_list = $this->cache->get('policy.list.'.$lang, function ($item) {
             $list = [];
             foreach ($this->getSources() as $source) {
                 try {
-                    $items = $source->getList();
+                    $items = $source->getList($this->languageManager);
                     $this->container->get('logger')->notice($source->getName() . " has " . count($items) . " polices.");
                     foreach ($items as $name => $item) {
                         $item['source'] = $source->getName();

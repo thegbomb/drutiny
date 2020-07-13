@@ -5,6 +5,7 @@ namespace Drutiny\PolicySource;
 use Drutiny\Api;
 use Drutiny\Policy;
 use Drutiny\Policy\Dependency;
+use Drutiny\LanguageManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -34,12 +35,18 @@ class DrutinyGitHubIO implements PolicySourceInterface
   /**
    * {@inheritdoc}
    */
-    public function getList()
+    public function getList(LanguageManager $languageManager)
     {
         $list = [];
         foreach ($this->api->getPolicyList() as $listedPolicy) {
             $listedPolicy['filepath'] = Api::BaseUrl . $listedPolicy['_links']['self']['href'];
             $listedPolicy['class'] = preg_replace('/^\\\/', '', $listedPolicy['class']);
+            $listedPolicy['language'] = $listedPolicy['language'] ?? $languageManager->getDefaultLanguage();
+
+            if ($listedPolicy['language'] != $languageManager->getCurrentLanguage()) {
+              continue;
+            }
+            
             $list[$listedPolicy['name']] = $listedPolicy;
         }
         return $list;

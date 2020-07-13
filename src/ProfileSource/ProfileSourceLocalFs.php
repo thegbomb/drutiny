@@ -2,11 +2,12 @@
 
 namespace Drutiny\ProfileSource;
 
+use Drutiny\LanguageManager;
 use Drutiny\Profile;
-use Symfony\Component\Yaml\Yaml;
-use Symfony\Component\Finder\Finder;
 use Drutiny\Profile\PolicyDefinition;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\Yaml\Yaml;
 
 class ProfileSourceLocalFs implements ProfileSourceInterface
 {
@@ -28,7 +29,7 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
   /**
    * {@inheritdoc}
    */
-    public function getList()
+    public function getList(LanguageManager $languageManager)
     {
         $finder = new Finder();
         $finder->files()
@@ -40,6 +41,12 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
             $filename = $file->getRealPath();
             $name = str_replace('.profile.yml', '', pathinfo($filename, PATHINFO_BASENAME));
             $profile = Yaml::parse($file->getContents());
+            $profile['language'] = $profile['language'] ?? $languageManager->getDefaultLanguage();
+
+            if ($languageManager->getCurrentLanguage() != $profile['language']) {
+              continue;
+            }
+
             $profile['filepath'] = $filename;
             $profile['name'] = $name;
             unset($profile['format']);

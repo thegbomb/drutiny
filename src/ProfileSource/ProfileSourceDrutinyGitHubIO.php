@@ -5,9 +5,11 @@ namespace Drutiny\ProfileSource;
 use Drutiny\Api;
 use Drutiny\Profile;
 use Drutiny\Report\Format;
+use Drutiny\LanguageManager;
 use Drutiny\ProfileFactory;
 use Drutiny\Profile\PolicyDefinition;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+
 
 class ProfileSourceDrutinyGitHubIO implements ProfileSourceInterface
 {
@@ -34,10 +36,16 @@ class ProfileSourceDrutinyGitHubIO implements ProfileSourceInterface
   /**
    * {@inheritdoc}
    */
-    public function getList()
+    public function getList(LanguageManager $languageManager)
     {
         $list = [];
         foreach ($this->api->getProfileList() as $listedPolicy) {
+            $listedPolicy['language'] = $listedPolicy['language'] ?? $languageManager->getDefaultLanguage();
+
+            if ($languageManager->getCurrentLanguage() != $listedPolicy['language']) {
+              continue;
+            }
+
             $list[$listedPolicy['name']] = $listedPolicy;
         }
         return $list;

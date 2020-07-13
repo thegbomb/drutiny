@@ -17,6 +17,7 @@ parameters:
   twig.strict: true
   async.enabled: true
   async.max_threads: 7
+  language_default: en
 services:
     # default configuration for services in *this* file
     _defaults:

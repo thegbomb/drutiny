@@ -3,7 +3,7 @@
 namespace Drutiny;
 
 use Drutiny\ProfileSource\ProfileSourceInterface;
-;
+use Drutiny\LanguageManager;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -15,11 +15,13 @@ class ProfileFactory
     use ContainerAwareTrait;
 
     protected $cache;
+    protected $languageManager;
 
-    public function __construct(ContainerInterface $container, CacheInterface $cache)
+    public function __construct(ContainerInterface $container, CacheInterface $cache, LanguageManager $languageManager)
     {
         $this->setContainer($container);
         $this->cache = $cache;
+        $this->languageManager = $languageManager;
     }
 
   /**
@@ -45,12 +47,13 @@ class ProfileFactory
    */
     public function getProfileList():array
     {
-        return $this->cache->get('profile.list', function (ItemInterface $item) {
+        $lang_code = $this->languageManager->getCurrentLanguage();
+        return $this->cache->get('profile.list'.$lang_code, function (ItemInterface $item) {
           // $item->expiresAfter(0);
             $list = [];
 
             foreach ($this->getSources() as $source) {
-                foreach ($source->getList() as $name => $item) {
+                foreach ($source->getList($this->languageManager) as $name => $item) {
                     $item['source'] = $source->getName();
                     $list[$name] = $item;
                 }
