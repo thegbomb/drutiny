@@ -9,22 +9,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Yaml\Yaml;
-use Drutiny\Console\ProgressLogger;
 
 /**
  *
  */
 class TargetMetadataCommand extends Command
 {
-
-    protected $progressLogger;
-
-
-    public function __construct(ProgressLogger $progressLogger)
-    {
-        $this->progressLogger = $progressLogger;
-        parent::__construct();
-    }
 
   /**
    * @inheritdoc
