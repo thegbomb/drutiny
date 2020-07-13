@@ -31,6 +31,10 @@ class NoExperimentalCore extends Audit
             return true;
         }
 
+        foreach ($info as &$module) {
+            $module['name'] = $module['name'] ?? $module['display_name'];
+        }
+
         $this->set('modules', array_values($info));
         return false;
     }
