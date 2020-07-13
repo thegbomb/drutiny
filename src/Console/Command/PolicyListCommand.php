@@ -2,8 +2,8 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\Console\ProgressLogger;
 use Drutiny\PolicyFactory;
+use Drutiny\LanguageManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -19,13 +19,14 @@ class PolicyListCommand extends Command
 {
 
   protected $policyFactory;
+  protected $languageManager;
 
 
-  public function __construct(LoggerInterface $logger, ProgressLogger $progressLogger, PolicyFactory $factory)
+  public function __construct(LoggerInterface $logger, PolicyFactory $factory, LanguageManager $languageManager)
   {
       $this->logger = $logger;
       $this->policyFactory = $factory;
-      $this->progressLogger = $progressLogger;
+      $this->languageManager = $languageManager;
       parent::__construct();
   }
 
@@ -42,6 +43,13 @@ class PolicyListCommand extends Command
             't',
             InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
             'Filter list by tag'
+        )
+        ->addOption(
+            'language',
+            '',
+            InputOption::VALUE_OPTIONAL,
+            'Define which language to use for policies and profiles. Defaults to English (en).',
+            'en'
         )
         ->addOption(
             'source',
@@ -63,6 +71,9 @@ class PolicyListCommand extends Command
         // Ensure Container logger uses the same verbosity.
         $container->get('verbosity')
         ->set($output->getVerbosity());
+
+        // Set global language used by policy/profile sources.
+        $this->languageManager->setLanguage($input->getOption('language'));
 
         $list = $this->policyFactory->getPolicyList();
 

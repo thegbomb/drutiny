@@ -3,9 +3,11 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\PolicyFactory;
+use Drutiny\LanguageManager;
 use Fiasco\SymfonyConsoleStyleMarkdown\Renderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Twig\Environment;
@@ -16,13 +18,15 @@ use Twig\Environment;
 class PolicyInfoCommand extends Command
 {
   protected $policyFactory;
+  protected $languageManager;
   protected $twig;
 
 
-  public function __construct(PolicyFactory $factory, Environment $twig)
+  public function __construct(PolicyFactory $factory, Environment $twig, LanguageManager $languageManager)
   {
       $this->policyFactory = $factory;
       $this->twig = $twig;
+      $this->languageManager = $languageManager;
       parent::__construct();
   }
 
@@ -38,6 +42,13 @@ class PolicyInfoCommand extends Command
             'policy',
             InputArgument::REQUIRED,
             'The name of the check to run.'
+        )
+        ->addOption(
+            'language',
+            '',
+            InputOption::VALUE_OPTIONAL,
+            'Define which language to use for policies and profiles. Defaults to English (en).',
+            'en'
         );
     }
 
@@ -46,6 +57,9 @@ class PolicyInfoCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Set global language used by policy/profile sources.
+        $this->languageManager->setLanguage($input->getOption('language'));
+
         $policy = $this->policyFactory->loadPolicyByName($input->getArgument('policy'));
 
         $template = $this->twig->load('docs/policy.md.twig');

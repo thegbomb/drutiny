@@ -4,10 +4,9 @@ namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
 use Drutiny\AssessmentManager;
-use Drutiny\Console\ProgressLogger;
-use Drutiny\Entity\PolicyOverride;
 use Drutiny\DomainSource;
 use Drutiny\PolicyFactory;
+use Drutiny\LanguageManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,8 +14,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Console\Application;
-use Symfony\Component\Yaml\Yaml;
+
 
 /**
  * Run a profile and generate a report.
@@ -26,16 +24,15 @@ class ProfileRunCommand extends AbstractReportingCommand
 
     protected $domainSource;
     protected $logger;
-    protected $progressLogger;
     protected $policyFactory;
+    protected $languageManager;
 
-
-    public function __construct(DomainSource $domainSource, LoggerInterface $logger, ProgressLogger $progressLogger, PolicyFactory $factory)
+    public function __construct(DomainSource $domainSource, LoggerInterface $logger, PolicyFactory $factory, LanguageManager $languageManager)
     {
         $this->domainSource = $domainSource;
         $this->logger = $logger;
         $this->policyFactory = $factory;
-        $this->progressLogger = $progressLogger;
+        $this->languageManager = $languageManager;
         parent::__construct();
     }
 
@@ -58,6 +55,13 @@ class ProfileRunCommand extends AbstractReportingCommand
             'target',
             InputArgument::REQUIRED,
             'The target to run the policy collection against.'
+        )
+        ->addOption(
+            'language',
+            '',
+            InputOption::VALUE_OPTIONAL,
+            'Define which language to use for policies and profiles. Defaults to English (en).',
+            'en'
         )
         ->addOption(
             'remediate',
@@ -127,17 +131,8 @@ class ProfileRunCommand extends AbstractReportingCommand
             'Exclude domains that don\'t match this regex filter',
             []
         );
-    }
-
-  /**
-   * {@inheritdoc}
-   */
-    public function setApplication(?Application $application = null)
-    {
-        parent::setApplication($application);
-
-      // Build a way for the command line to specify the options to derive
-      // domains from their sources.
+        // Build a way for the command line to specify the options to derive
+        // domains from their sources.
         foreach ($this->domainSource->getSources() as $driver => $properties) {
             foreach ($properties as $name => $description) {
                 $this->addOption(
@@ -163,11 +158,14 @@ class ProfileRunCommand extends AbstractReportingCommand
         ->getKernel()
         ->getContainer();
 
+        // Set global language used by policy/profile sources.
+        $this->languageManager->setLanguage($input->getOption('language'));
+
         // Ensure Container logger uses the same verbosity.
         $container->get('verbosity')
         ->set($output->getVerbosity());
 
-        $console = new SymfonyStyle($input, $output);
+        $console = new SymfonyStyle($input, $output->section());
         $async = $container->get('async');
 
         $profile = $container->get('profile.factory')
@@ -249,11 +247,13 @@ class ProfileRunCommand extends AbstractReportingCommand
               return $assessment->export();
             });
         }
+        $console->progressStart(count($uris));
 
         $exit_codes = [0];
         $results = [];
         $assessment_manager = new AssessmentManager();
         foreach ($async->wait() as $export) {
+            $console->progressAdvance();
             $assessment = $container->get('Drutiny\Assessment');
             $assessment->import($export);
             $assessment_manager->addAssessment($assessment);
@@ -273,6 +273,7 @@ class ProfileRunCommand extends AbstractReportingCommand
             }
             $exit_codes[] = $assessment->getSeverityCode();
         }
+        $console->progressFinish();
 
         if (count($assessment_manager->getAssessments()) > 1) {
 

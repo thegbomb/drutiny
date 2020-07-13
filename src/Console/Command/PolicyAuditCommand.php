@@ -3,9 +3,9 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
-use Drutiny\Console\ProgressLogger;
 use Drutiny\PolicyFactory;
 use Drutiny\Profile;
+use Drutiny\LanguageManager;
 use Drutiny\Audit\RemediableInterface;
 use Drutiny\Report\Format;
 use Drutiny\Entity\PolicyOverride;
@@ -26,12 +26,13 @@ use Symfony\Component\Yaml\Yaml;
 class PolicyAuditCommand extends AbstractReportingCommand
 {
   protected $policyFactory;
+  protected $languageManager;
 
-  public function __construct(LoggerInterface $logger, ProgressLogger $progressLogger, PolicyFactory $factory)
+  public function __construct(LoggerInterface $logger, PolicyFactory $factory, LanguageManager $languageManager)
   {
       $this->logger = $logger;
       $this->policyFactory = $factory;
-      $this->progressLogger = $progressLogger;
+      $this->languageManager = $languageManager;
       parent::__construct();
   }
 
@@ -52,6 +53,13 @@ class PolicyAuditCommand extends AbstractReportingCommand
             'target',
             InputArgument::REQUIRED,
             'The target to run the check against.'
+        )
+        ->addOption(
+            'language',
+            '',
+            InputOption::VALUE_OPTIONAL,
+            'Define which language to use for policies and profiles. Defaults to English (en).',
+            'en'
         )
         ->addOption(
             'set-parameter',
@@ -106,6 +114,8 @@ class PolicyAuditCommand extends AbstractReportingCommand
         $container = $this->getApplication()
         ->getKernel()
         ->getContainer();
+
+        $this->languageManager->setLanguage($input->getOption('language'));
 
         // Ensure Container logger uses the same verbosity.
         $container->get('verbosity')
