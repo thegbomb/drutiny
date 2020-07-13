@@ -5,6 +5,7 @@ namespace Drutiny\Plugin\Drupal8\Audit;
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Audit\RemediableInterface;
+use Composer\Semver\Comparator;
 
 /**
  * User #1
@@ -37,11 +38,22 @@ class User1 extends Audit implements RemediableInterface
    */
     public function audit(Sandbox $sandbox)
     {
-      // Get the details for user #1.
-        $user = $sandbox->drush(['format' => 'json'])
-                    ->userInformation(1);
+        $drush = $this->target->getService('drush');
 
-        $user = (object) array_pop($user);
+        if (Comparator::greaterThan($this->target['drush.drush-version'], '10.0.0')) {
+            $command = $drush->userInformation([
+              'uid' => 1,
+              'format' => 'json'
+            ]);
+        }
+        else {
+            $command = $drush->userInformation(1, ['format' => 'json']);
+        }
+
+        $user = $command->run(function ($output) {
+          $json = json_decode($output, true);
+          return (object) array_pop($json);
+        });
 
         $this->set('user', $user);
         $this->set('blacklist_fail', false);
