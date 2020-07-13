@@ -2,7 +2,6 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\Console\ProgressLogger;
 use Drutiny\DomainSource;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\InputArgument;
