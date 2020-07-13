@@ -39,6 +39,7 @@ class HttpHeaderExists extends Http
     public function audit(Sandbox $sandbox)
     {
         try {
+            $this->set('header', $this->getParameter('header'));
             $res = $this->getHttpResponse($sandbox);
             if ($has_header = $res->hasHeader($this->getParameter('header'))) {
                 $headers = $res->getHeader($this->getParameter('header'));
