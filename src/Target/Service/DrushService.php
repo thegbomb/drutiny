@@ -93,9 +93,9 @@ class DrushService {
     $options = is_array(end($args)) ? array_pop($args) : [];
 
     // Ensure the root argument is set.
-    // if (!isset($options['root']) && !isset($options['r'])) {
-    //   $options['root'] = '$DRUSH_ROOT';
-    // }
+    if (!isset($options['root']) && !isset($options['r'])) {
+      $options['root'] = '$DRUSH_ROOT';
+    }
 
     // Quote all arguments.
     array_walk($args, function (&$arg) {
