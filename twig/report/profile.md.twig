@@ -20,7 +20,7 @@ End | {{ assessment.reportingPeriodEnd.format('Y-m-d H:i:s e') }}
 ## Recommendations
     {% for response in assessment.results|filter(r => r.isFailure) %}
       {% with response.tokens %}
-{{ include(template_from_string(response.policy.remediation | mustache2twig )) }}
+{{ include(template_from_string(response.policy.remediation | mustache2twig, "remediation field in profile.md.twig" )) }}
       {% endwith %}
     {% endfor %}
   {% endif %}
