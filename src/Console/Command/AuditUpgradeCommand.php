@@ -45,6 +45,7 @@ class AuditUpgradeCommand extends Command
           '$sandbox->getParameter' => '$this->getParameter',
           '$sandbox->exec' => '$this->target->getService(\'exec\')->run',
           'Drutiny\RemediableInterface' => 'Drutiny\Audit\RemediableInterface',
+          '$sandbox->getTarget()->uri()' => '$this->target[\'uri\']',
         //  'getParameterTokens()' => 'get("parameters")->all()'
         ];
 
