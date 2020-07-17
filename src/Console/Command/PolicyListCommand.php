@@ -3,6 +3,7 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\PolicyFactory;
+use Drutiny\ProfileFactory;
 use Drutiny\LanguageManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -19,14 +20,16 @@ class PolicyListCommand extends Command
 {
 
   protected $policyFactory;
+  protected $profileFactory;
   protected $languageManager;
 
 
-  public function __construct(LoggerInterface $logger, PolicyFactory $factory, LanguageManager $languageManager)
+  public function __construct(LoggerInterface $logger, PolicyFactory $factory, ProfileFactory $profileFactory, LanguageManager $languageManager)
   {
       $this->logger = $logger;
       $this->policyFactory = $factory;
       $this->languageManager = $languageManager;
+      $this->profileFactory = $profileFactory;
       parent::__construct();
   }
 
@@ -83,12 +86,20 @@ class PolicyListCommand extends Command
             });
         }
 
+        $profiles = array_map(function ($profile) {
+          return $this->profileFactory->loadProfileByName($profile['name']);
+        }, $this->profileFactory->getProfileList());
+
         $rows = array();
         foreach ($list as $listedPolicy) {
             $row = array(
             'description' => '<options=bold>' . wordwrap($listedPolicy['title'], 50) . '</>',
             'name' => $listedPolicy['name'],
             'source' => $listedPolicy['source'],
+            'profile_util' => count(array_filter($profiles, function ($profile) use ($listedPolicy) {
+                $list = array_keys($profile->policies->all());
+                return in_array($listedPolicy['name'], $list);
+              })),
             );
             $rows[] = $row;
         }
@@ -101,10 +112,7 @@ class PolicyListCommand extends Command
         });
 
         $io = new SymfonyStyle($input, $output);
-        $headers = ['Title', 'Name', 'Source'];
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $headers[] = 'URI';
-        }
+        $headers = ['Title', 'Name', 'Source', 'Profile Utilization'];
         $io->table($headers, $rows);
 
         return 0;

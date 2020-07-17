@@ -2,9 +2,9 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\Registry;
+
+use Drutiny\PolicyFactory;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -15,6 +15,13 @@ use Symfony\Component\Finder\Finder;
  */
 class AuditListCommand extends Command
 {
+    protected $policyFactory;
+
+    public function __construct(PolicyFactory $policyFactory)
+    {
+        $this->policyFactory = $policyFactory;
+        parent::__construct();
+    }
 
   /**
    * @inheritdoc
@@ -60,20 +67,19 @@ class AuditListCommand extends Command
         });
 
         sort($audits);
+        $policy_list = $this->policyFactory->getPolicyList(true);
+
+        $stats = [];
+        foreach ($audits as $audit) {
+          $stats[] = [$audit, count(array_filter($policy_list, function ($policy) use ($audit) {
+            return $audit == $policy['class'];
+          }))];
+        }
 
         $io = new SymfonyStyle($input, $output);
         $io->title('Drutiny Audit Classes');
-        $io->listing($audits);
+        // $io->listing($audits);
+        $io->table(['Audit', 'Policy utilisation'], $stats);
         return 0;
-    }
-
-  /**
-   *
-   */
-    protected function formatDescription($text)
-    {
-        $lines = explode(PHP_EOL, $text);
-        $text = implode(' ', $lines);
-        return wordwrap($text, 50);
     }
 }
