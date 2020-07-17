@@ -214,6 +214,7 @@ services:
         - [addFilter, ['@twig.filters.array_sum']]
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.mustache2twig']]
+        - [addfilter, ['@twig.filters.chart']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
 
     twig.filters.array_sum:
@@ -234,6 +235,13 @@ services:
         - ['Drutiny\Report\Format\HTML', 'filterSectionHeading']
         - needs_environment: true
           is_safe: ['html']
+
+    twig.filters.chart:
+      class: Twig\TwigFilter
+      arguments:
+        - 'chart'
+        - ['Drutiny\Report\Format\HTML', 'filterChart']
+        - is_safe: ['html']
 
     process.manager:
       class: Drutiny\Process\ProcessManager

@@ -41,6 +41,19 @@ class HTML extends Format
         ->render(['heading' => $heading]);
     }
 
+    /**
+     * Registered as a Twig filter to be used as: chart.foo|chart.
+     */
+    public static function filterChart(array $chart)
+    {
+      $element = '<div class="chart-unprocessed" ';
+      foreach ($chart as $name => $key) {
+        $value = is_array($key) ? implode(',', $key) : $key;
+        $element .= 'data-chart-'.$name . '="'.$value.'" ' ;
+      }
+      return $element . '></div>';
+    }
+
 
     protected function prepareContent(Profile $profile, AssessmentInterface $assessment)
     {
@@ -62,7 +75,7 @@ class HTML extends Format
         foreach ($section as $attribute => $value) {
           $template = $this->prefixTemplate($section[$attribute]);
 
-          $template = $this->preMapDrutiny2Variables($template);
+          //$template = $this->preMapDrutiny2Variables($template);
 
           // Map the old Drutiny 2.x variables to the Drutiny 3.x versions.
           $template = $this->preMapDrutiny2Variables($template);
