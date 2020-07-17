@@ -11,7 +11,7 @@
   {% for response in assessment.results|filter(r => r.hasError) %}
     {% include 'report/policy/error.md.twig' with {'result': response } %}
   {% endfor %}
-  {% for response in assessment.results|filter(r => r.isSuccessful) %}
+  {% for response in assessment.results|filter(r => r.isSuccessful and not r.isNotice) %}
     {% include 'report/policy/success.md.twig' with {'result': response } %}
   {% endfor %}
 {% endblock %}
