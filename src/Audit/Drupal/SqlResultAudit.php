@@ -26,12 +26,18 @@ class SqlResultAudit extends AbstractAnalysis
      */
     public function configure()
     {
+        parent::configure();
         $this->addParameter(
             'query',
             static::PARAMETER_REQUIRED,
             'The SQL query to run. Can use the audit context for variable replace. E.g. {drush.db-name}.',
         );
-        parent::configure();
+        $this->addParameter(
+            'db_level_query',
+            static::PARAMETER_OPTIONAL,
+            '',
+            false
+        );
     }
 
     /**
