@@ -33,6 +33,7 @@ abstract class Audit implements AuditInterface
     protected $target;
     protected $expressionLanguage;
     protected $dataBag;
+    protected $policy;
 
     final public function __construct(
       ContainerInterface $container,
@@ -256,7 +257,17 @@ abstract class Audit implements AuditInterface
         if (!isset($this->definition)) {
             $this->definition = new InputDefinition();
         }
-        $this->definition->addArgument(new InputArgument($name, $mode, $description, $default));
+        $args = $this->definition->getArguments();
+        $input = new InputArgument($name, $mode, $description, $default);
+
+        if ($mode == self::PARAMETER_REQUIRED) {
+          array_unshift($args, $input);
+        }
+        else {
+          $args[] = $input;
+        }
+
+        $this->definition->setArguments($args);
 
         return $this;
     }
