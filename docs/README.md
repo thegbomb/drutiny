@@ -28,3 +28,9 @@ composer install
 ```
 
 This will also install the dev dependencies such as phpunit and phpcs.
+
+Alternatively you can install using composer:
+
+```
+composer require drutiny/drutiny:3.0.x-dev
+```
