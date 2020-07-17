@@ -17,6 +17,7 @@ class DrushService {
     'userInformation' => 'user:information',
     'sqlq' => 'sqlq',
     'updb' => 'updb',
+    'updatedbStatus' => 'updatedb:status',
   ];
   public function __construct(ExecutionInterface $service)
   {
@@ -71,7 +72,7 @@ class DrushService {
         '@code' => $initCode.$code
       ]);
       $wrapper = base64_encode($wrapper);
-      $command = strtr('echo @code | base64 --decode | @launcher php-script -', [
+      $command = strtr('echo @code | base64 --decode | @launcher -r $DRUSH_ROOT php-script -', [
         '@code' => $wrapper,
         '@launcher' => $launcher = '$(which ' . implode(' || which ', static::LAUNCHERS) . ')',
       ]);
