@@ -78,6 +78,10 @@ class Assessment implements ExportableInterface, AssessmentInterface
             $audit = $this->container->get($policy->class);
             $audit->setParameter('reporting_period_start', $start)
                   ->setParameter('reporting_period_end', $end);
+
+            if ($target !== $audit->getTarget()) {
+              throw new \Exception("Audit target not the same as assessment target.");
+            }
             $audit->getTarget()->setUri($this->uri);
 
             $this->async->run(function () use ($audit, $policy, $remediate) {
