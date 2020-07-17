@@ -76,7 +76,7 @@ class AuditUpgrade {
         $configure_code[] = "$mode,";
         $configure_code[] = "'$desc'".(isset($default) ? ',' : '');
         if (isset($default)) {
-          $configure_code[] = "$default";
+          $configure_code[] = var_export($default, true);
         }
         $configure_code[] = ');';
 
