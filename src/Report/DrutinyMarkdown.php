@@ -14,6 +14,7 @@ namespace Drutiny\Report;
 use Drutiny\Report\Format\MarkdownHelper;
 use Twig\Extra\Markdown\MarkdownInterface;
 
+
 class DrutinyMarkdown implements MarkdownInterface
 {
     private $converter;

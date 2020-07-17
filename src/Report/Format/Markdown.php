@@ -8,8 +8,6 @@ use Drutiny\Report\FormatInterface;
 use Twig\Extra\Markdown\twig_html_to_markdown;
 use Twig\TemplateWrapper;
 
-// class_exists('Twig\Extra\Markdown\MarkdownExtension');
-
 class Markdown extends HTML
 {
     protected $format = 'markdown';
@@ -24,10 +22,6 @@ class Markdown extends HTML
         $lines = explode(PHP_EOL, $markdown);
         array_walk($lines, function (&$line) {
           $line = trim($line);
-        });
-
-        $lines = array_filter($lines, function ($line) {
-            return !preg_match(MarkdownHelper::CHART_REGEX, $line);
         });
 
         $this->buffer->write(implode(PHP_EOL, $lines));

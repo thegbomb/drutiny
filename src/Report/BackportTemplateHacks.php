@@ -90,27 +90,51 @@ Trait BackportTemplateHacks
     }
 
     public static function convertMustache2TwigSyntax($sample) {
+      // Convert old chart syntax to new syntax.
+      // Old (2.x): {{{_chart.foo}}}
+      // New (3.x): {{chart.foo|chart}}
+      $sample = preg_replace("/{{{_chart.(.+)}}}/", '{{result.policy.chart.$1|chart}}', $sample);
+
       $tokens = [];
-      while (preg_match_all('/({?{{)\s*([\#\^\/ ])?\s*([a-zA-Z0-9_]+|\.)\s?(}}}?)/', $sample, $matches)) {
+      while (preg_match_all('/({?{{)\s*([\#\^\/ ])?\s*([a-zA-Z0-9_\.]+|\.)\s?(}}}?)/', $sample, $matches)) {
         foreach ($matches[3] as $idx => $variable) {
           $operator = $matches[2][$idx];
           $is_raw = (strlen($matches[1][$idx]) == 3);
           $syntax = $matches[0][$idx];
 
           // If condition or loop.
-          if ($operator == '#') {
+          if (in_array($operator, ['#', '^'])) {
             // Find closing condition.
-            $closing_idx = array_search($variable, array_slice($matches[3], $idx+1, null, true));
-            if ($matches[2][$closing_idx] != '/') {
-              throw new \Exception("Expected closing statement for $variable. Found: {$matches[0][$closing_idx]}");
+            $i = $idx+1;
+            do {
+                $slice = array_slice($matches[3], $i, null, true);
+
+                if (empty($slice)) {
+                  throw new \Exception("Expected closing statement for $variable in \n $sample");
+                }
+                $closing_idx = array_search($variable, $slice);
+
+                if ($matches[2][$closing_idx] != '/') {
+                    $i++;
+                    continue;
+                }
+                break;
             }
-            $start = strpos($sample, $matches[0][$idx]);
+            while (true);
+
+            $start = strpos($sample, $syntax);
             $end = strpos(substr($sample, $start), $matches[0][$closing_idx]) + strlen($matches[0][$closing_idx]);
             $snippet = substr($sample, $start, $end);
             $token = md5($snippet);
 
             $content = substr($sample, $start + strlen($syntax), $end - strlen($syntax) - strlen($matches[0][$closing_idx]));
-            $tokens[$token] = static::mustache_tpl($variable, static::convertMustache2TwigSyntax($content));
+
+            if ($operator == '#') {
+              $tokens[$token] = static::mustache_tpl($variable, static::convertMustache2TwigSyntax($content));
+            }
+            elseif ($operator == '^') {
+              $tokens[$token] = static::not_mustache_tpl($variable, static::convertMustache2TwigSyntax($content));
+            }
 
             $sample = implode($token, explode($snippet, $sample, 2));
             break;
@@ -128,11 +152,17 @@ Trait BackportTemplateHacks
       return strtr($sample, $tokens);
     }
 
+    private static function not_mustache_tpl($variable, $content) {
+      return <<<HTML
+      {% if $variable is empty or not $variable %}$content{% endif %}
+      HTML;
+    }
+
     private static function mustache_tpl($variable, $content) {
       return <<<HTML
       {% if $variable is iterable %}
           {% for self in $variable %}{% if self is iterable %}{% with self %}$content{% endwith %}{% else %}$content{% endif %}{% endfor %}
-      {% else %}{% endif %}
+      {% endif %}
       HTML;
     }
 }
