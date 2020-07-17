@@ -96,13 +96,11 @@ class PolicyFactory
         }
 
         $available_list = array_filter($policy_list, function ($listedPolicy) {
-            try {
-                $this->container->get($listedPolicy['class']);
-                return true;
-            } catch (\Exception $e) {
-                $this->logger->warning($e->getMessage());
+            if (!class_exists($listedPolicy['class'])) {
+                $this->logger->warning('Failed to find class:  ' . $listedPolicy['class']);
                 return false;
             }
+            return true;
         });
         return $available_list;
     }
