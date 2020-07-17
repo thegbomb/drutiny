@@ -186,7 +186,8 @@ services:
       class: Drutiny\Target\TargetFactory
 
     target:
-      alias: target.drush
+      class: Drutiny\Target\DrushTarget
+      synthetic: true
 
     target.drush:
       class: Drutiny\Target\DrushTarget
