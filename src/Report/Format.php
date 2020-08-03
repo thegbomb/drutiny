@@ -51,8 +51,9 @@ abstract class Format implements FormatInterface
             $message[] = strtr('file:line', $stack);
           }
           $this->logger->error(implode("\n", $message));
-          $source = $e->getSourceContext();
-          $this->logger->info($source->getCode());
+          if ($source = $e->getSourceContext()) {
+            $this->logger->info($source->getCode());
+          }
           throw $e;
         }
         return $this;

@@ -80,6 +80,7 @@ class AuditResponse implements ExportableInterface
 
     public function setTokens(array $tokens = []) {
         $this->tokens = $tokens;
+        $this->tokens['chart'] = $this->policy->chart;
         return $this;
     }
 

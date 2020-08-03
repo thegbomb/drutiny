@@ -3,13 +3,10 @@
 namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
-use Drutiny\PolicyFactory;
 use Drutiny\Profile;
-use Drutiny\LanguageManager;
 use Drutiny\Audit\RemediableInterface;
 use Drutiny\Report\Format;
 use Drutiny\Entity\PolicyOverride;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -23,18 +20,9 @@ use Symfony\Component\Yaml\Yaml;
 /**
  *
  */
-class PolicyAuditCommand extends AbstractReportingCommand
+class PolicyAuditCommand extends DrutinyBaseCommand
 {
-  protected $policyFactory;
-  protected $languageManager;
-
-  public function __construct(LoggerInterface $logger, PolicyFactory $factory, LanguageManager $languageManager)
-  {
-      $this->logger = $logger;
-      $this->policyFactory = $factory;
-      $this->languageManager = $languageManager;
-      parent::__construct();
-  }
+  use ReportingCommandTrait;
 
   /**
    * @inheritdoc
@@ -103,6 +91,7 @@ class PolicyAuditCommand extends AbstractReportingCommand
             FALSE
         );
         parent::configure();
+        $this->configureReporting();
     }
 
   /**
@@ -110,16 +99,13 @@ class PolicyAuditCommand extends AbstractReportingCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-
-        $container = $this->getApplication()
-        ->getKernel()
-        ->getContainer();
-
-        $this->languageManager->setLanguage($input->getOption('language'));
+        $progress = $this->getProgressBar();
+        $progress->start();
+        $this->getLanguageManager()->setLanguage($input->getOption('language'));
 
         // Ensure Container logger uses the same verbosity.
-        $container->get('verbosity')
-        ->set($output->getVerbosity());
+        // $container->get('verbosity')
+        // ->set($output->getVerbosity());
 
         // Setup any parameters for the check.
         $parameters = [];
@@ -130,14 +116,14 @@ class PolicyAuditCommand extends AbstractReportingCommand
         }
 
         $name = $input->getArgument('policy');
-        $profile = $container->get('profile');
+        $profile = $this->getContainer()->get('profile');
 
         $profile->setProperties([
           'title' => 'Policy Audit: ' . $name,
           'name' => $name,
           'uuid' => '/dev/null',
           'policies' => [
-            $name => $container->get('policy.override')->add([
+            $name => $this->getContainer()->get('policy.override')->add([
               'name' => $name,
               'parameters' => $parameters
             ])
@@ -150,7 +136,7 @@ class PolicyAuditCommand extends AbstractReportingCommand
         ]);
 
         // Setup the target.
-        $target = $container->get('target.factory')->create($input->getArgument('target'));
+        $target = $this->getTargetFactory()->create($input->getArgument('target'));
 
         // Get the URLs.
         $uri = $input->getOption('uri');
@@ -163,18 +149,23 @@ class PolicyAuditCommand extends AbstractReportingCommand
         $profile->setReportingPeriod($start, $end);
 
         $policies = [];
+        $progress->setMessage("Loading policy definitions...");
         foreach ($profile->getAllPolicyDefinitions() as $definition) {
-            $policies[] = $definition->getPolicy($this->policyFactory);
+            $policies[] = $definition->getPolicy($this->getPolicyFactory());
         }
 
-        $assessment = $container->get('Drutiny\Assessment')
+        $progress->setMessage("Assessing target...");
+        $assessment = $this->getContainer()->get('assessment')
         ->setUri($uri)
         ->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
+
+        $progress->finish();
+        $progress->clear();
 
         $filepath = $input->getOption('report-filename') ?: 'stdout';
 
         $format = $input->getOption('format');
-        $format = $container->get('format.factory')->create($format, $profile->format[$format] ?? []);
+        $format = $this->getContainer()->get('format.factory')->create($format, $profile->format[$format] ?? []);
         $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($filepath, 'w')) : $output);
         $format->render($profile, $assessment)->write();
 

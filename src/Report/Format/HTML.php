@@ -75,8 +75,6 @@ class HTML extends Format
         foreach ($section as $attribute => $value) {
           $template = $this->prefixTemplate($section[$attribute]);
 
-          //$template = $this->preMapDrutiny2Variables($template);
-
           // Map the old Drutiny 2.x variables to the Drutiny 3.x versions.
           $template = $this->preMapDrutiny2Variables($template);
 

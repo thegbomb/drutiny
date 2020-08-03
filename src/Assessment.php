@@ -2,7 +2,7 @@
 
 namespace Drutiny;
 
-use Async\AsyncRuntime;
+use Async\ForkManager;
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
 use Drutiny\Entity\ExportableInterface;
@@ -22,22 +22,22 @@ class Assessment implements ExportableInterface, AssessmentInterface
     /**
      * @var string URI
      */
-    protected $uri;
+    protected $uri = '';
     protected $results = [];
     protected $successful = true;
     protected $severityCode = 1;
     protected $logger;
     protected $container;
     protected $remediable = [];
-    protected $async;
+    protected $forkManager;
     protected $statsByResult = [];
     protected $statsBySeverity = [];
 
-    public function __construct(LoggerInterface $logger, ContainerInterface $container, AsyncRuntime $async)
+    public function __construct(LoggerInterface $logger, ContainerInterface $container, ForkManager $forkManager)
     {
         $this->logger = $logger;
         $this->container = $container;
-        $this->async = $async;
+        $this->forkManager = $forkManager;
     }
 
     public function setUri($uri = 'default')
@@ -84,11 +84,11 @@ class Assessment implements ExportableInterface, AssessmentInterface
             }
             $audit->getTarget()->setUri($this->uri);
 
-            $this->async->run(function () use ($audit, $policy, $remediate) {
+            $this->forkManager->run(function () use ($audit, $policy, $remediate) {
               return $audit->execute($policy, $remediate);
             });
         }
-        foreach ($this->async->wait() as $response) {
+        foreach ($this->forkManager->receive() as $response) {
             $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
             $this->statsByResult[$response->getType()]++;
 
@@ -219,6 +219,6 @@ class Assessment implements ExportableInterface, AssessmentInterface
       $this->importUnserialized($export);
       $this->container = drutiny();
       $this->logger = drutiny()->get('logger');
-      $this->async = drutiny()->get('Async\AsyncRuntime');
+      $this->async = drutiny()->get('async');
     }
 }

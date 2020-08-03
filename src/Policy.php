@@ -7,6 +7,7 @@ use Drutiny\Policy\Dependency;
 use Drutiny\Entity\DataBag;
 use Drutiny\Entity\ExportableInterface;
 use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 
 class Policy implements ExportableInterface
 {
@@ -30,7 +31,7 @@ class Policy implements ExportableInterface
     /**
      * Make properties read-only attributes of object.
      */
-    public function __get($property)
+    public function __get(string $property)
     {
       if ($property == 'parameters') {
         return $this->parameterBag->all();
@@ -52,7 +53,7 @@ class Policy implements ExportableInterface
   /**
    * Set policy property.
    */
-    public function setProperty($property, $value)
+    public function setProperty(string $property, $value)
     {
         return $this->setProperties([$property => $value]);
     }
@@ -69,10 +70,16 @@ class Policy implements ExportableInterface
         $processor = new Processor();
         $configuration = new PolicyConfiguration();
 
-        $policyData = $processor->processConfiguration(
-            $configuration,
-            ['policy' => $data]
-        );
+        try {
+          $policyData = $processor->processConfiguration(
+              $configuration,
+              ['policy' => $data]
+          );
+        }
+        catch (InvalidConfigurationException $e) {
+            throw new InvalidConfigurationException("Policy '{$data['name']}' configuration invalid: " . $e->getMessage());
+        }
+
 
         // Parameters sit on their own DataBag.
         if (isset($new_properties['parameters'])) {
@@ -119,7 +126,7 @@ class Policy implements ExportableInterface
         return $this;
     }
 
-    public function addParameter($key, $value)
+    public function addParameter(string $key, $value)
     {
         return $this->parameterBag->set($key, $value);
     }
@@ -129,7 +136,7 @@ class Policy implements ExportableInterface
       return $this->parameterBag->add($parameters);
     }
 
-    public function getParameter($key)
+    public function getParameter(string $key)
     {
       return $this->parameterBag->get($key);
     }
@@ -147,7 +154,7 @@ class Policy implements ExportableInterface
         return $this->dependencies;
     }
 
-    public function setSeverity($severity)
+    public function setSeverity(string $severity)
     {
         return $this->setProperty('severity', $severity);
     }

@@ -162,6 +162,8 @@ Trait BackportTemplateHacks
       return <<<HTML
       {% if $variable is iterable %}
           {% for self in $variable %}{% if self is iterable %}{% with self %}$content{% endwith %}{% else %}$content{% endif %}{% endfor %}
+      {% elseif $variable %}
+        $content
       {% endif %}
       HTML;
     }

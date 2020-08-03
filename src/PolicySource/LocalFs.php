@@ -35,7 +35,7 @@ class LocalFs implements PolicySourceInterface
     public function getList(LanguageManager $languageManager)
     {
         $lang_code = $languageManager->getCurrentLanguage();
-        return $this->cache->get('localfs.policies.'.$lang_code, function ($item) use ($languageManager) {
+        //return $this->cache->get('localfs.policies.'.$lang_code, function ($item) use ($languageManager) {
             $finder = $this->finder->name('*.policy.yml');
             $list = [];
             foreach ($finder as $file) {
@@ -49,7 +49,7 @@ class LocalFs implements PolicySourceInterface
                 $list[$policy['name']] = $policy;
             }
             return $list;
-        });
+        //});
     }
 
   /**
@@ -76,7 +76,6 @@ class LocalFs implements PolicySourceInterface
                 ];
             }
         }
-
         return $policy->setProperties($definition);
     }
 

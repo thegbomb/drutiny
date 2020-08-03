@@ -19,9 +19,9 @@ use Symfony\Component\Yaml\Yaml;
 /**
  *
  */
-class AuditRunCommand extends AbstractReportingCommand
+class AuditRunCommand extends DrutinyBaseCommand
 {
-
+    use ReportingCommandTrait;
   /**
    * @inheritdoc
    */

@@ -8,6 +8,7 @@ use Drutiny\Policy\UnknownPolicyException;
 use Drutiny\LanguageManager;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Psr\Log\LoggerInterface;
@@ -19,13 +20,15 @@ class PolicyFactory
 
     protected $cache;
     protected $languageManager;
+    protected $progress;
 
-    public function __construct(ContainerInterface $container, CacheInterface $cache, LoggerInterface $logger, LanguageManager $languageManager)
+    public function __construct(ContainerInterface $container, CacheInterface $cache, LoggerInterface $logger, LanguageManager $languageManager, ProgressBar $progress)
     {
         $this->setContainer($container);
         $this->cache = $cache;
         $this->logger = $logger;
         $this->languageManager = $languageManager;
+        $this->progress = $progress;
     }
 
   /**
@@ -73,6 +76,8 @@ class PolicyFactory
         $lang = $this->languageManager->getCurrentLanguage();
         $policy_list = $this->cache->get('policy.list.'.$lang, function ($item) {
             $list = [];
+            // Add steps to the progress bar.
+            $this->progress->setMaxSteps($this->progress->getMaxSteps() + count($this->getSources()));
             foreach ($this->getSources() as $source) {
                 try {
                     $items = $source->getList($this->languageManager);
@@ -87,6 +92,7 @@ class PolicyFactory
                     '@error' => $e->getMessage(),
                     ]));
                 }
+                $this->progress->advance();
             }
             return $list;
         });

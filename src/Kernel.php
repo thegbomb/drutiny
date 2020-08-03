@@ -15,6 +15,7 @@ use Symfony\Component\DependencyInjection\Loader\GlobFileLoader;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
+use Drutiny\DependencyInjection\TwigLoaderPass;
 
 class Kernel
 {
@@ -82,9 +83,11 @@ class Kernel
         $loader = $this->getContainerLoader($container);
 
         $container->addCompilerPass(new RegisterListenersPass('event_dispatcher', 'kernel.event_listener', 'drutiny.event_subscriber'));
+        $container->addCompilerPass(new TwigLoaderPass());
 
         $container->setParameter('user_home_dir', getenv('HOME'));
         $container->setParameter('drutiny_core_dir', \dirname(__DIR__));
+        $container->setParameter('project_dir', $this->getProjectDir());
 
         foreach ($this->loadingPaths as $path) {
           $loading_path = [
@@ -92,7 +95,6 @@ class Kernel
           ];
           $loader->load(implode('/', $loading_path), 'glob');
         }
-
 
         return $container;
     }

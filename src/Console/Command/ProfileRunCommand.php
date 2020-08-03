@@ -4,10 +4,6 @@ namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
 use Drutiny\AssessmentManager;
-use Drutiny\DomainSource;
-use Drutiny\PolicyFactory;
-use Drutiny\LanguageManager;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -19,22 +15,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Run a profile and generate a report.
  */
-class ProfileRunCommand extends AbstractReportingCommand
+class ProfileRunCommand extends DrutinyBaseCommand
 {
-
-    protected $domainSource;
-    protected $logger;
-    protected $policyFactory;
-    protected $languageManager;
-
-    public function __construct(DomainSource $domainSource, LoggerInterface $logger, PolicyFactory $factory, LanguageManager $languageManager)
-    {
-        $this->domainSource = $domainSource;
-        $this->logger = $logger;
-        $this->policyFactory = $factory;
-        $this->languageManager = $languageManager;
-        parent::__construct();
-    }
+    use ReportingCommandTrait;
+    use DomainSourceCommandTrait;
+    use LanguageCommandTrait;
 
   /**
    * @inheritdoc
@@ -55,13 +40,6 @@ class ProfileRunCommand extends AbstractReportingCommand
             'target',
             InputArgument::REQUIRED,
             'The target to run the policy collection against.'
-        )
-        ->addOption(
-            'language',
-            '',
-            InputOption::VALUE_OPTIONAL,
-            'Define which language to use for policies and profiles. Defaults to English (en).',
-            'en'
         )
         ->addOption(
             'remediate',
@@ -110,39 +88,10 @@ class ProfileRunCommand extends AbstractReportingCommand
             InputOption::VALUE_OPTIONAL,
             'The end point in time to report to. Can be absolute or relative. Defaults to the current hour.',
             date('Y-m-d H:00:00')
-        )
-        ->addOption(
-            'domain-source',
-            'd',
-            InputOption::VALUE_OPTIONAL,
-            'Use a domain source to preload uri options. Defaults to yaml filepath.',
-            'yaml'
-        )->addOption(
-            'domain-source-blacklist',
-            null,
-            InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
-            'Exclude domains that match this regex filter',
-            []
-        )
-        ->addOption(
-            'domain-source-whitelist',
-            null,
-            InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
-            'Exclude domains that don\'t match this regex filter',
-            []
         );
-        // Build a way for the command line to specify the options to derive
-        // domains from their sources.
-        foreach ($this->domainSource->getSources() as $driver => $properties) {
-            foreach ($properties as $name => $description) {
-                $this->addOption(
-                    'domain-source-' . $driver . '-' . $name,
-                    null,
-                    InputOption::VALUE_OPTIONAL,
-                    $description
-                );
-            }
-        }
+        $this->configureReporting();
+        $this->configureDomainSource();
+        $this->configureLanguage();
     }
 
   /**
@@ -150,27 +99,23 @@ class ProfileRunCommand extends AbstractReportingCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $progress = $this->getProgressBar(6);
+        $progress->start();
+        $progress->setMessage("Loading profile..");
 
         // Set the filepath where the report will be written to (can be console).
         $filepath = $input->getOption('report-filename') ?: 'stdout';
 
-        $container = $this->getApplication()
-        ->getKernel()
-        ->getContainer();
+        $this->initLanguage($input);
 
-        // Set global language used by policy/profile sources.
-        $this->languageManager->setLanguage($input->getOption('language'));
+        $console = new SymfonyStyle($input, $output);
 
-        // Ensure Container logger uses the same verbosity.
-        $container->get('verbosity')
-        ->set($output->getVerbosity());
+        $profile = $this->getProfileFactory()
+          ->loadProfileByName($input->getArgument('profile'))
+          ->setReportPerSite($input->getOption('report-per-site'));
 
-        $console = new SymfonyStyle($input, $output->section());
-        $async = $container->get('async');
-
-        $profile = $container->get('profile.factory')
-        ->loadProfileByName($input->getArgument('profile'))
-        ->setReportPerSite($input->getOption('report-per-site'));
+        $progress->advance();
+        $progress->setMessage("Loading policy definitions..");
 
         // Override the title of the profile with the specified value.
         if ($title = $input->getOption('title')) {
@@ -179,7 +124,9 @@ class ProfileRunCommand extends AbstractReportingCommand
 
         // Setup the reporting format.
         $format = $input->getOption('format');
-        $format = $container->get('format.factory')->create($format, $profile->format[$format] ?? []);
+        $format = $this->getContainer()
+          ->get('format.factory')
+          ->create($format, $profile->format[$format] ?? []);
 
         // Set the filepath where the report will be written to (can be console).
         $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
@@ -187,11 +134,14 @@ class ProfileRunCommand extends AbstractReportingCommand
         // Allow command line to add policies to the profile.
         $included_policies = $input->getOption('include-policy');
         foreach ($included_policies as $policy_name) {
-            $this->logger->debug("Loading policy definition: $policy_name");
+            $this->getLogger()->debug("Loading policy definition: $policy_name");
             $profile->policies->set(
               $policy_name,
-              $container->get('policy.override')->add(['name' => $policy_name]));
+              $this->getContainer()->get('policy.override')->add(['name' => $policy_name])
+            );
         }
+        $progress->advance();
+        $progress->setMessage("Loading targets..");
 
         // Allow command line omission of policies highlighted in the profile.
         // WARNING: This may remove policy dependants which may make polices behave
@@ -200,17 +150,19 @@ class ProfileRunCommand extends AbstractReportingCommand
         $profile->setProperties(['excluded_policies' => $excluded_policies]);
 
         // Setup the target.
-        $target = $container->get('target.factory')->create($input->getArgument('target'));
-        $this->logger->debug("Target " . $input->getArgument('target') . ' loaded.');
+        $target = $this->getTargetFactory()->create($input->getArgument('target'));
+        $this->getLogger()->debug("Target " . $input->getArgument('target') . ' loaded.');
 
         // Get the URLs.
         $uris = $input->getOption('uri');
 
         $domains = [];
         foreach ($this->parseDomainSourceOptions($input) as $source => $options) {
-            $this->logger->debug("Loading domains from $source.");
-            $domains = array_merge($this->domainSource->getDomains($source, $options), $domains);
+            $this->getLogger()->debug("Loading domains from $source.");
+            $domains = array_merge($this->getDomainSource()->getDomains($source, $options), $domains);
         }
+        $progress->advance();
+        $progress->setMessage("Loading policies..");
 
         if (!empty($domains)) {
           // Merge domains in with the $uris argument.
@@ -224,37 +176,46 @@ class ProfileRunCommand extends AbstractReportingCommand
         $end   = new \DateTime($input->getOption('reporting-period-end'));
         $profile->setReportingPeriod($start, $end);
 
+        $definitions = $profile->getAllPolicyDefinitions();
+        $max_steps = $progress->getMaxSteps() + count($definitions) + count($uris);
+        $progress->setMaxSteps($max_steps);
+
         $policies = [];
         foreach ($profile->getAllPolicyDefinitions() as $policyDefinition) {
-            $this->logger->debug("Loading policy from definition: " . $policyDefinition->name);
-            $policies[] = $policyDefinition->getPolicy($this->policyFactory);
+            $this->getLogger()->debug("Loading policy from definition: " . $policyDefinition->name);
+            $policies[] = $policyDefinition->getPolicy($this->getPolicyFactory());
+            $progress->advance();
         }
+        $progress->advance();
 
         $uris = ($uris === ['default']) ? [$target->getUri()] : $uris;
+
+        $forkManager = $this->getForkManager();
 
         foreach ($uris as $uri) {
             try {
                 $target->setUri($uri);
             } catch (\Drutiny\Target\InvalidTargetException $e) {
-                $this->logger->warning("Target cannot be evaluated: " . $e->getMessage());
+                $this->getLogger()->warning("Target cannot be evaluated: " . $e->getMessage());
                 continue;
             }
 
-            $async->run(function () use ($target, $policies, $start, $end, $input, $container, $uri) {
-              $this->logger->setTopic("Evaluating $uri.");
-              $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
+            $forkManager->run(function () use ($target, $policies, $start, $end, $input, $uri) {
+              $this->getLogger()->info("Evaluating $uri.");
+              $assessment = $this->getContainer()->get('assessment')->setUri($uri);
               $assessment->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
               return $assessment->export();
             });
         }
-        $console->progressStart(count($uris));
+        $progress->advance();
 
         $exit_codes = [0];
         $results = [];
         $assessment_manager = new AssessmentManager();
-        foreach ($async->wait() as $export) {
-            $console->progressAdvance();
-            $assessment = $container->get('Drutiny\Assessment');
+
+        foreach ($forkManager->receive() as $export) {
+            $progress->advance();
+            $assessment = $this->getContainer()->get('assessment');
             $assessment->import($export);
             $assessment_manager->addAssessment($assessment);
 
@@ -265,7 +226,7 @@ class ProfileRunCommand extends AbstractReportingCommand
                 ]);
 
                 $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($report_filename, 'w')) : $output);
-                $format->render($profile, $assessment)->write();
+                $results[] = $format->render($profile, $assessment);
 
                 if ($filepath != 'stdout') {
                   $console->success(sprintf("%s report written to %s", $format->getFormat(), $report_filename));
@@ -273,7 +234,12 @@ class ProfileRunCommand extends AbstractReportingCommand
             }
             $exit_codes[] = $assessment->getSeverityCode();
         }
-        $console->progressFinish();
+        $progress->finish();
+        $progress->clear();
+
+        while ($format = array_shift($results)) {
+          $format->write();
+        }
 
         if (count($assessment_manager->getAssessments()) > 1) {
 
@@ -300,26 +266,5 @@ class ProfileRunCommand extends AbstractReportingCommand
         $exit_code = max($exit_codes);
 
         return $exit_code >= $exit_severity ? $exit_code : 0;
-    }
-
-    protected function parseDomainSourceOptions(InputInterface $input):array
-    {
-      // Load additional uris from domain-source
-        $sources = [];
-        foreach ($input->getOptions() as $name => $value) {
-            if ($value === null) {
-                continue;
-            }
-            if (strpos($name, 'domain-source-') === false) {
-                continue;
-            }
-            $param = str_replace('domain-source-', '', $name);
-            if (strpos($param, '-') === false) {
-                continue;
-            }
-            list($source, $name) = explode('-', $param, 2);
-            $sources[$source][$name] = $value;
-        }
-        return $sources;
     }
 }

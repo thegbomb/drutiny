@@ -51,6 +51,7 @@ class PolicyConfiguration implements ConfigurationInterface
               ->info('What severity level the policy is rated at.')
               ->values(['low', 'normal', 'high', 'critical'])
               ->defaultValue('normal')
+              ->treatNullLike('normal')
               ->end()
 
             // Working variables.
@@ -128,6 +129,7 @@ class PolicyConfiguration implements ConfigurationInterface
                       ->values(['top', 'bottom', 'left', 'right', 'none'])
                       ->defaultValue('right')
                       ->end()
+                    ->integerNode('bootstrap-columns')->end()
                   ->end()
                 ->end()
               ->end();

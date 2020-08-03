@@ -6,9 +6,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter as Cache;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 
 /**
  *
@@ -16,9 +18,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class CacheClearCommand extends Command
 {
     protected $container;
+    protected $cache;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(ContainerInterface $container, CacheInterface $cache)
     {
+      $this->cache = $cache;
       $this->container = $container;
       parent::__construct();
     }
@@ -36,6 +40,12 @@ class CacheClearCommand extends Command
           InputArgument::OPTIONAL,
           'A cache reference to purge (e.g. twig).'
           )
+        ->addOption(
+          'cid',
+          null,
+          InputOption::VALUE_OPTIONAL,
+          'The cache ID to purge from cache.'
+          )
         ;
     }
 
@@ -44,14 +54,24 @@ class CacheClearCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $io = new SymfonyStyle($input, $output);
+        if ($cid = $input->getOption('cid')) {
+          $this->cache->delete($cid);
+          $io->success('Cache item cleared: ' . $cid);
+          return 0;
+        }
         $fs['cache.directory'] = $this->container->getParameter('cache.directory');
         $fs['twig.cache'] = $this->container->getParameter('twig.cache');
-        $io = new SymfonyStyle($input, $output);
 
-        switch ($input->getArgument('cache')) {
+        $cid = $input->getArgument('cache');
+
+        switch ($cid) {
             case 'twig':
               $fs = [$fs['twig.cache']];
+            case  NULL:
+              break;
             default:
+              $this->cache->delete($input->getArgument('cache'));
               break;
         }
 

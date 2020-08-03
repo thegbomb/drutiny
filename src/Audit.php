@@ -18,6 +18,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\Yaml\Yaml;
@@ -27,25 +28,28 @@ use Symfony\Component\Yaml\Yaml;
  */
 abstract class Audit implements AuditInterface
 {
-    protected $definition;
-    protected $logger;
-    protected $container;
-    protected $target;
-    protected $expressionLanguage;
-    protected $dataBag;
-    protected $policy;
+    protected InputDefinition $definition;
+    protected LoggerInterface $logger;
+    protected ContainerInterface $container;
+    protected TargetInterface $target;
+    protected ExpressionLanguage $expressionLanguage;
+    protected DataBag $dataBag;
+    protected Policy $policy;
+    protected ProgressBar $progressBar;
 
     final public function __construct(
       ContainerInterface $container,
       TargetInterface $target,
       LoggerInterface $logger,
-      ExpressionLanguage $expressionLanguage
+      ExpressionLanguage $expressionLanguage,
+      ProgressBar $progressBar
       ) {
         $this->container = $container;
         $this->target = $target;
         $this->logger = $logger;
         $this->definition = new InputDefinition();
         $this->expressionLanguage = $expressionLanguage;
+        $this->progressBar = $progressBar;
         $this->dataBag = new DataBag();
         $this->dataBag->add([
         'parameters' => new DataBag(),
@@ -62,6 +66,11 @@ abstract class Audit implements AuditInterface
      */
     abstract public function audit(Sandbox $sandbox);
 
+    protected function getPolicy()
+    {
+        return $this->policy;
+    }
+
     /**
      * @param Sandbox $sandbox
      *
@@ -71,13 +80,17 @@ abstract class Audit implements AuditInterface
      */
     final public function execute(Policy $policy, $remediate = false)
     {
+        $this->policy = $policy;
         $response = new AuditResponse($policy);
         $this->logger->info('Auditing '.$policy->name);
         try {
+            $dependencies = $policy->getDepends();
+            $this->progressBar->setMaxSteps(count($dependencies) + $this->progressBar->getMaxSteps());
             // Ensure policy dependencies are met.
             foreach ($policy->getDepends() as $dependency) {
                 // Throws DependencyException if dependency is not met.
                 $dependency->execute($this);
+                $this->progressBar->advance();
             }
 
             $input = new ArrayInput($policy->getAllParameters(), $this->definition);

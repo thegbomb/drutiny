@@ -22,7 +22,6 @@ class DomainSourceListCommand extends Command
 
     protected $domainSource;
     protected $logger;
-    protected $progressLogger;
     protected $domainSourceOptions;
 
 

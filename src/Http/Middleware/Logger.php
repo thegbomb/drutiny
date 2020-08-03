@@ -41,7 +41,7 @@ class Logger implements MiddlewareInterface
         }
 
         $formatter = new MessageFormatter($message_format);
-        $this->logger->info($formatter->format($request));
+        $this->logger->debug($formatter->format($request));
 
       // Logging HTTP Requests.
         return $request;

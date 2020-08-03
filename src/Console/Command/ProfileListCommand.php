@@ -2,7 +2,6 @@
 
 namespace Drutiny\Console\Command;
 
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -10,7 +9,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  *
  */
-class ProfileListCommand extends Command
+class ProfileListCommand extends DrutinyBaseCommand
 {
 
   /**
@@ -29,12 +28,10 @@ class ProfileListCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $render = new SymfonyStyle($input, $output);
-
-        $profiles = $this->getApplication()
-          ->getKernel()
-          ->getContainer()
-          ->get('profile.factory')
-          ->getProfileList();
+        $progress = $this->getProgressBar();
+        $progress->start(1);
+        $progress->setMessage("Pulling profiles from profile sources...");
+        $profiles = $this->getProfileFactory()->getProfileList();
 
       // Build array of table rows.
         $rows = array_map(function ($profile) {
@@ -50,9 +47,9 @@ class ProfileListCommand extends Command
             sort($sort);
             return $a[1] === $sort[0] ? -1 : 1;
         });
-
+        $progress->finish();
+        $progress->clear();
         $render->table(['Profile', 'Name', 'Source'], $rows);
-
         $render->note("Use drutiny profile:info to view more information about a profile.");
         return 0;
     }

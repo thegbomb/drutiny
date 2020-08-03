@@ -2,34 +2,19 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\Assessment;
-use Drutiny\Profile\ProfileSource;
-use Drutiny\Profile;
-use Drutiny\Profile\PolicyDefinition;
-use Drutiny\Report;
-use Drutiny\Sandbox\Sandbox;
-use Drutiny\DomainSource;
-use Drutiny\Target\Target;
-use Drutiny\ProgressBar;
 use Drutiny\Report\FormatInterface;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Console\Input\InputInterface;
 
 /**
  *
  */
-abstract class AbstractReportingCommand extends Command
+trait ReportingCommandTrait
 {
-
-
   /**
    * @inheritdoc
    */
-    protected function configure()
+    protected function configureReporting()
     {
         $this
         ->addOption(

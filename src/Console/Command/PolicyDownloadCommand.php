@@ -8,15 +8,28 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Yaml\Yaml;
-use Drutiny\PolicySource\PolicySource;
+use Drutiny\PolicyFactory;
 use Drutiny\Profile;
-use Drutiny\Config;
+use Drutiny\LanguageManager;
+use Psr\Log\LoggerInterface;
 
 /**
  *
  */
 class PolicyDownloadCommand extends Command
 {
+
+  protected $policyFactory;
+  protected $languageManager;
+  protected $logger;
+
+  public function __construct(LoggerInterface $logger, PolicyFactory $factory, LanguageManager $languageManager)
+  {
+      $this->logger = $logger;
+      $this->policyFactory = $factory;
+      $this->languageManager = $languageManager;
+      parent::__construct();
+  }
 
   /**
    * @inheritdoc
@@ -44,18 +57,29 @@ class PolicyDownloadCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $render = new SymfonyStyle($input, $output);
-        $policy = PolicySource::loadPolicyByName($name = $input->getArgument('policy'));
+        $policy = $this->policyFactory->loadPolicyByName($input->getArgument('policy'));
 
-        $name = str_replace(':', '-', $name);
-        $filename = Config::getUserDir() . "/$name.policy.yml";
+        $container = $this->getApplication()
+        ->getKernel()
+        ->getContainer();
+
+        $directory = $container->getParameter('policy.library.fs');
+        $name = str_replace(':', '-', $policy->name);
+        $filename = $directory . "/$name.policy.yml";
+
+        if (!file_exists($directory) && !mkdir($directory)) {
+            $render->error("Cannot download into $directory: directory doesn't exist and can't be created.");
+            return 1;
+        }
         if (file_exists($filename)) {
             $render->error("$filename already exists. Please delete this file if you wish to download it from its source.");
-            return;
+            return 2;
         }
 
         $output = Yaml::dump($policy->export(), 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
 
         file_put_contents($filename, $output);
         $render->success("$filename written.");
+        return 0;
     }
 }

@@ -2,37 +2,16 @@
 
 namespace Drutiny\Console\Command;
 
-use Drutiny\PolicyFactory;
-use Drutiny\ProfileFactory;
-use Drutiny\LanguageManager;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  *
  */
-class PolicyListCommand extends Command
+class PolicyListCommand extends DrutinyBaseCommand
 {
-
-  protected $policyFactory;
-  protected $profileFactory;
-  protected $languageManager;
-
-
-  public function __construct(LoggerInterface $logger, PolicyFactory $factory, ProfileFactory $profileFactory, LanguageManager $languageManager)
-  {
-      $this->logger = $logger;
-      $this->policyFactory = $factory;
-      $this->languageManager = $languageManager;
-      $this->profileFactory = $profileFactory;
-      parent::__construct();
-  }
-
   /**
    * @inheritdoc
    */
@@ -67,29 +46,29 @@ class PolicyListCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $container = $this->getApplication()
-        ->getKernel()
-        ->getContainer();
-
-        // Ensure Container logger uses the same verbosity.
-        $container->get('verbosity')
-        ->set($output->getVerbosity());
+        $progress = $this->getProgressBar();
+        $progress->start(4);
 
         // Set global language used by policy/profile sources.
-        $this->languageManager->setLanguage($input->getOption('language'));
+        $this->getLanguageManager()->setLanguage($input->getOption('language'));
 
-        $list = $this->policyFactory->getPolicyList();
+        $progress->setMessage("Loading policy library from policy sources.");
+        $list = $this->getPolicyFactory()->getPolicyList();
 
         if ($source_filter = $input->getOption('source')) {
+            $progress->setMessage("Filtering policies by source: $source_filter");
             $list = array_filter($list, function ($policy) use ($source_filter) {
                 return $source_filter == $policy['source'];
             });
         }
+        $progress->advance();
 
+        $progress->setMessage("Mapping policy utilisation by profile.");
         $profiles = array_map(function ($profile) {
-          return $this->profileFactory->loadProfileByName($profile['name']);
-        }, $this->profileFactory->getProfileList());
+          return $this->getProfileFactory()->loadProfileByName($profile['name']);
+        }, $this->getProfileFactory()->getProfileList());
 
+        $progress->advance();
         $rows = array();
         foreach ($list as $listedPolicy) {
             $row = array(
@@ -104,12 +83,14 @@ class PolicyListCommand extends Command
             $rows[] = $row;
         }
 
+
         usort($rows, function ($a, $b) {
             $x = [strtolower($a['name']), strtolower($b['name'])];
             sort($x, SORT_STRING);
 
             return $x[0] == strtolower($a['name']) ? -1 : 1;
         });
+        $progress->finish();
 
         $io = new SymfonyStyle($input, $output);
         $headers = ['Title', 'Name', 'Source', 'Profile Utilization'];

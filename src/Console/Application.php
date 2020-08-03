@@ -72,6 +72,10 @@ class Application extends BaseApplication
      */
     protected function doRunCommand(Command $command, InputInterface $input, OutputInterface $output)
     {
+        $this->kernel->getContainer()->get('verbosity')->set($output->getVerbosity());
+        $this->kernel->getContainer()->get('logger')->notice("Application Running {command}.", [
+          'command' => $command->getName(),
+        ]);
         if (!$command instanceof ListCommand) {
             if ($this->registrationErrors) {
                 $this->renderRegistrationErrors($input, $output);
@@ -87,6 +91,9 @@ class Application extends BaseApplication
             $this->renderRegistrationErrors($input, $output);
             $this->registrationErrors = [];
         }
+        $this->kernel->getContainer()->get('logger')->notice("Application Command {command} complete.", [
+          'command' => $command->getName(),
+        ]);
 
         return $returnCode;
     }

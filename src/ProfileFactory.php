@@ -8,6 +8,7 @@ use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class ProfileFactory
 {
@@ -16,12 +17,14 @@ class ProfileFactory
 
     protected $cache;
     protected $languageManager;
+    protected $style;
 
-    public function __construct(ContainerInterface $container, CacheInterface $cache, LanguageManager $languageManager)
+    public function __construct(ContainerInterface $container, CacheInterface $cache, LanguageManager $languageManager, ProgressBar $progress)
     {
         $this->setContainer($container);
         $this->cache = $cache;
         $this->languageManager = $languageManager;
+        $this->progress = $progress;
     }
 
   /**
@@ -51,14 +54,14 @@ class ProfileFactory
         return $this->cache->get('profile.list'.$lang_code, function (ItemInterface $item) {
           // $item->expiresAfter(0);
             $list = [];
-
+            $this->progress->setMaxSteps($this->progress->getMaxSteps() + count($this->getSources()));
             foreach ($this->getSources() as $source) {
                 foreach ($source->getList($this->languageManager) as $name => $item) {
                     $item['source'] = $source->getName();
                     $list[$name] = $item;
                 }
+                $this->progress->advance();
             }
-
             return $list;
         });
     }
