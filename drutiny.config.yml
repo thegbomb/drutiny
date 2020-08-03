@@ -1,9 +1,0 @@
-CredentialSchema:
-  http:
-    user_agent:
-      type: string
-      description: Customize Drutiny requests to send a defined User Agent on all HTTP requests.
-  github:
-    personal_access_token:
-      type: string
-      description: A github personal oauth token.
