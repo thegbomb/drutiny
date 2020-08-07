@@ -75,20 +75,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
             'Specify policy names to include in the profile in addition to those listed in the profile.',
             []
         )
-        ->addOption(
-            'reporting-period-start',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'The starting point in time to report from. Can be absolute or relative. Defaults to 24 hours before the current hour.',
-            date('Y-m-d H:00:00', strtotime('-24 hours'))
-        )
-        ->addOption(
-            'reporting-period-end',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'The end point in time to report to. Can be absolute or relative. Defaults to the current hour.',
-            date('Y-m-d H:00:00')
-        );
+        ;
         $this->configureReporting();
         $this->configureDomainSource();
         $this->configureLanguage();

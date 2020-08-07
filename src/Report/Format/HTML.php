@@ -95,7 +95,7 @@ class HTML extends Format
             $this->logger->error($e->getMessage());
             $source = $e->getSourceContext();
             $this->logger->info($source->getCode());
-            $this->logger->debug($section[$attribute]);
+            $this->logger->debug("Original template: \n".$section[$attribute]);
           }
 
           // Convert any Markdown formatting over to HTML.

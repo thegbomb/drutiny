@@ -23,6 +23,7 @@ use Symfony\Component\Yaml\Yaml;
 class PolicyAuditCommand extends DrutinyBaseCommand
 {
   use ReportingCommandTrait;
+  use LanguageCommandTrait;
 
   /**
    * @inheritdoc
@@ -41,13 +42,6 @@ class PolicyAuditCommand extends DrutinyBaseCommand
             'target',
             InputArgument::REQUIRED,
             'The target to run the check against.'
-        )
-        ->addOption(
-            'language',
-            '',
-            InputOption::VALUE_OPTIONAL,
-            'Define which language to use for policies and profiles. Defaults to English (en).',
-            'en'
         )
         ->addOption(
             'set-parameter',
@@ -70,20 +64,6 @@ class PolicyAuditCommand extends DrutinyBaseCommand
             'default'
         )
         ->addOption(
-            'reporting-period-start',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'The starting point in time to report from. Can be absolute or relative. Defaults to 24 hours before the current hour.',
-            date('Y-m-d H:00:00', strtotime('-24 hours'))
-        )
-        ->addOption(
-            'reporting-period-end',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'The end point in time to report to. Can be absolute or relative. Defaults to the current hour.',
-            date('Y-m-d H:00:00')
-        )
-        ->addOption(
             'exit-on-severity',
             'x',
             InputOption::VALUE_OPTIONAL,
@@ -92,6 +72,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         );
         parent::configure();
         $this->configureReporting();
+        $this->configureLanguage();
     }
 
   /**
@@ -101,11 +82,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
     {
         $progress = $this->getProgressBar();
         $progress->start();
-        $this->getLanguageManager()->setLanguage($input->getOption('language'));
-
-        // Ensure Container logger uses the same verbosity.
-        // $container->get('verbosity')
-        // ->set($output->getVerbosity());
+        $this->initLanguage($input);
 
         // Setup any parameters for the check.
         $parameters = [];

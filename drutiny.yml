@@ -19,6 +19,9 @@ parameters:
   twig.strict: true
   async.forks: 7
   language_default: en
+  progress_bar.template: |
+    %%message%%
+    %%current%%/%%max%% [%%bar%%] %%percent:3s%%%% %%elapsed:6s%%
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -232,12 +235,38 @@ services:
         - [addFilter, ['@twig.filters.array_sum']]
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.mustache2twig']]
-        - [addfilter, ['@twig.filters.chart']]
+        - [addFilter, ['@twig.filters.chart']]
+        - [addFunction, ['@twig.functions.render_response']]
+        - [addFunction, ['@twig.functions.mustache']]
+        - [addTest, ['@twig.test.is_numeric']]
+        - [addTest, ['@twig.test.keyed']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
+
+    twig.functions.render_response:
+      class: Twig\TwigFunction
+      arguments:
+        - render_response
+        - ['Drutiny\Report\Format', 'renderAuditReponse']
+        - is_safe: [html]
+          needs_environment: true
+
+    twig.functions.mustache:
+      class: Twig\TwigFunction
+      arguments:
+        - mustache
+        - ['Drutiny\Report\Format\HTML', 'mustache']
 
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
+
+    twig.test.is_numeric:
+      class: Twig\TwigTest
+      arguments: ['numeric', 'is_numeric']
+
+    twig.test.keyed:
+      class: Twig\TwigTest
+      arguments: ['keyed', ['Drutiny\Report\Format\HTML', 'keyed']]
 
     twig.filters.mustache2twig:
       class: Twig\TwigFilter
@@ -277,6 +306,7 @@ services:
         exclude:
           - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
           - src/Console/Application.php
+          - src/Report/Backport/*
           - src/Console/LogFileLogger.php
           - src/Event/*
           - src/Upgrade/*
@@ -333,7 +363,7 @@ services:
         - [setEmptyBarCharacter, ['░']]
         - [setProgressCharacter, ['']]
         - [setBarCharacter, ['▓']]
-        - [setFormatDefinition, ['drutiny', ' %%current%%/%%max%% [%%bar%%] %%percent:3s%%%% %%elapsed:6s%% | %%message%%']]
+        - [setFormatDefinition, ['drutiny', '%progress_bar.template%']]
         - [setFormat, ['drutiny']]
 
     Symfony\Component\Console\Style\SymfonyStyle:

@@ -43,10 +43,17 @@ class LogFileLogger extends AbstractLogger {
         if ($verbosity > $this->verbosity->get()) {
           return;
         }
+        $trace = '';
+
+        if ($this->verbosity->get() === OutputInterface::VERBOSITY_DEBUG) {
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+            $trace = strtr('file:line', end($backtrace));
+        }
 
         $datetime = new \DateTime();
-        $log = strtr("datetime|pid|level| message\n", [
+        $log = strtr("datetime|pid|level|trace message\n", [
           'level' => strtoupper($level),
+          'trace' => $trace,
           'pid' => getmypid(),
           'message' => $this->interpolate($message, $context),
           'datetime' => $datetime->format("Y-m-d\TH:i:s.vP"),

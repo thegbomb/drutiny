@@ -14,7 +14,7 @@ class FormatFactory
         $this->setContainer($container);
     }
 
-    public function create($format, $options = [])
+    public function create(string $format, array $options = [])
     {
         foreach ($this->container->findTaggedServiceIds('format') as $id => $info) {
             $formatter = $this->container->get($id);

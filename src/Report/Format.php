@@ -5,10 +5,12 @@ namespace Drutiny\Report;
 use Drutiny\AssessmentInterface;
 use Drutiny\Profile;
 use Drutiny\Console\Verbosity;
+use Drutiny\AuditResponse\AuditResponse;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
+use Twig\TwigFunction;
 
 abstract class Format implements FormatInterface
 {
@@ -26,7 +28,23 @@ abstract class Format implements FormatInterface
         $this->output = new BufferedOutput($verbosity->get(), true);
         $this->buffer = new BufferedOutput($verbosity->get(), true);
         $this->twig = $twig;
+        $this->twig->addGlobal('format', $this);
+        $this->twig->addGlobal('logger', $logger);
         $this->logger = $logger;
+    }
+
+    public static function renderAuditReponse(Environment $twig, AuditResponse $response)
+    {
+        $globals = $twig->getGlobals();
+        $globals['logger']->info("Rendering audit response for ".$response->getPolicy()->name);
+        $template = 'report/policy/'.$response->getType().'.'.$globals['format']->getExtension().'.twig';
+        return $twig->render($template, [
+          'result' => $response,
+        ]);
+    }
+
+    public static function keyed($variable) {
+      return is_array($variable) && is_string(reset($variable));
     }
 
     public function render(Profile $profile, AssessmentInterface $assessment)

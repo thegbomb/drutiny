@@ -73,7 +73,7 @@ class Application extends BaseApplication
     protected function doRunCommand(Command $command, InputInterface $input, OutputInterface $output)
     {
         $this->kernel->getContainer()->get('verbosity')->set($output->getVerbosity());
-        $this->kernel->getContainer()->get('logger')->notice("Application Running {command}.", [
+        $this->kernel->getContainer()->get('logger')->notice("Application Running {command} {args}.", [
           'command' => $command->getName(),
         ]);
         if (!$command instanceof ListCommand) {
