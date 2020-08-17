@@ -23,11 +23,11 @@ Trait BackportTemplateHacks
     protected static function preMapDrutiny2Variables($template)
     {
       $variables = [
-        'output_failure' => "{% for result in assessment.results|filter(r => r.isFailure) %}{{ render_response(result) }}{% endfor %}",
-        'output_warning' => "{% for result in assessment.results|filter(r => r.hasWarning) %}{{ render_response(result) }}{% endfor %}",
-        'output_error'   => "{% for result in assessment.results|filter(r => r.hasError) %}{{ render_response(result) }}{% endfor %}",
-        'output_notice'  => "{% for result in assessment.results|filter(r => r.isNotice) %}{{ render_response(result) }}{% endfor %}",
-        'output_success' => "{% for result in assessment.results|filter(r => r.isSuccessful) %}{{ render_response(result) }}{% endfor %}",
+        'output_failure' => "{% for result in assessment.results|filter(r => r.isFailure) %}{{ policy_result(result) }}{% endfor %}",
+        'output_warning' => "{% for result in assessment.results|filter(r => r.hasWarning) %}{{ policy_result(result) }}{% endfor %}",
+        'output_error'   => "{% for result in assessment.results|filter(r => r.hasError) %}{{ policy_result(result) }}{% endfor %}",
+        'output_notice'  => "{% for result in assessment.results|filter(r => r.isNotice) %}{{ policy_result(result) }}{% endfor %}",
+        'output_success' => "{% for result in assessment.results|filter(r => r.isSuccessful) %}{{ policy_result(result) }}{% endfor %}",
       ];
       foreach ($variables as $variable => $twig) {
           $template = preg_replace_callback("/{{# ?$variable ?}}.*{{\/ ?$variable ?}}/s", function ($matches) use ($twig) {
@@ -70,22 +70,22 @@ Trait BackportTemplateHacks
         '{{ var0remediations |raw }}' => "{% with response.tokens %}{{ include(template_from_string(response.policy.remediation)) | markdown_to_html }}{% endwith %}",
 
         'var1output_failure in output_failure' => "response in assessment.results|filter(r => r.isFailure)",
-        '{{ var1output_failure|raw }}' => "{{ render_response(response) }}",
+        '{{ var1output_failure|raw }}' => "{{ policy_result(response) }}",
 
         'var1output_warning in output_warning' => "response in assessment.results|filter(r => r.hasWarning)",
-        '{{ var1output_warning|raw }}' => "{{ render_response(response) }}",
+        '{{ var1output_warning|raw }}' => "{{ policy_result(response) }}",
 
         'var1output_notice in output_notice' => "response in assessment.results|filter(r => r.isNotice)",
-        '{{ var1output_notice|raw }}' => "{{ render_response(response) }}",
+        '{{ var1output_notice|raw }}' => "{{ policy_result(response) }}",
 
         'var0output_error in output_error' => "response in assessment.results|filter(r => r.hasError)",
-        '{{ var0output_error|raw }}' => "{{ render_response(response) }}",
+        '{{ var0output_error|raw }}' => "{{ policy_result(response) }}",
 
         'var1output_error in output_error' => "response in assessment.results|filter(r => r.hasError)",
-        '{{ var1output_error|raw }}' => "{{ render_response(response) }}",
+        '{{ var1output_error|raw }}' => "{{ policy_result(response) }}",
 
         'var1output_success in output_success' => "response in assessment.results|filter(r => r.isSuccessful)",
-        '{{ var1output_success|raw }}' => "{{ render_response(response) }}",
+        '{{ var1output_success|raw }}' => "{{ policy_result(response) }}",
 
       ]);
     }
@@ -94,7 +94,7 @@ Trait BackportTemplateHacks
       // Convert old chart syntax to new syntax.
       // Old (2.x): {{{_chart.foo}}}
       // New (3.x): {{chart.foo|chart}}
-      $sample = preg_replace("/{{{_chart.(.+)}}}/", '{{result.policy.chart.$1|chart}}', $sample);
+      $sample = preg_replace("/{{{_chart.(.+)}}}/", '{{audit_response.policy.chart.$1|chart}}', $sample);
 
       return MustacheParser::reformat($sample);
     }

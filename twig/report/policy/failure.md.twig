@@ -1,14 +1,14 @@
-#### {{ result.policy.title }}
+#### {{ audit_response.policy.title }}
 
-{% with result.tokens %}
-{{ include(template_from_string(result.policy.description | mustache2twig, "description.field on failure.md.twig")) }}
-{{ include(template_from_string(result.policy.failure | mustache2twig, "failure.field on failure.md.twig")) }}
+{% with audit_response.tokens %}
+{{ include(template_from_string(audit_response.policy.description | mustache2twig, "description.field on failure.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.failure | mustache2twig, "failure.field on failure.md.twig")) }}
 
-{% if result.hasWarning %}
+{% if audit_response.hasWarning %}
 ##### Warning
-{{ include(template_from_string(result.policy.warning | mustache2twig, "warning.field on failure.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.warning | mustache2twig, "warning.field on failure.md.twig")) }}
 {% endif %}
 
 ##### Remediation
-{{ include(template_from_string(result.policy.remediation | mustache2twig, "remediation.field on failure.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.remediation | mustache2twig, "remediation.field on failure.md.twig")) }}
 {% endwith %}

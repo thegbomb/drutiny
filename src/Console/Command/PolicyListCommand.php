@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class PolicyListCommand extends DrutinyBaseCommand
 {
+    use LanguageCommandTrait;
   /**
    * @inheritdoc
    */
@@ -27,18 +28,12 @@ class PolicyListCommand extends DrutinyBaseCommand
             'Filter list by tag'
         )
         ->addOption(
-            'language',
-            '',
-            InputOption::VALUE_OPTIONAL,
-            'Define which language to use for policies and profiles. Defaults to English (en).',
-            'en'
-        )
-        ->addOption(
             'source',
             's',
             InputOption::VALUE_OPTIONAL,
             'Filter by source'
         );
+        $this->configureLanguage();
     }
 
   /**
@@ -49,8 +44,7 @@ class PolicyListCommand extends DrutinyBaseCommand
         $progress = $this->getProgressBar();
         $progress->start(4);
 
-        // Set global language used by policy/profile sources.
-        $this->getLanguageManager()->setLanguage($input->getOption('language'));
+        $this->initLanguage($input);
 
         $progress->setMessage("Loading policy library from policy sources.");
         $list = $this->getPolicyFactory()->getPolicyList();

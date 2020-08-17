@@ -236,16 +236,16 @@ services:
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.mustache2twig']]
         - [addFilter, ['@twig.filters.chart']]
-        - [addFunction, ['@twig.functions.render_response']]
+        - [addFunction, ['@twig.functions.policy_result']]
         - [addFunction, ['@twig.functions.mustache']]
         - [addTest, ['@twig.test.is_numeric']]
         - [addTest, ['@twig.test.keyed']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
 
-    twig.functions.render_response:
+    twig.functions.policy_result:
       class: Twig\TwigFunction
       arguments:
-        - render_response
+        - policy_result
         - ['Drutiny\Report\Format', 'renderAuditReponse']
         - is_safe: [html]
           needs_environment: true

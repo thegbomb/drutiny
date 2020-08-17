@@ -37,14 +37,14 @@ End | {{ assessment.reportingPeriodEnd.format('Y-m-d H:i:s e') }}
 {% if assessment.results|filter(r => r.isFailure) is not empty %}
 ## Issues
   {% for response in assessment.results|filter(r => r.isFailure) %}
-    {% include 'report/policy/failure.md.twig' with {'result': response } %}
+    {{ policy_result(response) }}
   {% endfor %}
 {% endif %}
 
 {% if assessment.results|filter(r => r.hasWarning) is not empty %}
 ## Warnings
   {% for response in assessment.results|filter(r => r.hasWarning) %}
-    {% include 'report/policy/warning.md.twig' with {'result': response } %}
+    {{ policy_result(response) }}
   {% endfor %}
 {% endif %}
 {% endblock %}
@@ -59,7 +59,7 @@ The various appendices provides more detailed data regarding the health of
 the site.
 
 {% for response in assessment.results|filter(r => r.isNotice) %}
-  {% include 'report/policy/notice.md.twig' with {'result': response } %}
+  {{ policy_result(response) }}
 {% endfor %}
   {% endif %}
 
@@ -70,7 +70,7 @@ During the production of this report, not all report policies were able to
 be carried out due to errors encounted.
 
 {% for response in assessment.results|filter(r => r.hasError) %}
-  {% include 'report/policy/error.md.twig' with {'result': response } %}
+  {{ policy_result(response) }}
 {% endfor %}
   {% endif %}
 
@@ -83,7 +83,7 @@ production of this report and their associated outcomes.
 {% if assessment.results|filter(r => r.hasError) is not empty %}
 ### Appendix - Successful Assessments
 {% for response in assessment.results|filter(r => r.isSuccessful) %}
-  {% include 'report/policy/success.md.twig' with {'result': response } %}
+  {{ policy_result(response) }}
 {% endfor %}
 {% endif %}
 {% endblock %}

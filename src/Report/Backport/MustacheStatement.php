@@ -84,7 +84,7 @@ class MustacheStatement extends TextNode {
         }
         // {{^foo}}
         elseif ($this->getOperatorType() == self::MODE_NOT) {
-          $syntax .= '{%~ if is empty or not '.$this->getVariableName().' ~%}';
+          $syntax .= '{%~ if '.$this->getVariableName().' is empty or not '.$this->getVariableName().' ~%}';
           $syntax .= parent::__toString();
           $syntax .= '{%~ endif ~%}';
         }

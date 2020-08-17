@@ -3,6 +3,7 @@
 namespace Drutiny\Report\Format;
 
 use Drutiny\AssessmentInterface;
+use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\Profile;
 use Drutiny\Report\BackportTemplateHacks;
 use Drutiny\Report\Format;

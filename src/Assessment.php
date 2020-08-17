@@ -32,6 +32,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
     protected $forkManager;
     protected $statsByResult = [];
     protected $statsBySeverity = [];
+    protected $policyOrder = [];
 
     public function __construct(LoggerInterface $logger, ContainerInterface $container, ForkManager $forkManager)
     {
@@ -70,6 +71,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
 
         $promises = [];
         foreach ($policies as $policy) {
+            $this->policyOrder[] = $policy->name;
             $this->logger->info("Assessing '{policy}' against {uri}", [
               'policy' => $policy->name,
               'uri' => $this->uri,
@@ -88,7 +90,9 @@ class Assessment implements ExportableInterface, AssessmentInterface
               return $audit->execute($policy, $remediate);
             });
         }
+        $returned = 0;
         foreach ($this->forkManager->receive() as $response) {
+            $returned++;
             $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
             $this->statsByResult[$response->getType()]++;
 
@@ -108,6 +112,10 @@ class Assessment implements ExportableInterface, AssessmentInterface
 
             $this->logger->info(sprintf('Policy "%s" assessment on %s completed: %s.', $response->getPolicy()->title, $this->uri(), $response->getType()));
         }
+
+        $total = count($policies);
+        $this->logger->debug("Assessment returned $returned/$total from the fork manager.");
+
         return $this;
     }
 
@@ -172,7 +180,10 @@ class Assessment implements ExportableInterface, AssessmentInterface
      */
     public function getResults()
     {
-        return $this->results;
+        return array_map(function ($name) {
+            return $this->results[$name];
+        }, $this->policyOrder);
+        //return $this->results;
     }
 
     public function getRemediableResults()

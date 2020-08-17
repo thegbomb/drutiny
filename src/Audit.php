@@ -12,6 +12,7 @@ use Drutiny\Sandbox\Sandbox;
 use Drutiny\Target\NoSuchPropertyException;
 use Drutiny\Target\TargetInterface;
 use Drutiny\Upgrade\AuditUpgrade;
+use Drutiny\Entity\Exception\DataNotFoundException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -127,7 +128,7 @@ abstract class Audit implements AuditInterface
             $helper = AuditUpgrade::fromAudit($this);
             $helper->addParameterFromException($e);
             $this->set('exception', $helper->getParamUpgradeMessage());
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             $outcome = AuditInterface::ERROR;
             $message = $e->getMessage();
             if ($this->container->get('verbosity')->get() > OutputInterface::VERBOSITY_NORMAL) {
@@ -210,9 +211,17 @@ abstract class Audit implements AuditInterface
         return $this;
     }
 
+    /**
+     * Get a set parameter or provide the default value.
+     */
     public function getParameter(string $name, $default_value = null)
     {
-        return $this->dataBag->get('parameters')->get($name) ?? $default_value;
+        try {
+            return $this->dataBag->get('parameters')->get($name) ?? $default_value;
+        }
+        catch (DataNotFoundException $e) {
+            return $default_value;
+        }
     }
 
     /**

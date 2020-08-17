@@ -65,8 +65,6 @@ class PolicyShowCommand extends DrutinyBaseCommand
                 $export[$field] = $this->mapDrutiny2toDrutiny3variables($export[$field]);
             }
         }
-        print $export['success'];
-        return 0;
         //var_dump($export['success']);
         $output->write(Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
 

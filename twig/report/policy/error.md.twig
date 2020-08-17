@@ -1,11 +1,11 @@
-#### {{ result.policy.title }}
+#### {{ audit_response.policy.title }}
 
-{{ include(template_from_string(result.policy.description | mustache2twig, "description field on error.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.description | mustache2twig, "description field on error.md.twig")) }}
 
-This policy was unable to determine the state of {{ result.policy.title }}.
+This policy was unable to determine the state of {{ audit_response.policy.title }}.
 
-{% if result.tokens.exception is defined %}
+{% if audit_response.tokens.exception is defined %}
 ```
-{{ result.tokens.exception }}
+{{ audit_response.tokens.exception }}
 ```
 {% endif %}
