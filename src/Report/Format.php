@@ -33,13 +33,14 @@ abstract class Format implements FormatInterface
         $this->logger = $logger;
     }
 
-    public static function renderAuditReponse(Environment $twig, AuditResponse $response)
+    public static function renderAuditReponse(Environment $twig, AuditResponse $response, AssessmentInterface $assessment)
     {
         $globals = $twig->getGlobals();
         $globals['logger']->info("Rendering audit response for ".$response->getPolicy()->name);
         $template = 'report/policy/'.$response->getType().'.'.$globals['format']->getExtension().'.twig';
         return $twig->render($template, [
           'audit_response' => $response,
+          'assessment' => $assessment,
         ]);
     }
 

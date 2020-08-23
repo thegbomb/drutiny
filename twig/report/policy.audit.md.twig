@@ -1,5 +1,5 @@
 {% block findings %}
   {% for response in assessment.results %}
-    {{ policy_result(response) }}
+    {{ policy_result(response, assessment) }}
   {% endfor %}
 {% endblock %}

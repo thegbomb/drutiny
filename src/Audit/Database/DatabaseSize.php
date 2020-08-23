@@ -24,11 +24,11 @@ class DatabaseSize extends Audit
 
     public function configure()
     {
-           $this->addParameter(
-               'max_size',
-               static::PARAMETER_OPTIONAL,
-               'Fail the audit if the database size is greater than this value',
-           );
+         $this->addParameter(
+             'max_size',
+             static::PARAMETER_OPTIONAL,
+             'Fail the audit if the database size is greater than this value',
+         );
         $this->addParameter(
             'warning_size',
             static::PARAMETER_OPTIONAL,
@@ -57,8 +57,8 @@ class DatabaseSize extends Audit
         });
         $size = (float) reset($resultLines);
 
-        $this->set('db', $name)
-            ->setParameter('size', $size);
+        $this->set('db', $name);
+        $this->set('size', $size);
 
         if ($this->getParameter('max_size') < $size) {
             return false;

@@ -20,12 +20,12 @@ class CodeScan extends Audit
 
     public function configure()
     {
-           $this->addParameter(
-               'directory',
-               static::PARAMETER_OPTIONAL,
-               'Absolute filepath to directory to scan',
-               '%root'
-           );
+        $this->addParameter(
+            'directory',
+            static::PARAMETER_OPTIONAL,
+            'Absolute filepath to directory to scan',
+            '%root'
+        );
         $this->addParameter(
             'exclude',
             static::PARAMETER_OPTIONAL,
@@ -56,6 +56,13 @@ class CodeScan extends Audit
     {
         $directory = $this->getParameter('directory', '%root');
         $stat = $sandbox->drush(['format' => 'json'])->status();
+
+        // Backwards compatibility. %paths is no longer present since Drush 8.
+        if (!isset($stat['%paths'])) {
+            foreach ($stat as $key => $value) {
+              $stat['%paths']['%'.$key] = $value;
+            }
+        }
 
         $directory =  strtr($directory, $stat['%paths']);
 

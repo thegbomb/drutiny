@@ -27,7 +27,7 @@ class Target extends ExpressionFunction implements ContainerDependentFunctionInt
 
     public function getEvaluator()
     {
-        return function ($args, $property) {
+        return function ($args, string $property) {
             return $this->target->getProperty($property);
         };
     }

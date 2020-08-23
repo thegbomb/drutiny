@@ -27,8 +27,9 @@ class DrushTarget extends Target implements TargetInterface
 
         $this['drush']->add($drush_properties);
 
-        if (isset($drush_properties['uri'])) {
-          $this['uri'] = $drush_properties['uri'];
+        // Provide a default URI if none already provided.
+        if (isset($drush_properties['uri']) && !$this->hasProperty('uri')) {
+          $this->setUri($drush_properties['uri']);
         }
 
         $this->buildAttributes();

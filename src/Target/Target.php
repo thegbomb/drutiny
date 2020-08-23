@@ -43,6 +43,7 @@ abstract class Target implements \ArrayAccess
    */
   public function setUri(string $uri)
   {
+    $this->setProperty('domain', parse_url($uri, PHP_URL_HOST) ?? $uri);
     return $this->setProperty('uri', $uri);
   }
 

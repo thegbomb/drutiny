@@ -1,10 +1,11 @@
 <div class="row result-group">
-  <div class="col-sm-12 col-md-10">
+  <div class="col-sm-12 col-md-10 py-3">
     <h4 id="{{ audit_response.policy.name }}">{{ audit_response.policy.title }} <span class="text-danger glyphicon glyphicon-remove" aria-hidden="true"></span></h4>
 
     {{ include(template_from_string(audit_response.policy.description | mustache2twig)) | markdown_to_html }}
 
-    <div class="alert alert-danger" role="alert">
+    <div>
+      <h5 class="text-danger">Failure</h5>
       {% with audit_response.tokens %}
       {{ include(template_from_string(audit_response.policy.failure | mustache2twig)) | markdown_to_html }}
       {% endwith %}
@@ -17,8 +18,8 @@
       {% endwith %}
     </div>
     {% endif %}
-    <div class="alert alert-info" role="alert">
-    <h5>Remediation</h5>
+    <div>
+    <h5 class="text-info">Remediation</h5>
     {% with audit_response.tokens %}
     {{ include(template_from_string(audit_response.policy.remediation | mustache2twig)) | markdown_to_html }}
     {% endwith %}

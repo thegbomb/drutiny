@@ -15,7 +15,9 @@ use Drutiny\Entity\SerializableExportableTrait;
  */
 class AuditResponse implements ExportableInterface
 {
-    use SerializableExportableTrait;
+    use SerializableExportableTrait {
+      import as importUnserialized;
+    }
 
     protected $policy;
     protected $state = Audit::NOT_APPLICABLE;
@@ -36,7 +38,7 @@ class AuditResponse implements ExportableInterface
   /**
    * Get the AudiResponse Policy.
    */
-    public function getPolicy()
+    public function getPolicy():Policy
     {
         return $this->policy;
     }
@@ -44,7 +46,7 @@ class AuditResponse implements ExportableInterface
   /**
    * Set the state of the response.
    */
-    public function set($state = null, $tokens = [])
+    public function set(int $state = Audit::ERROR, array $tokens = []):AuditResponse
     {
         switch (true) {
             case ($state === Audit::SUCCESS):
@@ -78,19 +80,20 @@ class AuditResponse implements ExportableInterface
         return $this;
     }
 
-    public function setTokens(array $tokens = []) {
+    public function setTokens(array $tokens = []):AuditResponse
+    {
         $this->tokens = $tokens;
         $this->tokens['chart'] = $this->policy->chart;
         return $this;
     }
 
-    public function setToken($name, $value)
+    public function setToken($name, $value):AuditResponse
     {
       $this->tokens[$name] = $value;
       return $this;
     }
 
-    public function getTokens()
+    public function getTokens():array
     {
       return $this->tokens;
     }
@@ -98,7 +101,7 @@ class AuditResponse implements ExportableInterface
   /**
    * Get the exception message if present.
    */
-    public function getExceptionMessage()
+    public function getExceptionMessage():string
     {
         return isset($this->tokens['exception']) ? $this->tokens['exception'] : '';
     }
@@ -106,7 +109,7 @@ class AuditResponse implements ExportableInterface
   /**
    * Get the type of response based on policy type and audit response.
    */
-    public function getType()
+    public function getType():string
     {
         if ($this->isNotApplicable()) {
             return 'not-applicable';
@@ -130,12 +133,12 @@ class AuditResponse implements ExportableInterface
   /**
    *
    */
-    public function isSuccessful()
+    public function isSuccessful():bool
     {
         return $this->state === Audit::SUCCESS || $this->remediated || $this->isNotice() || $this->state === Audit::WARNING;
     }
 
-    public function isFailure()
+    public function isFailure():bool
     {
       return $this->getType() == 'failure';
     }
@@ -143,7 +146,7 @@ class AuditResponse implements ExportableInterface
   /**
    *
    */
-    public function isNotice()
+    public function isNotice():bool
     {
         return $this->state === Audit::NOTICE;
     }
@@ -151,12 +154,12 @@ class AuditResponse implements ExportableInterface
   /**
    *
    */
-    public function hasWarning()
+    public function hasWarning():bool
     {
         return $this->state === Audit::WARNING || $this->state === Audit::WARNING_FAIL;
     }
 
-    public function isRemediated($set = null)
+    public function isRemediated($set = null):bool
     {
         if (isset($set)) {
             $this->remediated = $set;
@@ -164,27 +167,27 @@ class AuditResponse implements ExportableInterface
         return $this->remediated;
     }
 
-    public function hasError()
+    public function hasError():bool
     {
         return $this->state === Audit::ERROR;
     }
 
-    public function isNotApplicable()
+    public function isNotApplicable():bool
     {
         return $this->state === Audit::NOT_APPLICABLE;
     }
 
-    public function isIrrelevant()
+    public function isIrrelevant():bool
     {
         return $this->state === Audit::IRRELEVANT;
     }
 
-    public function getSeverity()
+    public function getSeverity():string
     {
         return $this->policy->severity;
     }
 
-    public function getSeverityCode()
+    public function getSeverityCode():int
     {
         return $this->policy->getSeverity();
     }
@@ -195,7 +198,7 @@ class AuditResponse implements ExportableInterface
    * @return string
    *   Translated description.
    */
-    public function getSummary()
+    public function getSummary():string
     {
         $summary = [];
         switch (true) {
@@ -238,7 +241,7 @@ exception
     /**
      * {@inheritdoc}
      */
-    public function export()
+    public function export():array
     {
       return [
         'policy' => $this->policy->name,
@@ -262,9 +265,12 @@ exception
      */
     public function import($export)
     {
-      $this->state = $export['state'];
-      $this->remediated = $export['remediated'];
-      $this->tokens = $export['tokens'];
+
+      // $this->state = $export['state'];
+      // $this->remediated = $export['remediated'];
+      // $this->tokens = $export['tokens'];
       $this->policy = drutiny()->get('policy.factory')->loadPolicyByName($export['policy']);
+      unset($export['policy']);
+      $this->importUnserialized($export);
     }
 }

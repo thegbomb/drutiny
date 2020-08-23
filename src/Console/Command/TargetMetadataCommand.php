@@ -34,7 +34,7 @@ class TargetMetadataCommand extends Command
             'l',
             InputOption::VALUE_OPTIONAL,
             'Provide URLs to run against the target. Useful for multisite installs. Accepts multiple arguments.',
-            'default'
+            false
         );
     }
 
@@ -49,7 +49,9 @@ class TargetMetadataCommand extends Command
           ->get('target.factory')
           ->create($input->getArgument('target'));
 
-        $target->setUri($input->getOption('uri'));
+        if ($uri = $input->getOption('uri')) {
+          $target->setUri($uri);
+        }
 
         $io = new SymfonyStyle($input, $output);
 

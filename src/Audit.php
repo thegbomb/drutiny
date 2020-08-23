@@ -84,6 +84,7 @@ abstract class Audit implements AuditInterface
         $this->policy = $policy;
         $response = new AuditResponse($policy);
         $this->logger->info('Auditing '.$policy->name);
+        $outcome = AuditInterface::ERROR;
         try {
             $dependencies = $policy->getDepends();
             $this->progressBar->setMaxSteps(count($dependencies) + $this->progressBar->getMaxSteps());

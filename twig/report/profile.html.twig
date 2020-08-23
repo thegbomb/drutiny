@@ -36,14 +36,14 @@
   {% if assessment.results|filter(r => r.isFailure) is not empty %}
     {{ 'Issues' | heading }}
     {% for response in assessment.results|filter(r => r.isFailure) %}
-      {{ policy_result(response) }}
+      {{ policy_result(response, assessment) }}
     {% endfor %}
   {% endif %}
 
   {% if assessment.results|filter(r => r.hasWarning) is not empty %}
     {{ 'Warnings' | heading }}
     {% for response in assessment.results|filter(r => r.hasWarning) %}
-      {{ policy_result(response) }}
+      {{ policy_result(response, assessment) }}
     {% endfor %}
   {% endif %}
 {% endblock %}
@@ -58,7 +58,7 @@
     the site.
 
     {% for response in assessment.results|filter(r => r.isNotice) %}
-      {{ policy_result(response) }}
+      {{ policy_result(response, assessment) }}
     {% endfor %}
   {% endif %}
 
@@ -69,7 +69,7 @@
     be carried out due to errors encounted.
 
     {% for response in assessment.results|filter(r => r.hasError) %}
-      {{ policy_result(response) }}
+      {{ policy_result(response, assessment) }}
     {% endfor %}
   {% endif %}
 
@@ -82,7 +82,7 @@
   {% if assessment.results|filter(r => r.hasError) is not empty %}
     ### Appendix - Successful Assessments
     {% for response in assessment.results|filter(r => r.isSuccessful) %}
-      {{ policy_result(response) }}
+      {{ policy_result(response, assessment) }}
     {% endfor %}
   {% endif %}
 {% endblock %}

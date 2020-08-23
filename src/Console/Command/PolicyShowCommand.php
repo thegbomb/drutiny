@@ -52,7 +52,9 @@ class PolicyShowCommand extends DrutinyBaseCommand
 
         $export = $policy->export();
         if (!$input->getOption('backward-compatibility')) {
-            foreach (['success'] as $field) {
+            foreach (['success', 'failure', 'warning'] as $field) {
+                if (empty($export[$field])) continue;
+
                 $export[$field] = $this->prefixTemplate($export[$field]);
 
                 // Map the old Drutiny 2.x variables to the Drutiny 3.x versions.

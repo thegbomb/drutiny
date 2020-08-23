@@ -61,7 +61,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
             'l',
             InputOption::VALUE_OPTIONAL,
             'Provide URLs to run against the target. Useful for multisite installs. Accepts multiple arguments.',
-            'default'
+            false
         )
         ->addOption(
             'exit-on-severity',
@@ -116,8 +116,9 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         $target = $this->getTargetFactory()->create($input->getArgument('target'));
 
         // Get the URLs.
-        $uri = $input->getOption('uri');
-        $target->setUri($uri);
+        if ($uri = $input->getOption('uri')) {
+          $target->setUri($uri);
+        }
 
         $result = [];
 

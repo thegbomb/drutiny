@@ -32,7 +32,7 @@ class SPF extends Audit
         );
         $this->addParameter(
             'matching_value',
-            static::PARAMETER_OPTIONAL,
+            static::PARAMETER_REQUIRED,
             'A value that should be present in the queried DNS record.',
         );
     }
@@ -57,7 +57,7 @@ class SPF extends Audit
           return array_filter($output);
         });
 
-        $matching_value = $this->getParameter('matching_value');
+        $matching_value = $this->getParameter('matching_value') ?? $this->get('matching_value');
         return (bool) count(
             array_filter(
                 $values, function ($txt) use ($matching_value) {

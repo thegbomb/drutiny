@@ -6,24 +6,24 @@ namespace Drutiny;
  *
  */
 class AssessmentManager implements AssessmentInterface {
-    protected $assessments;
+    protected $assessments = [];
 
     public function addAssessment(Assessment $assessment)
     {
         $this->assessments[$assessment->uri()] = $assessment;
     }
 
-    public function getAssessments()
+    public function getAssessments():array
     {
         return $this->assessments;
     }
 
-    public function getAssessmentByUri($uri)
+    public function getAssessmentByUri($uri):AssessmentInterface
     {
         return $this->assessments[$uri];
     }
 
-    public function getResultsByPolicy($policy_name)
+    public function getResultsByPolicy($policy_name):array
     {
         $results = [];
         foreach ($this->assessments as $assessment) {

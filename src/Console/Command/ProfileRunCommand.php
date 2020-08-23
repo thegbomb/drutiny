@@ -52,7 +52,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
             'l',
             InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
             'Provide URLs to run against the target. Useful for multisite installs. Accepts multiple arguments.',
-            ['default']
+            []
         )
         ->addOption(
             'exit-on-severity',
@@ -175,7 +175,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
         }
         $progress->advance();
 
-        $uris = ($uris === ['default']) ? [$target->getUri()] : $uris;
+        $uris = empty($uris) ? [$target->getUri()] : $uris;
 
         $forkManager = $this->getForkManager();
 

@@ -18,9 +18,9 @@ End | {{ assessment.reportingPeriodEnd.format('Y-m-d H:i:s e') }}
 {% block recommendations %}
   {% if assessment.results|filter(r => r.isFailure) is not empty %}
 ## Recommendations
-    {% for response in assessment.results|filter(r => r.isFailure) %}
-      {% with response.tokens %}
-{{ include(template_from_string(response.policy.remediation | mustache2twig, "remediation field in profile.md.twig" )) }}
+    {% for _r in assessment.results|filter(r => r.isFailure) %}
+      {% with _r.tokens %}
+{{ include(template_from_string(_r.policy.remediation | mustache2twig, "remediation field in profile.md.twig" )) }}
       {% endwith %}
     {% endfor %}
   {% endif %}
@@ -37,14 +37,14 @@ End | {{ assessment.reportingPeriodEnd.format('Y-m-d H:i:s e') }}
 {% if assessment.results|filter(r => r.isFailure) is not empty %}
 ## Issues
   {% for response in assessment.results|filter(r => r.isFailure) %}
-    {{ policy_result(response) }}
+    {{ policy_result(response, assessment) }}
   {% endfor %}
 {% endif %}
 
 {% if assessment.results|filter(r => r.hasWarning) is not empty %}
 ## Warnings
   {% for response in assessment.results|filter(r => r.hasWarning) %}
-    {{ policy_result(response) }}
+    {{ policy_result(response, assessment) }}
   {% endfor %}
 {% endif %}
 {% endblock %}
@@ -59,7 +59,7 @@ The various appendices provides more detailed data regarding the health of
 the site.
 
 {% for response in assessment.results|filter(r => r.isNotice) %}
-  {{ policy_result(response) }}
+  {{ policy_result(response, assessment) }}
 {% endfor %}
   {% endif %}
 
@@ -70,7 +70,7 @@ During the production of this report, not all report policies were able to
 be carried out due to errors encounted.
 
 {% for response in assessment.results|filter(r => r.hasError) %}
-  {{ policy_result(response) }}
+  {{ policy_result(response, assessment) }}
 {% endfor %}
   {% endif %}
 
@@ -83,7 +83,7 @@ production of this report and their associated outcomes.
 {% if assessment.results|filter(r => r.hasError) is not empty %}
 ### Appendix - Successful Assessments
 {% for response in assessment.results|filter(r => r.isSuccessful) %}
-  {{ policy_result(response) }}
+  {{ policy_result(response, assessment) }}
 {% endfor %}
 {% endif %}
 {% endblock %}

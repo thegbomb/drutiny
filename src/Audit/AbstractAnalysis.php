@@ -55,15 +55,15 @@ abstract class AbstractAnalysis extends Audit
     {
         $this->gather($sandbox);
 
-        $expression = $this->getParameter('not_applicable', 'false');
-        $this->logger->debug(__CLASS__ . ':INAPPLICABILITY ' . $expression);
-        if ($this->evaluate($expression)) {
-            return self::NOT_APPLICABLE;
+        if ($expression = $this->getParameter('not_applicable', 'false')) {
+            $this->logger->debug(__CLASS__ . ':INAPPLICABILITY ' . $expression);
+            if ($this->evaluate($expression)) {
+                return self::NOT_APPLICABLE;
+            }
         }
 
         $expression = $this->getParameter('expression', 'true');
         $this->logger->debug(__CLASS__ . ':EXPRESSION: ' . $expression);
-
         $output = $this->evaluate($expression);
         $this->logger->debug(__CLASS__ . ':EVALUATION: ' . json_encode($output));
         return $output;

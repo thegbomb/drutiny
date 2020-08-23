@@ -83,7 +83,7 @@ class HTML extends Format
           $template = $this->convertMustache2TwigSyntax($template);
 
           // Map the old Drutiny 2.x variables to the Drutiny 3.x versions.
-          $template = $this->mapDrutiny2toDrutiny3variables($template);
+          // $template = $this->mapDrutiny2toDrutiny3variables($template);
 
           try {
             // Convert template into a Twig template and render into HTML.

@@ -23,11 +23,11 @@ Trait BackportTemplateHacks
     protected static function preMapDrutiny2Variables($template)
     {
       $variables = [
-        'output_failure' => "{% for result in assessment.results|filter(r => r.isFailure) %}{{ policy_result(result) }}{% endfor %}",
-        'output_warning' => "{% for result in assessment.results|filter(r => r.hasWarning) %}{{ policy_result(result) }}{% endfor %}",
-        'output_error'   => "{% for result in assessment.results|filter(r => r.hasError) %}{{ policy_result(result) }}{% endfor %}",
-        'output_notice'  => "{% for result in assessment.results|filter(r => r.isNotice) %}{{ policy_result(result) }}{% endfor %}",
-        'output_success' => "{% for result in assessment.results|filter(r => r.isSuccessful) %}{{ policy_result(result) }}{% endfor %}",
+        'output_failure' => "{% for result in assessment.results|filter(r => r.isFailure) %}{{ policy_result(result, assessment) }}{% endfor %}",
+        'output_warning' => "{% for result in assessment.results|filter(r => r.hasWarning) %}{{ policy_result(result, assessment) }}{% endfor %}",
+        'output_error'   => "{% for result in assessment.results|filter(r => r.hasError) %}{{ policy_result(result, assessment) }}{% endfor %}",
+        'output_notice'  => "{% for result in assessment.results|filter(r => r.isNotice) %}{{ policy_result(result, assessment) }}{% endfor %}",
+        'output_success' => "{% for result in assessment.results|filter(r => r.isSuccessful) %}{{ policy_result(result, assessment) }}{% endfor %}",
       ];
       foreach ($variables as $variable => $twig) {
           $template = preg_replace_callback("/{{# ?$variable ?}}.*{{\/ ?$variable ?}}/s", function ($matches) use ($twig) {
@@ -62,9 +62,13 @@ Trait BackportTemplateHacks
         '{{ appendix_table |raw }}' => "{% include 'report/page/appendix_table.html.twig' %}",
         '{{ severity_stats |raw }}' => "{% include 'report/page/severity_stats.html.twig' %}",
         '{{ summary_table |raw }}' => "{% include 'report/page/summary_table.html.twig' %}",
+        '{{{ appendix_table }}}' => "{% include 'report/page/appendix_table.html.twig' %}",
+        '{{{appendix_table}}}' => "{% include 'report/page/appendix_table.html.twig' %}",
         '{{appendix_table|raw}}' => "{% include 'report/page/appendix_table.html.twig' %}",
         '{{severity_stats|raw}}' => "{% include 'report/page/severity_stats.html.twig' %}",
+        '{{{ severity_stats }}}' => "{% include 'report/page/severity_stats.html.twig' %}",
         '{{summary_table|raw}}' => "{% include 'report/page/summary_table.html.twig' %}",
+        '{{{ summary_table }}}' => "{% include 'report/page/summary_table.html.twig' %}",
 
         '{% for var0remediations in remediations %}' => "{% for response in assessment.results|filter(r => r.isFailure) %}",
         '{{ var0remediations |raw }}' => "{% with response.tokens %}{{ include(template_from_string(response.policy.remediation)) | markdown_to_html }}{% endwith %}",
@@ -87,6 +91,7 @@ Trait BackportTemplateHacks
         'var1output_success in output_success' => "response in assessment.results|filter(r => r.isSuccessful)",
         '{{ var1output_success|raw }}' => "{{ policy_result(response) }}",
 
+        "{{_uri}}" => "{{assessment.uri}}",
       ]);
     }
 
@@ -95,7 +100,7 @@ Trait BackportTemplateHacks
       // Old (2.x): {{{_chart.foo}}}
       // New (3.x): {{chart.foo|chart}}
       $sample = preg_replace("/{{{_chart.(.+)}}}/", '{{audit_response.policy.chart.$1|chart}}', $sample);
-
+      $sample = self::mapDrutiny2toDrutiny3variables($sample);
       return MustacheParser::reformat($sample);
     }
 

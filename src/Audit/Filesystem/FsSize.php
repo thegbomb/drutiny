@@ -4,43 +4,57 @@ namespace Drutiny\Audit\Filesystem;
 
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Annotation\Param;
 
 /**
  * Large files
- * @Param(
- *  name = "max_size",
- *  description = "The maximum size in MegaBytes a directory should be.",
- *  type = "integer",
- *  default = 20
- * )
- * @Param(
- *  name = "path",
- *  description = "The path of the directory to check for size.",
- *  type = "string"
- * )
  */
 class FsSize extends Audit
 {
 
-  /**
-   * @inheritdoc
-   */
+    public function configure()
+    {
+        $this->addParameter(
+            'max_size',
+            static::PARAMETER_OPTIONAL,
+            'The maximum size in MegaBytes a directory should be.',
+            20
+        );
+        $this->addParameter(
+            'path',
+            static::PARAMETER_REQUIRED,
+            'The path of the directory to check for size.'
+        );
+    }
+
+
+    /**
+     * @inheritdoc
+     */
     public function audit(Sandbox $sandbox)
     {
-        $path = $sandbox->getParameter('path', '%files');
+        $path = $this->getParameter('path', '%files');
         $stat = $sandbox->drush(['format' => 'json'])->status();
+
+        if (!isset($stat['%paths'])) {
+            foreach ($stat as $key => $value) {
+                $stat['%paths']['%'.$key] = $value;
+            }
+        }
 
         $path = strtr($path, $stat['%paths']);
 
-        $size = trim($sandbox->exec("du -d 0 -m $path | awk '{print $1}'"));
+        $size = trim($this->target->getService('exec')->run("du -d 0 -m $path | awk '{print $1}'"));
 
-        $max_size = (int) $sandbox->getParameter('max_size', 20);
+        $max_size = (int) $this->getParameter('max_size', 20);
 
-      // Set the size in MB for rendering
-        $sandbox->setParameter('size', $size);
-      // Set the actual path.
-        $sandbox->setParameter('path', $path);
+        // Set the size in MB for rendering
+        $this->set('size', $size);
+
+        // Backwards compatibility. Older policies use the output variable.
+        $this->set('output', $size);
+        
+        // Set the actual path.
+        $this->set('path', $path);
 
         return $size < $max_size;
     }

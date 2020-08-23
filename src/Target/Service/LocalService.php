@@ -97,7 +97,13 @@ class LocalService implements ExecutionInterface {
   public function replacePlaceholders(string $commandline)
   {
       return preg_replace_callback('/\$([_a-zA-Z]++[_a-zA-Z0-9]*+)/', function ($matches) use ($commandline) {
-          return $this->escapeArgument($this->getEnv($matches[1]));
+          try {
+            return $this->escapeArgument($this->getEnv($matches[1]));
+          }
+          catch (InvalidArgumentException $e) {
+            // Leave the env variable in place if no variable is found.
+            return '$'.$matches[1];
+          }
       }, $commandline);
   }
 

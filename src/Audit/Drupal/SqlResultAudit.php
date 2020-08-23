@@ -64,7 +64,8 @@ class SqlResultAudit extends AbstractAnalysis
 
         // Migrate 2.x queries to 3.x
         $query = strtr($query, [
-          ':db-name' => '{drush.db-name}'
+          ':db-name' => '{drush.db-name}',
+          ':default_collation' => '{default_collation}'
         ]);
         $query = $this->interpolate($query);
         $this->logger->debug("Running SQL query '{query}'", ['query' => $query]);

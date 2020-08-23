@@ -11,6 +11,7 @@ use Drutiny\Sandbox\ReportingPeriodTrait;
 use Drutiny\Target\TargetInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class Assessment implements ExportableInterface, AssessmentInterface
 {
@@ -33,12 +34,14 @@ class Assessment implements ExportableInterface, AssessmentInterface
     protected $statsByResult = [];
     protected $statsBySeverity = [];
     protected $policyOrder = [];
+    protected $progressBar;
 
-    public function __construct(LoggerInterface $logger, ContainerInterface $container, ForkManager $forkManager)
+    public function __construct(LoggerInterface $logger, ContainerInterface $container, ForkManager $forkManager, ProgressBar $progressBar)
     {
         $this->logger = $logger;
         $this->container = $container;
         $this->forkManager = $forkManager;
+        $this->progressBar = $progressBar;
     }
 
     public function setUri($uri = 'default')
@@ -69,6 +72,8 @@ class Assessment implements ExportableInterface, AssessmentInterface
             return $policy instanceof Policy;
         });
 
+        $this->progressBar->setMaxSteps($this->progressBar->getMaxSteps() + count($policies));
+
         $promises = [];
         foreach ($policies as $policy) {
             $this->policyOrder[] = $policy->name;
@@ -93,21 +98,20 @@ class Assessment implements ExportableInterface, AssessmentInterface
         $returned = 0;
         foreach ($this->forkManager->receive() as $response) {
             $returned++;
-            $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
-            $this->statsByResult[$response->getType()]++;
-
-            $this->statsBySeverity[$response->getSeverity()][$response->getType()] = $this->statsBySeverity[$response->getSeverity()][$response->getType()] ?? 0;
-            $this->statsBySeverity[$response->getSeverity()][$response->getType()]++;
-
-            // Omit irrelevant AuditResponses.
-            if (!$response->isIrrelevant()) {
-                $this->setPolicyResult($response);
-            }
+            $this->progressBar->advance();
+            $this->progressBar->setMessage('Audit response of ' . $response->getPolicy()->name . ' recieved.');
 
             // Attempt remediation.
             if ($remediate && !$response->isSuccessful()) {
                 $this->logger->info("\xE2\x9A\xA0 Remediating " . $response->getPolicy()->title);
                 $this->setPolicyResult($sandbox->remediate());
+            }
+            // Omit irrelevant AuditResponses.
+            elseif (!$response->isIrrelevant()) {
+                $this->setPolicyResult($response);
+            }
+            else {
+              $this->logger->info("Omitting policy result from assessment: ".$response->getPolicy()->name);
             }
 
             $this->logger->info(sprintf('Policy "%s" assessment on %s completed: %s.', $response->getPolicy()->title, $this->uri(), $response->getType()));
@@ -144,6 +148,13 @@ class Assessment implements ExportableInterface, AssessmentInterface
         if ($response->isFailure()) {
           $this->remediable[] = $response;
         }
+
+        // Statistics.
+        $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
+        $this->statsByResult[$response->getType()]++;
+
+        $this->statsBySeverity[$response->getSeverity()][$response->getType()] = $this->statsBySeverity[$response->getSeverity()][$response->getType()] ?? 0;
+        $this->statsBySeverity[$response->getSeverity()][$response->getType()]++;
     }
 
     public function getSeverityCode():int
@@ -180,10 +191,9 @@ class Assessment implements ExportableInterface, AssessmentInterface
      */
     public function getResults()
     {
-        return array_map(function ($name) {
-            return $this->results[$name];
-        }, $this->policyOrder);
-        //return $this->results;
+        return array_filter(array_map(function ($name) {
+            return $this->results[$name] ?? false;
+        }, $this->policyOrder));
     }
 
     public function getRemediableResults()
@@ -217,16 +227,21 @@ class Assessment implements ExportableInterface, AssessmentInterface
     public function export()
     {
       return [
-        'statsBySeverity' => $this->statsBySeverity,
-        'statsBySeverity' => $this->statsBySeverity,
+        // 'statsBySeverity' => $this->statsBySeverity,
+        // 'statsBySeverity' => $this->statsBySeverity,
         'uri' => $this->uri,
         'results' => $this->results,
         'remediable' => $this->remediable,
+        'policyOrder' => $this->policyOrder,
       ];
     }
 
     public function import(array $export)
     {
+      foreach ($export['results'] as $result) {
+          $this->setPolicyResult($result);
+      }
+      unset($export['results']);
       $this->importUnserialized($export);
       $this->container = drutiny();
       $this->logger = drutiny()->get('logger');

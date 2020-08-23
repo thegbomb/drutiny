@@ -19,8 +19,7 @@ class ArraySelect extends ExpressionFunction implements FunctionInterface
 
     public function getEvaluator()
     {
-        return function () {
-            list($input, $property, $value, $strict_match) = array_slice(func_get_args(), 1);
+        return function ($a, $input, $property, $value, $strict_match = false) {
             foreach ($input as $set) {
                 if (!isset($set[$property])) {
                     continue;
