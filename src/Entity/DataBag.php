@@ -46,7 +46,7 @@ class DataBag implements ExportableInterface
     /**
      * {@inheritdoc}
      */
-    public function export()
+    public function export():array
     {
         return array_map(function ($data) {
             if ($data instanceof ExportableInterface) {
