@@ -17,4 +17,11 @@ class MarkdownHelper extends Parsedown
     {
         return;
     }
+
+    protected function blockTable($Line, array $Block = null)
+    {
+        $block = parent::blockTable($Line, $Block);
+        $block['element']['attributes']['class'] = 'table';
+        return $block;
+    }
 }

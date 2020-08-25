@@ -28,6 +28,9 @@ class HTML extends Format
             // $options['content'] = $this->twig->load('report/profile.md.twig');
             // $options['content'] = Yaml::parseFile(dirname(__DIR__) . '/templates/content/profile.html.yml');
         }
+        elseif (is_string($options['content'])) {
+            $options['content'] = $this->twig->createTemplate($options['content']);
+        }
         $options['template'] = $options['template'] ?? 'report/page.' . $this->getExtension() . '.twig';
         return parent::setOptions($options);
     }
@@ -47,7 +50,11 @@ class HTML extends Format
      */
     public static function filterChart(array $chart)
     {
-      $element = '<div class="chart-unprocessed" ';
+      $class = 'chart-unprocessed';
+      if (isset($chart['html-class'])) {
+          $class .= ' '.$chart['html-class'];
+      }
+      $element = '<div class="'.$class.'" ';
       foreach ($chart as $name => $key) {
         $value = is_array($key) ? implode(',', $key) : $key;
         $element .= 'data-chart-'.$name . '="'.$value.'" ' ;
