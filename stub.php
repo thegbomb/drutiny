@@ -5,35 +5,27 @@
  * Stub file for the phar build.
  */
 
-use Symfony\Component\Console\Application;
-use Drutiny\CommandDiscovery;
-use Doctrine\Common\Annotations\AnnotationRegistry;
+ use Drutiny\Kernel;
+ use Drutiny\Console\Application;
 
+ if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
+     echo 'Warning: The console should be invoked via the CLI version of PHP, not the '.PHP_SAPI.' SAPI'.PHP_EOL;
+ }
+
+set_time_limit(0);
 ini_set('memory_limit', '-1');
 
+require 'vendor/autoload.php';
+
 const DRUTINY_LIB = __DIR__;
-
-$timezone = 'UTC';
-
-// Set the timezone to the local OS if supported.
-if (file_exists('/etc/localtime')) {
-  $systemZoneName = readlink('/etc/localtime');
-  if (strpos($systemZoneName, 'zoneinfo') !== FALSE) {
-    $timezone = substr($systemZoneName, strpos($systemZoneName, 'zoneinfo') + 9);
-  }
-}
-
-date_default_timezone_set($timezone);
-
-$loader = require DRUTINY_LIB . '/vendor/autoload.php';
-AnnotationRegistry::registerLoader([$loader, 'loadClass']);
 
 $version_filename = DRUTINY_LIB . '/VERSION';
 $version = 'unknown';
 if (file_exists($version_filename)) {
-  $version = file_get_contents($version_filename);
+ $version = file_get_contents($version_filename);
 }
 
-$application = new Application('Drutiny', $version);
-$application->addCommands(CommandDiscovery::findCommands());
+$kernel = new Kernel('production');
+
+$application = new Application($kernel, $version);
 $application->run();

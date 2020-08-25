@@ -28,15 +28,16 @@ if ($fs->exists(BUILD_DIRECTORY)) {
 $console->log('info', 'Creating build directory: ' . BUILD_DIRECTORY);
 $fs->mkdir(BUILD_DIRECTORY);
 
-$files = ['composer.json', 'drutiny.config.yml', 'stub.php'];
+$files = ['composer.json', 'drutiny.yml'];
 foreach ($files as $filename) {
   $console->log('info', 'Copying ' . $filename);
   $fs->copy($filename, BUILD_DIRECTORY . '/' . $filename);
 }
+$fs->copy(dirname(__DIR__) . '/stub.php', BUILD_DIRECTORY . '/stub.php');
 
 // Append the self-update command to the phar file.
 $console->log('info', 'Adding self updating command.');
-$config_file = BUILD_DIRECTORY . '/drutiny.config.yml';
+$config_file = BUILD_DIRECTORY . '/drutiny.yml';
 $config = Yaml::parseFile($config_file);
 $config['Command'][] = 'Drutiny\Command\SelfUpdateCommand';
 file_put_contents($config_file, Yaml::dump($config));
