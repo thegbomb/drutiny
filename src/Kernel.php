@@ -8,6 +8,7 @@ use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\Config\Loader\LoaderResolver;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Loader\ClosureLoader;
 use Symfony\Component\DependencyInjection\Loader\DirectoryLoader;
@@ -20,6 +21,7 @@ use Drutiny\DependencyInjection\TwigLoaderPass;
 class Kernel
 {
     private const CONFIG_EXTS = '.{php,yaml,yml}';
+    private const CACHED_CONTAINER = 'local.container.php';
     private $container;
     private $environment;
     private $loadingPaths = [];
@@ -62,8 +64,21 @@ class Kernel
    */
     protected function initializeContainer()
     {
-        $this->container = $this->buildContainer();
-        $this->container->compile();
+        $file = DRUTINY_LIB . '/' . self::CACHED_CONTAINER;
+        if (file_exists($file)) {
+          require_once $file;
+          $this->container = new ProjectServiceContainer();
+        }
+        else {
+          $this->container = $this->buildContainer();
+          $this->container->compile();
+
+          // TODO: cache container. Need workaround for Twig.
+          // if (is_writeable(dirname($file))) {
+          //     $dumper = new PhpDumper($this->container);
+          //     file_put_contents($file, $dumper->dump());
+          // }
+        }
         $this->initialized = TRUE;
         return $this->container;
     }
@@ -89,11 +104,20 @@ class Kernel
         $container->setParameter('drutiny_core_dir', \dirname(__DIR__));
         $container->setParameter('project_dir', $this->getProjectDir());
 
+        // Remove duplicates.
+        $idx = array_search($this->getProjectDir(), $this->loadingPaths);
+        if ($idx !== FALSE) {
+            unset($this->loadingPaths[$idx]);
+        }
+
+        $location = fn () => implode('/', func_get_args());
+
+        // Search top level for config.
+        $loader->load($location($this->getProjectDir(), '{drutiny}'.self::CONFIG_EXTS), 'glob');
+
         foreach ($this->loadingPaths as $path) {
-          $loading_path = [
-            $this->getProjectDir(), $path, '{drutiny}'.self::CONFIG_EXTS,
-          ];
-          $loader->load(implode('/', $loading_path), 'glob');
+          $loading_path = $location($this->getProjectDir(), $path, '{drutiny}'.self::CONFIG_EXTS);
+          $loader->load($loading_path, 'glob');
         }
 
         return $container;
