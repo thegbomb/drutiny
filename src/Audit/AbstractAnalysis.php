@@ -23,7 +23,7 @@ use Symfony\Component\Yaml\Yaml;
  *  description = "The expression language to evaludate if the analysis is not applicable. See https://symfony.com/doc/current/components/expression_language/syntax.html"
  * )
  */
-abstract class AbstractAnalysis extends Audit
+class AbstractAnalysis extends Audit
 {
   public function configure()
   {
@@ -39,6 +39,18 @@ abstract class AbstractAnalysis extends Audit
         'false'
       )
       ->addParameter(
+        'variables',
+        static::PARAMETER_OPTIONAL,
+        'A keyed array of expressions to set variables before evaluating the passing expression.',
+        []
+      )
+      ->addParameter(
+        'syntax',
+        static::PARAMETER_OPTIONAL,
+        'expression_language or twig',
+        'expression_language'
+      )
+      ->addParameter(
         'not_applicable',
         static::PARAMETER_OPTIONAL,
         'The expression language to evaludate if the analysis is not applicable. See https://symfony.com/doc/current/components/expression_language/syntax.html',
@@ -49,22 +61,27 @@ abstract class AbstractAnalysis extends Audit
   /**
    * Gather analysis data to audit.
    */
-    abstract protected function gather(Sandbox $sandbox);
+    protected function gather(Sandbox $sandbox) {}
 
     final public function audit(Sandbox $sandbox)
     {
         $this->gather($sandbox);
+        $syntax = $this->getParameter('syntax', 'expression_language');
 
         if ($expression = $this->getParameter('not_applicable', 'false')) {
             $this->logger->debug(__CLASS__ . ':INAPPLICABILITY ' . $expression);
-            if ($this->evaluate($expression)) {
+            if ($this->evaluate($expression, $syntax)) {
                 return self::NOT_APPLICABLE;
             }
         }
 
+        foreach ($this->getParameter('variables') as $key => $value) {
+          $this->set($key, $this->evaluate($value, $syntax));
+        }
+
         $expression = $this->getParameter('expression', 'true');
         $this->logger->debug(__CLASS__ . ':EXPRESSION: ' . $expression);
-        $output = $this->evaluate($expression);
+        $output = $this->evaluate($expression, $syntax);
         $this->logger->debug(__CLASS__ . ':EVALUATION: ' . json_encode($output));
         return $output;
     }
