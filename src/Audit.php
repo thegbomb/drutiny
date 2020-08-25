@@ -153,9 +153,27 @@ abstract class Audit implements AuditInterface
     /**
      * Evaluate an expression using the Symfony ExpressionLanguage engine.
      */
-    public function evaluate($expression)
+    public function evaluate(string $expression, $language = 'expression_language')
     {
-        return $this->expressionLanguage->evaluate($expression, $this->getContexts());
+        switch ($language) {
+          case 'twig':
+            return $this->evaluateTwigSyntax($expression);
+          case 'expression_language':
+          default:
+            return $this->expressionLanguage->evaluate($expression, $this->getContexts());
+        }
+    }
+
+    /**
+     * Evaluate a twig expression.
+     */
+    private function evaluateTwigSyntax(string $expression)
+    {
+        $code = '{{ '.$expression.'|json_encode() }}';
+        $twig = $this->container->get('Twig\Environment');
+        $template = $twig->createTemplate($code);
+        $output = $twig->render($template, $this->getContexts());
+        return json_decode($output);
     }
 
     /**
