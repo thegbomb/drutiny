@@ -305,19 +305,22 @@ services:
         resource: 'src/*'
         exclude:
           - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
-          - src/Console/Application.php
+          - src/Console/{Application.php}
           - src/Report/Backport/*
-          - src/Console/LogFileLogger.php
+          - src/Console/{LogFileLogger.php}
           - src/Event/*
           - src/Upgrade/*
-          - src/*/*Exception.php
-          - src/Sandbox/Sandbox.php
-          - src/ExpressionLanguage.php
+          - src/*/*{Exception.php}
+          - src/Sandbox/{Sandbox.php}
+          - src/{ExpressionLanguage.php}
           - src/Report/Format/Menu/*
-          - src/functions.php
+          - src/{functions.php}
 
     Drutiny\Target\Service\ExecutionInterface:
       alias: 'Drutiny\Target\Service\LocalService'
+
+    Drutiny\Entity\DataBag:
+      shared: false
 
     Drutiny\Entity\EventDispatchedDataBag:
       shared: false
@@ -348,6 +351,7 @@ services:
 
     finder:
       class: Symfony\Component\Finder\Finder
+      shared: false
 
     Symfony\Component\Finder\Finder:
       alias: finder
