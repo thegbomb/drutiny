@@ -7,15 +7,23 @@ use Drutiny\Profile;
 use Drutiny\Profile\PolicyDefinition;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Finder\Finder;
+use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\Yaml\Yaml;
 
 class ProfileSourceLocalFs implements ProfileSourceInterface
 {
     protected $container;
+    protected $cache;
+    protected $finder;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(CacheInterface $cache, Finder $finder, ContainerInterface $container)
     {
-      $this->container = $container;
+        $this->cache = $cache;
+        $this->finder = $finder
+          ->files()
+          ->in([$container->getParameter('drutiny_config_dir'), DRUTINY_LIB])
+          ->name('*.profile.yml');
+        $this->container = $container;
     }
 
   /**
@@ -31,13 +39,8 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
    */
     public function getList(LanguageManager $languageManager)
     {
-        $finder = new Finder();
-        $finder->files()
-        ->in('.')
-        ->name('*.profile.yml');
-
         $list = [];
-        foreach ($finder as $file) {
+        foreach ($this->finder as $file) {
             $filename = $file->getRealPath();
             $name = str_replace('.profile.yml', '', pathinfo($filename, PATHINFO_BASENAME));
             $profile = Yaml::parse($file->getContents());

@@ -18,7 +18,10 @@ class LocalFs implements PolicySourceInterface
     public function __construct(CacheInterface $cache, Finder $finder, ContainerInterface $container)
     {
         $this->cache = $cache;
-        $this->finder = $finder->files()->in($container->getParameter('drutiny_config_dir'));
+        $this->finder = $finder
+          ->files()
+          ->in([$container->getParameter('policy.library.fs'), DRUTINY_LIB])
+          ->name('*.policy.yml');
     }
 
   /**
@@ -36,9 +39,8 @@ class LocalFs implements PolicySourceInterface
     {
         $lang_code = $languageManager->getCurrentLanguage();
         //return $this->cache->get('localfs.policies.'.$lang_code, function ($item) use ($languageManager) {
-            $finder = $this->finder->name('*.policy.yml');
             $list = [];
-            foreach ($finder as $file) {
+            foreach ($this->finder as $file) {
                 $policy = Yaml::parse($file->getContents());
                 $policy['uuid'] = $file->getPathname();
                 $policy['language'] = $policy['language'] ?? $languageManager->getDefaultLanguage();
@@ -58,6 +60,13 @@ class LocalFs implements PolicySourceInterface
     public function load(array $definition)
     {
         $policy = new Policy();
+
+        // Load from disk rather than cache.
+        if (file_exists($definition['uuid'])) {
+          $uuid = $definition['uuid'];
+          $definition = Yaml::parseFile($definition['uuid']);
+          $definition['uuid'] = $uuid;
+        }
         unset($definition['source']);
         // Convert parameters to remove default key.
         if (!empty($definition['parameters'])) {
