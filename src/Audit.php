@@ -169,11 +169,11 @@ abstract class Audit implements AuditInterface
      */
     private function evaluateTwigSyntax(string $expression)
     {
-        $code = '{{ '.$expression.'|json_encode() }}';
+        $code = '{{ '.$expression.'|json_encode()|raw }}';
         $twig = $this->container->get('Twig\Environment');
         $template = $twig->createTemplate($code);
         $output = $twig->render($template, $this->getContexts());
-        return json_decode($output);
+        return json_decode($output, true);
     }
 
     /**
