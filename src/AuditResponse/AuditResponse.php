@@ -130,9 +130,9 @@ class AuditResponse implements ExportableInterface
         return $this->isSuccessful() ? 'success' : 'failure';
     }
 
-  /**
-   *
-   */
+    /**
+     *
+     */
     public function isSuccessful():bool
     {
         return $this->state === Audit::SUCCESS || $this->remediated || $this->isNotice() || $this->state === Audit::WARNING;
@@ -190,52 +190,6 @@ class AuditResponse implements ExportableInterface
     public function getSeverityCode():int
     {
         return $this->policy->getSeverity();
-    }
-
-  /**
-   * Get the response based on the state outcome.
-   *
-   * @return string
-   *   Translated description.
-   */
-    public function getSummary():string
-    {
-        $summary = [];
-        switch (true) {
-            case ($this->state === Audit::NOT_APPLICABLE):
-                $summary[] = "This policy is not applicable to this site.";
-                break;
-
-            case ($this->state === Audit::ERROR):
-                $tokens = [
-                'exception' => isset($this->tokens['exception']) ? $this->tokens['exception'] : 'Unknown exception occured.'
-                ];
-                $summary[] = strtr('Could not determine the state of ' . $this->getTitle() . ' due to an error:
-```
-exception
-```', $tokens);
-                break;
-
-            case ($this->state === Audit::WARNING):
-                $summary[] = $this->getWarning();
-            case ($this->state === Audit::SUCCESS):
-            case ($this->state === Audit::PASS):
-            case ($this->state === Audit::NOTICE):
-                $summary[] = $this->getSuccess();
-                break;
-
-            case ($this->state === Audit::WARNING_FAIL):
-                $summary[] = $this->getWarning();
-            case ($this->state === Audit::FAILURE):
-            case ($this->state === Audit::FAIL):
-                $summary[] = $this->getFailure();
-                break;
-
-            default:
-                throw new AuditResponseException("Unknown AuditResponse state ({$this->state}). Cannot generate summary for '" . $this->getTitle() . "'.");
-            break;
-        }
-        return implode(PHP_EOL, $summary);
     }
 
     /**

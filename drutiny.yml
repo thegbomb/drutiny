@@ -241,6 +241,8 @@ services:
         - [addTest, ['@twig.test.is_numeric']]
         - [addTest, ['@twig.test.keyed']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
+        - [addGlobal, ['logger', '@logger']]
+        - [addGlobal, ['ext', 'md']]
 
     twig.functions.policy_result:
       class: Twig\TwigFunction

@@ -1,4 +1,4 @@
-#### {{ audit_response.policy.title }}
+#### ❌ {{ audit_response.policy.title }} - {{ audit_response.type }}
 
 {% with audit_response.tokens %}
 {{ include(template_from_string(audit_response.policy.description | mustache2twig, "description.field on failure.md.twig")) }}

@@ -14,7 +14,12 @@ class Terminal extends Markdown
     public function render(Profile $profile, AssessmentInterface $assessment)
     {
         parent::render($profile, $assessment);
-        $this->buffer->write(Renderer::createFromMarkdown($this->buffer->fetch()));
+        $this->buffer->write(self::format($this->buffer->fetch()));
         return $this;
+    }
+
+    public static function format(string $output)
+    {
+        return Renderer::createFromMarkdown($output);
     }
 }

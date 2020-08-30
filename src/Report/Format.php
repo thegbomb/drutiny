@@ -28,15 +28,15 @@ abstract class Format implements FormatInterface
         $this->output = new BufferedOutput($verbosity->get(), true);
         $this->buffer = new BufferedOutput($verbosity->get(), true);
         $this->twig = $twig;
-        $this->twig->addGlobal('format', $this);
-        $this->twig->addGlobal('logger', $logger);
+        $this->twig->addGlobal('ext', $this->getExtension());
+        //$this->twig->addGlobal('logger', $logger);
         $this->logger = $logger;
     }
 
     public static function renderAuditReponse(Environment $twig, AuditResponse $response, AssessmentInterface $assessment)
     {
         $globals = $twig->getGlobals();
-        $template = 'report/policy/'.$response->getType().'.'.$globals['format']->getExtension().'.twig';
+        $template = 'report/policy/'.$response->getType().'.'.$globals['ext'].'.twig';
         $globals['logger']->info("Rendering audit response for ".$response->getPolicy()->name.' with '.$template);
         $globals['logger']->info('Keys: ' . implode(', ', array_keys($response->getTokens())));
         return $twig->render($template, [

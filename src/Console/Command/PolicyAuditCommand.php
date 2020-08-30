@@ -84,6 +84,8 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         $progress->start();
         $this->initLanguage($input);
 
+        $profile = $this->getContainer()->get('profile.factory')->loadProfileByName('empty');
+
         // Setup any parameters for the check.
         $parameters = [];
         foreach ($input->getOption('set-parameter') as $option) {
@@ -93,24 +95,14 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         }
 
         $name = $input->getArgument('policy');
-        $profile = $this->getContainer()->get('profile');
 
         $profile->setProperties([
-          'title' => 'Policy Audit: ' . $name,
-          'name' => $name,
-          'uuid' => '/dev/null',
           'policies' => [
             $name => $this->getContainer()->get('policy.override')->add([
               'name' => $name,
               'parameters' => $parameters
             ])
-          ],
-          'format' => [
-            'terminal' => [
-                'template' => 'report/policy.audit.md.twig'
-            ],
-          ]
-        ]);
+          ]]);
 
         // Setup the target.
         $target = $this->getTargetFactory()->create($input->getArgument('target'));

@@ -13,3 +13,7 @@ services:
   # to the phpunit interface.
   output:
     class: Symfony\Component\Console\Output\BufferedOutput
+  Symfony\Component\Console\Helper\ProgressBar:
+    arguments:
+      - '@Symfony\Component\Console\Output\NullOutput'
+  Symfony\Component\Console\Output\NullOutput:

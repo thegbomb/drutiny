@@ -1,6 +1,6 @@
 <?php
 
-namespace DrutinyTests\Audit;
+namespace DrutinyTests;
 
 use Drutiny\Console\Application;
 use Drutiny\Kernel;
@@ -10,22 +10,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 
-class ApplicationTest extends TestCase {
-
-  protected $application;
-  protected $output;
-  protected $container;
-
-  protected function setUp(): void
-  {
-      $kernel = new Kernel('phpunit');
-      $kernel->addServicePath(
-        str_replace($kernel->getProjectDir(), '', dirname(dirname(__FILE__))));
-      $this->application = new Application($kernel, 'x.y.z');
-      $this->application->setAutoExit(FALSE);
-      $this->output = $kernel->getContainer()->get('output');
-      $this->container = $kernel->getContainer();
-  }
+class ApplicationTest extends KernelTestCase {
 
   public function testContainer()
   {
@@ -129,7 +114,7 @@ class ApplicationTest extends TestCase {
 
     $code = $this->application->run($input, $this->output);
     $this->assertIsInt($code);
-    $this->assertEquals(Policy::SEVERITY_NORMAL, $code);
+    $this->assertEquals(0, $code);
     $this->assertStringContainsString('Drutiny\Audit\AlwaysPass', $this->output->fetch());
   }
 }

@@ -6,7 +6,7 @@ use Drutiny\Assessment;
 use Drutiny\Policy;
 use Drutiny\Profile;
 use Drutiny\Target\Target;
-use Drutiny\Report\Format;
+use Drutiny\Report\Format\Terminal;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -21,7 +21,8 @@ use Symfony\Component\Yaml\Yaml;
  */
 class AuditRunCommand extends DrutinyBaseCommand
 {
-    use ReportingCommandTrait;
+  use ReportingCommandTrait;
+  use LanguageCommandTrait;
   /**
    * @inheritdoc
    */
@@ -58,22 +59,10 @@ class AuditRunCommand extends DrutinyBaseCommand
             'l',
             InputOption::VALUE_OPTIONAL,
             'Provide URLs to run against the target. Useful for multisite installs. Accepts multiple arguments.'
-        )
-        ->addOption(
-            'reporting-period-start',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'The starting point in time to report from. Can be absolute or relative. Defaults to 24 hours before the current hour.',
-            date('Y-m-d H:00:00', strtotime('-24 hours'))
-        )
-        ->addOption(
-            'reporting-period-end',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'The end point in time to report to. Can be absolute or relative. Defaults to the current hour.',
-            date('Y-m-d H:00:00')
         );
         parent::configure();
+        $this->configureReporting();
+        $this->configureLanguage();
     }
 
   /**
@@ -81,6 +70,7 @@ class AuditRunCommand extends DrutinyBaseCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->initLanguage($input);
         $container = $this->getApplication()
         ->getKernel()
         ->getContainer();
@@ -98,6 +88,7 @@ class AuditRunCommand extends DrutinyBaseCommand
         'failure' => 'failure',
         'warning' => 'warning',
         'uuid' => $audit_class,
+        'severity' => 'normal'
         ]);
 
       // Setup any parameters for the check.
@@ -118,29 +109,30 @@ class AuditRunCommand extends DrutinyBaseCommand
             $target->setUri($uri);
         }
 
-        $sandbox = $container
-        ->get('sandbox')
-        ->create($target, $policy)
-        ->setReportingPeriod($start, $end);
+        $audit = $container->get($policy->class)
+          ->setParameter('reporting_period_start', $start)
+          ->setParameter('reporting_period_end', $end);
 
-        $response = $sandbox->run();
+        $response = $audit->execute($policy);
 
         $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
         $assessment->setPolicyResult($response);
 
-        $profile = $container->get('profile');
-        $profile->setProperties([
-          'title' => 'Audit Run',
-          'name' => 'audit:run',
-          'uuid' => '/dev/null'
-        ]);
+        $render = Terminal::renderAuditReponse($container->get('twig'), $response, $assessment);
 
         $filepath = $input->getOption('report-filename') ?: 'stdout';
+        if ($filepath != 'stdout') {
+          file_put_contents($filepath, $render);
+          $output->write('<success>Audit response written to '.$filepath.'</success>');
+        }
+        else {
+          $output->write(Terminal::format($render));
+          $output->writeln('');
+        }
 
-        $format = $input->getOption('format');
-        $format = $container->get('format.factory')->create($format, $profile->format[$format] ?? []);
-        $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($filepath, 'w')) : $output);
-        $format->render($profile, $assessment)->write();
+        if ($response->isSuccessful()) {
+          return 0;
+        }
 
         return $response->getSeverityCode();
     }

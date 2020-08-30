@@ -19,6 +19,6 @@ class Sandbox
     public function __construct(AuditInterface $audit)
     {
         $this->audit = $audit;
-        $this->setReportingPeriod($audit->getParameter('reporting_period_start'), $audit->getParameter('reporting_period_end'));
+        $this->setReportingPeriod($audit->getParameter('reporting_period_start', new \DateTime()), $audit->getParameter('reporting_period_end', new \DateTime()));
     }
 }

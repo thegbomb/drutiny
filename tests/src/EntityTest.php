@@ -1,6 +1,6 @@
 <?php
 
-namespace DrutinyTests\Audit;
+namespace DrutinyTests;
 
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\Audit;
@@ -10,23 +10,9 @@ use Drutiny\Policy;
 use Drutiny\Sandbox\Sandbox;
 use PHPUnit\Framework\TestCase;
 
-class EntityTest extends TestCase {
+class EntityTest extends KernelTestCase {
 
   protected $target;
-  protected $application;
-  protected $output;
-  protected $container;
-
-  protected function setUp(): void
-  {
-      $kernel = new Kernel('phpunit');
-      $kernel->addServicePath(
-        str_replace($kernel->getProjectDir(), '', dirname(dirname(__FILE__))));
-      $this->application = new Application($kernel, 'x.y.z');
-      $this->application->setAutoExit(FALSE);
-      $this->output = $kernel->getContainer()->get('output');
-      $this->container = $kernel->getContainer();
-  }
 
   public function testPolicyObjectUsage()
   {

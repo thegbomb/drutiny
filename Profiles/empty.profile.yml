@@ -1,3 +1,6 @@
 title: Empty Profile
 description: |
   Empty profile with nothing in it.
+format:
+  terminal:
+    template: report/policy.audit.md.twig

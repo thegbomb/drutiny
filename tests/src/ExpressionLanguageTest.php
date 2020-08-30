@@ -1,6 +1,6 @@
 <?php
 
-namespace DrutinyTests\Audit;
+namespace DrutinyTests;
 
 use Drutiny\Console\Application;
 use Drutiny\Kernel;
@@ -9,22 +9,13 @@ use Drutiny\Sandbox\Sandbox;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
-class ExpressionLanguageTest extends TestCase {
+class ExpressionLanguageTest extends KernelTestCase {
 
   protected $target;
-  protected $application;
-  protected $output;
-  protected $container;
 
   protected function setUp(): void
   {
-      $kernel = new Kernel('phpunit');
-      $kernel->addServicePath(
-        str_replace($kernel->getProjectDir(), '', dirname(dirname(__FILE__))));
-      $this->application = new Application($kernel, 'x.y.z');
-      $this->application->setAutoExit(FALSE);
-      $this->output = $kernel->getContainer()->get('output');
-      $this->container = $kernel->getContainer();
+      parent::setUp();
       $this->target = $this->container->get('target.factory')->create('@none');
       $this->target->setUri('https://example.com/');
   }
@@ -47,7 +38,5 @@ class ExpressionLanguageTest extends TestCase {
 
       $version = $this->target->getProperty('php_version');
       $this->assertEquals($language->evaluate('target("php_version")'), $version);
-
-      
   }
 }
