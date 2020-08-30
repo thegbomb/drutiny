@@ -1,9 +1,8 @@
 language: php
 sudo: required
-dist: bionic
+dist: focal
 php:
-- '7.2'
-- '7.3'
+- '7.4'
 before_script:
 - sudo rm -f /etc/localtime
 - sudo ln -s /usr/share/zoneinfo/UTC /etc/localtime
@@ -28,14 +27,8 @@ deploy:
   script: ./docs/deploy.sh
   skip_cleanup: true
   on:
-    branch: 2.2.x
-    php: 7.3
-- provider: script
-  script: ./docs/deploy.sh
-  skip_cleanup: true
-  on:
-    branch: 2.3.x
-    php: 7.3
+    branch: 3.0.x
+    php: 7.4
 - provider: releases
   api_key:
     secure: f47s/UHIsWJBjRv7gWcRhgERy8VtNYcKSYmfb3R9wlw1D2vJCrsxNhPjOi3oI/ow2a+jAjvJKOnZ8qG3cEF93hcV6AI1GHn7W+G5qlMpABURyubm6qOkeXTF2a8dN0izaFKNDlQCBSkzRuBPTHX5XDLDDVLsCnxRze3Ua6qfy3IXE2plf6ALToH6HXkRSq6bXRP9JgKWwGJTbuKEipFFBri11mfoJ2ubbv0N7GsB8nCYPaonRRAsD4pD4w6TItuW8QWGq+KRkhSHnvKYevoEKlpAGGCBJTSk2Hvke7ZBEFj1arbnNqKHcTrfKGJw/oAlwDLQaVh5K0BJvw9pO51MdgDE/lpb6En2AE550+o/LPv9H1fyXkWflpLsX+YYptxMyKA50mPyNByQw+UMS7QaQkmPZKUVGgqcIslRz4qIzMzQRGbt5izl0Vpgbok9yPahh5VgdTsrSqEFpYn/0nXHb7fpQYeeqmW6GZpVaM2lN+LBbjs/cscy5nJdwq0k7uG3te0bAMt9FIkAeGEoDihuZckwB1TT2azvpDjaLee8SCVNj+1MQqq3fxPy8PFGTng2rAK9hqqNmi0kbNIq5j9//MeGSiKX71K9LCpTy2N1FQAy71AYLufwG6EKP1Y34IgF6ysJ+Q8JKTmAtdPENfwiSLVlTYTOC6sL7rgNYYmHrMU=
