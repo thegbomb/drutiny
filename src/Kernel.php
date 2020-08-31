@@ -73,6 +73,10 @@ class Kernel
           $this->container = $this->buildContainer();
           $this->container->compile();
 
+          // Ensure the Drutiny config directory is available.
+          is_dir($this->container->getParameter('drutiny_config_dir')) or
+          mkdir($this->container->getParameter('drutiny_config_dir'), 0744, true);
+
           // TODO: cache container. Need workaround for Twig.
           // if (is_writeable(dirname($file))) {
           //     $dumper = new PhpDumper($this->container);

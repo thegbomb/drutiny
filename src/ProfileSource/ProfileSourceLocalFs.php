@@ -9,6 +9,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Finder\Finder;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 
 class ProfileSourceLocalFs implements ProfileSourceInterface
 {
@@ -21,8 +22,16 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
         $this->cache = $cache;
         $this->finder = $finder
           ->files()
-          ->in([$container->getParameter('drutiny_config_dir'), DRUTINY_LIB])
+          ->in(DRUTINY_LIB)
           ->name('*.profile.yml');
+
+        try {
+          $this->finder->in($container->getParameter('drutiny_config_dir'));
+        }
+        catch (DirectoryNotFoundException $e) {
+          // Ignore not finding an existing config dir.
+        }
+
         $this->container = $container;
     }
 

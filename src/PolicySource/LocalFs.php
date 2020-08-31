@@ -17,6 +17,10 @@ class LocalFs implements PolicySourceInterface
 
     public function __construct(CacheInterface $cache, Finder $finder, ContainerInterface $container)
     {
+        // Ensure the policy directory is available.
+        $fs = $container->getParameter('policy.library.fs');
+        is_dir($fs) || mkdir($fs, 0744, true);
+
         $this->cache = $cache;
         $this->finder = $finder
           ->files()
