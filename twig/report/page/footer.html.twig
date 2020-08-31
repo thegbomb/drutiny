@@ -25,7 +25,9 @@
       var config = {
         data: {},
         type: data.chartType,
-        options: {}
+        options: {
+          maintainAspectRatio: false
+        }
       };
 
       // Labels == X-Axis labels.
@@ -73,6 +75,7 @@
         data: {},
         type: data.chartType,
         options: {
+          maintainAspectRatio: false,
           scales: {
             xAxes: [],
             yAxes: []
@@ -227,18 +230,21 @@
             return i.length;
           });
 
-      if (data.chartBootstrapColumns != undefined) {
-        $(this).addClass('col-sm-' + data.chartBootstrapColumns);
-      }
-      else {
-        $('canvas', this).css({
-          width: data.chartWidth,
-          height: data.chartHeight
-        })
-      }
+      // if (data.chartBootstrapColumns != undefined) {
+      //   $(this).addClass('col-sm-' + data.chartBootstrapColumns);
+      // }
+      // else {
+      //   $(this).css({
+      //     width: data.chartWidth,
+      //     height: data.chartHeight
+      //   })
+      // }
 
+      $(this).css({
+        height: data.chartHeight,
+        position: 'relative'
+      });
       $(this).html('<canvas></canvas>');
-      $('canvas', this).css('height', data.chartHeight);
 
       var ctx = $('canvas', this).get(0).getContext('2d');
       var series = data.chartSeries.split(',');

@@ -1,13 +1,9 @@
 <div class="row result-group">
-  <div class="col-sm-12 col-md-10">
+  <div class="col">
     <h4 id="{{ audit_response.policy.name }}">{{ audit_response.policy.title }}</h4>
+    {% with audit_response.tokens %}
     {{ include(template_from_string(audit_response.policy.description | mustache2twig)) | markdown_to_html }}
-    <div class="panel panel-info">
-      <div class="panel-body">
-        {% with audit_response.tokens %}
-        {{ include(template_from_string(audit_response.policy.success | mustache2twig)) | markdown_to_html }}
-        {% endwith %}
-      </div>
-    </div>
+    {{ include(template_from_string(audit_response.policy.success | mustache2twig)) | markdown_to_html }}
+    {% endwith %}
   </div>
 </div>

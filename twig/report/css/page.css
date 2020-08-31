@@ -1,17 +1,25 @@
 <style>
-  body {
+  /* body {
     margin-top: 45px;
     padding-bottom: 20px;
-  }
-  table {
+  } */
+  /* table {
     font-size: 14px;
     width: 100%;
+    margin: 0.5em 0;
+  }
+  th {
+    background-color: #c9c9c9;
   }
   td, th {
     text-overflow: ellipsis;
     overflow: hidden;
     width: 1%;
-  }
+    padding: 0.5em 0.1em;
+  } */
+  /* tr {
+    border-bottom: #c9c9c9 solid 1px;
+  } */
   .page-header {
     border-bottom: none;
   }
@@ -30,6 +38,9 @@
   }
   .dropdown-submenu {
     position: relative;
+  }
+  .chart {
+    float:left;
   }
   .dropdown-submenu>.dropdown-menu {
       top: 0;

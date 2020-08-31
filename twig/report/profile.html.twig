@@ -57,7 +57,7 @@
     The various appendices provides more detailed data regarding the health of
     the site.
 
-    {% for response in assessment.results|filter(r => r.isNotice) %}
+    {% for response in assessment.results %}
       {{ policy_result(response, assessment) }}
     {% endfor %}
   {% endif %}
