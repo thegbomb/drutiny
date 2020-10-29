@@ -23,10 +23,10 @@
   .page-header {
     border-bottom: none;
   }
-  .alert-success, .alert-danger {
+  /* .alert-success, .alert-danger {
     background-color: transparent;
     color: #333333;
-  }
+  } */
   .navbar-pad {
     margin-bottom: -45px;
     display:block;
@@ -83,6 +83,11 @@
       -moz-border-radius: 6px 0 6px 6px;
       border-radius: 6px 0 6px 6px;
   }
+
+  .assessement-uri {
+    font-size: x-large;
+  }
+
   @page
   {
       size: auto;   /* auto is the initial value */

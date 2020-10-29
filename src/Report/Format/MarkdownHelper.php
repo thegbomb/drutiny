@@ -20,8 +20,11 @@ class MarkdownHelper extends Parsedown
 
     protected function blockTable($Line, array $Block = null)
     {
-        $block = parent::blockTable($Line, $Block);
-        $block['element']['attributes']['class'] = 'table';
-        return $block;
+      $block = parent::blockTable($Line, $Block);
+      if (isset($block['element']['name'])) {
+        $block['element']['attributes']['class'] = 'table table-hover';
+      }
+
+      return $block;
     }
 }
