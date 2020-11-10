@@ -15,6 +15,7 @@
       {% endblock %}
       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/simplex/bootstrap.min.css">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
       {% include 'report/css/page.css' %}
       {% block extra_css %}{% endblock %}
     </head>
@@ -32,13 +33,18 @@
         <div class="row">
           {{ profile.description }}
         </div>
-
-        <div class="row">
-          <div class="col-lg-9">
+        <div class="row position-relative">
+          <div class="main col-lg-9">
+            <button type="button" class="close toc-toggle toc-toggle-open sticky-top" aria-label="Close">
+              <span class="fa fa-chevron-left" aria-hidden="true"></span>
+            </button>
           {% include 'report/page/sections.html.twig' %}
           </div> <!-- /col-lg-9 -->
           <div class="sidebar col-lg-3">
             <!-- #table_of_contents# -->
+            <button type="button" class="close toc-toggle toc-toggle-close sticky-top" aria-label="Close">
+              <span class="fa fa-times" aria-hidden="true"></span>
+            </button>
             <nav id="toc" data-toggle="toc" class="sticky-top"></nav>
           </div> <!-- /sidebar -->
         </div>
