@@ -16,3 +16,5 @@ if (file_exists('/etc/localtime')) {
 }
 
 date_default_timezone_set($timezone);
+
+define('REQUEST_TIME', time());
