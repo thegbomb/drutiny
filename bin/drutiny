@@ -18,8 +18,11 @@ $version_filename = dirname(__DIR__) . '/VERSION';
 if (file_exists($version_filename)) {
   $version = file_get_contents($version_filename);
 }
+elseif ($git_bin = exec('which git')) {
+  $version = exec(sprintf('%s -C %s branch', $git_bin, dirname(__DIR__))) . '-dev';
+}
 else {
-  $version = exec(sprintf('git -C %s branch', dirname(__DIR__))) . '-dev';
+  $version = 'dev';
 }
 
 $kernel = new Kernel('production');
