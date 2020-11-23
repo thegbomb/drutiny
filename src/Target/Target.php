@@ -160,6 +160,10 @@ abstract class Target implements \ArrayAccess
   private function getDataPaths(Databag $bag, $prefix = '') {
     $keys = [];
     foreach ($bag->all() as $key => $value) {
+        // Periods are reserved characters and cannot be used for DataPaths.
+        if (strpos($key, '.') !== FALSE) {
+          continue;
+        }
         $keys[] = $prefix.$key;
         if ($value instanceof Databag) {
           $keys = array_merge($this->getDataPaths($value, $prefix.$key.'.'), $keys);
