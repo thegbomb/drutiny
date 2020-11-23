@@ -19,7 +19,7 @@ class AuditResponse implements ExportableInterface
       import as importUnserialized;
     }
 
-    protected $policy;
+    protected Policy $policy;
     protected $state = Audit::NOT_APPLICABLE;
     protected $remediated = false;
     protected $tokens = [];
