@@ -45,15 +45,15 @@ class EventDispatchedDataBag extends DataBag
       $before_type = gettype($value);
       $before_type = $before_type == 'object' ? get_class($value) : $before_type;
 
-      $this->logger->debug("Event '$event_name' triggered on $before_type.");
+      //$this->logger->debug("Event '$event_name' triggered on $before_type.");
       $this->eventDispatcher->dispatch($event, $event_name);
 
       if ($event->getValue() !== $value) {
         $type = gettype($event->getValue());
         $type = $type == 'object' ? get_class($event->getValue()) : $type;
-        $this->logger->debug("Event '$event_name' changed value to type of $type.");
+        //$this->logger->debug("Event '$event_name' changed value to type of $type.");
       }
-      
+
       return $event->getValue();
     }
 
