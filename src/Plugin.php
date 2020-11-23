@@ -77,6 +77,13 @@ abstract class Plugin {
         $this->credentials->doWrite();
     }
 
+    public function setField($name, $value = null):void
+    {
+      $storage = $this->fields[$name]['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
+      $storage->{$name} = $value;
+      $storage->doWrite();
+    }
+
     /**
      * Get user input to get the value of a field.
      */
