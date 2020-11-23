@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\Yaml\Yaml;
 use Drutiny\Kernel;
 
 /**
@@ -46,6 +47,7 @@ class Application extends BaseApplication
       if ($output === null) {
         $output = $this->kernel->getContainer()->get('output');
       }
+      $this->checkForUpdates($output);
       return parent::run($input, $output);
     }
 
@@ -167,5 +169,47 @@ class Application extends BaseApplication
         foreach ($this->registrationErrors as $error) {
             $this->doRenderThrowable($error, $output);
         }
+    }
+
+    private function checkForUpdates(OutputInterface $output = null)
+    {
+      $container = $this->kernel->getContainer();
+
+      // Check for 2.x drutiny credentials and migrate them if 3.x credentials are
+      // not yet setup.
+      $old_path = $container->getParameter('config.old_path');
+      $config = $container->get('config');
+      $creds = $container->get('credentials');
+
+      // If 3.x creds are set or 2.x creds dont' exist, don't continue.
+      if (!file_exists($old_path) || count($config->keys()) || count($creds->keys())) {
+        return;
+      }
+
+      $map = [
+        'sumologic' => 'sumologic',
+        'github' => 'github',
+        'cloudflare' => 'cloudflare',
+        'acquia:cloud' => 'acquia_api_v2',
+        'acquia:lift' => 'acquia_lift',
+        'http' => 'http',
+      ];
+
+      $old_creds = Yaml::parseFile($old_path);
+
+      foreach ($container->findTaggedServiceIds('plugin') as $id => $info) {
+          $plugin = $container->get($id);
+
+          if (!isset($old_creds[$map[$plugin->getName()]])) {
+            continue;
+          }
+
+          foreach ($old_creds[$map[$plugin->getName()]] as $field => $value) {
+            $plugin->setField($field, $value);
+          }
+
+          $output->writeln("Migrated plugin credentials for " . $plugin->getName() . ".");
+      }
+
     }
 }
