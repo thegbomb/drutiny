@@ -3,6 +3,7 @@
 namespace Drutiny\Target\Service;
 
 use Drutiny\Target\TargetInterface;
+use Drutiny\Entity\Exception\DataNotFoundException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\InvalidArgumentException;
@@ -46,7 +47,7 @@ class LocalService implements ExecutionInterface {
       $item->expiresAfter($ttl);
       $this->logger->debug(__CLASS__ . ':MISS: ' . $cmd);
 
-      $process = Process::fromShellCommandline($cmd, null, $this->getEnv());
+      $process = Process::fromShellCommandline($cmd, null, $this->getEnvAll());
       $process->setTimeout(600);
       try {
         $process->mustRun();
@@ -71,27 +72,58 @@ class LocalService implements ExecutionInterface {
     return hash('md5', $this->replacePlaceholders($cmd));
   }
 
-  protected function getEnv($envk = NULL)
+  /**
+   * Get a single environment variable.
+   */
+  protected function getEnv($envk)
   {
     if (!isset($this->target)) {
       return [];
     }
     $env = [];
     foreach ($this->target->getPropertyList() as $key) {
+      $var = strtoupper(str_replace('.', '_', $key));
+
+      if ($var != $envk) {
+        continue;
+      }
+
       $value = $this->target->getProperty($key);
       if (is_object($value) && !method_exists($key, '__toString')) {
         continue;
       }
-      $var = strtoupper(str_replace('.', '_', $key));
-      $env[$var] = $this->target->getProperty($key);
+
+      return is_object($value) ? (string) $value : $value;
     }
     if ($envk === NULL) {
       return $env;
     }
-    if (!isset($env[$envk])) {
-      throw new InvalidArgumentException("No such environmental variable: '$envk'.");
+    throw new InvalidArgumentException("No such environmental variable: '$envk'.");
+  }
+
+  /**
+   * Load all property values from a target as environment variables.
+   */
+  protected function getEnvAll():array
+  {
+    if (!isset($this->target)) {
+      return [];
     }
-    return $env[$envk];
+    $env = [];
+    foreach ($this->target->getPropertyList() as $key) {
+      try {
+        $value = $this->target->getProperty($key);
+      }
+      // TODO: Fix bug that generates a DataNotFoundException from a listed property.
+      catch (DataNotFoundException $e) {}
+
+      if (is_object($value) && !method_exists($key, '__toString')) {
+        continue;
+      }
+      $var = strtoupper(str_replace('.', '_', $key));
+      $env[$var] = is_object($value) ? (string) $value : $value;
+    }
+    return $env;
   }
 
   public function replacePlaceholders(string $commandline)
