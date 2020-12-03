@@ -28,7 +28,7 @@ Policy | Success | Failure | Warning | Notice | Error | Not Applicable
 Site | Message
 ---- | -------
 {% for uri, result in assessment.getResultsByPolicy(policy_name)|filter(p => p.isFailure) %}
-{{uri}} | {{ include(template_from_string(result.policy.failure | mustache2twig, uri ~ ': failure message in profile.multiple_target.md.twig: ' ~ policy_name)) }}
+{{uri}} | {{ include(template_from_string(result.policy.failure, uri ~ ': failure message in profile.multiple_target.md.twig: ' ~ policy_name)) }}
 {% endfor %}
 {% endfor %}
 {% endblock %}

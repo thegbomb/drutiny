@@ -25,7 +25,7 @@ class FormatFactory
             $formatter->setOptions($options);
             return $formatter;
         }
-      //$formats = Config::get('Format');
+
         if (!isset($formats[$format])) {
             throw new \InvalidArgumentException("Reporting format '$format' is not supported.");
         }

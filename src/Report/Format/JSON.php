@@ -4,17 +4,27 @@ namespace Drutiny\Report\Format;
 
 use Drutiny\Profile;
 use Drutiny\Report\Format;
+use Drutiny\Report\FormatInterface;
+use Drutiny\Report\FilesystemFormatInterface;
 use Drutiny\AssessmentInterface;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class JSON extends Format
+class JSON extends Format implements FilesystemFormatInterface
 {
-    protected $format = 'json';
-    protected $extension = 'json';
+    protected string $name = 'json';
+    protected string $extension = 'json';
     protected $data;
 
-    protected function prepareContent(Profile $profile, AssessmentInterface $assessment)
+    /**
+     * Return an array of FormattedOutput objects.
+     */
+    public function getOutput():iterable
+    {
+      return [];
+    }
+
+    protected function prepareContent(Profile $profile, AssessmentInterface $assessment):array
     {
         $json = [
           'date' => date('Y-m-d'),
@@ -47,9 +57,37 @@ class JSON extends Format
         return $this->data;
     }
 
-    public function render(Profile $profile, AssessmentInterface $assessment)
+    public function render(Profile $profile, AssessmentInterface $assessment):FormatInterface
     {
         $this->buffer->write(json_encode($this->prepareContent($profile, $assessment)));
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function write():iterable
+    {
+      $filepath = $this->dir . '/' . $this->namespace . $this->extension;
+      $stream = new StreamOutput(fopen($filepath, 'w'));
+      $stream->write($this->buffer->fetch());
+      $this->logger->info("Written $filepath.");
+      yield $filepath;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setWriteableDirectory(string $dir):void
+    {
+      $this->directory = $dir;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getExtension():string
+    {
+      return $this->extension;
     }
 }

@@ -4,15 +4,18 @@ namespace Drutiny\Report\Format;
 
 use Drutiny\Profile;
 use Drutiny\AssessmentInterface;
+use Drutiny\Report\FormatInterface;
 use Fiasco\SymfonyConsoleStyleMarkdown\Renderer;
 use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Terminal extends Markdown
 {
-    protected $format = 'terminal';
+    protected string $name = 'terminal';
 
-    public function render(Profile $profile, AssessmentInterface $assessment)
+    public function render(Profile $profile, AssessmentInterface $assessment):FormatInterface
     {
+        echo '----- Rendering Format -----';
         parent::render($profile, $assessment);
         $this->buffer->write(self::format($this->buffer->fetch()));
         return $this;
@@ -21,5 +24,13 @@ class Terminal extends Markdown
     public static function format(string $output)
     {
         return Renderer::createFromMarkdown($output);
+    }
+
+    public function write():iterable
+    {
+        echo '----- Writing Format -----';
+        $output = new ConsoleOutput();
+        $output->write($this->buffer->fetch());
+        yield 'terminal';
     }
 }

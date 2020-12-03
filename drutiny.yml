@@ -235,10 +235,8 @@ services:
         - [addExtension, ['@Twig\Extra\String\StringExtension']]
         - [addFilter, ['@twig.filters.array_sum']]
         - [addFilter, ['@twig.filters.sectionHeading']]
-        - [addFilter, ['@twig.filters.mustache2twig']]
         - [addFilter, ['@twig.filters.chart']]
         - [addFunction, ['@twig.functions.policy_result']]
-        - [addFunction, ['@twig.functions.mustache']]
         - [addTest, ['@twig.test.is_numeric']]
         - [addTest, ['@twig.test.keyed']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
@@ -249,15 +247,9 @@ services:
       class: Twig\TwigFunction
       arguments:
         - policy_result
-        - ['Drutiny\Report\Format', 'renderAuditReponse']
+        - ['Drutiny\Report\Twig\Helper', 'renderAuditReponse']
         - is_safe: [html]
           needs_environment: true
-
-    twig.functions.mustache:
-      class: Twig\TwigFunction
-      arguments:
-        - mustache
-        - ['Drutiny\Report\Format\HTML', 'mustache']
 
     twig.filters.array_sum:
       class: Twig\TwigFilter
@@ -269,14 +261,7 @@ services:
 
     twig.test.keyed:
       class: Twig\TwigTest
-      arguments: ['keyed', ['Drutiny\Report\Format\HTML', 'keyed']]
-
-    twig.filters.mustache2twig:
-      class: Twig\TwigFilter
-      arguments:
-        - 'mustache2twig'
-        - ['Drutiny\Report\Format\HTML', 'convertMustache2TwigSyntax']
-        - is_safe: ['html']
+      arguments: ['keyed', ['Drutiny\Report\Twig\Helper', 'keyed']]
 
     twig.filters.sectionHeading:
       class: Twig\TwigFilter

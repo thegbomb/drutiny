@@ -2,11 +2,11 @@
   <div class="col">
 
     <h3 id="{{ audit_response.policy.name }}">{{ audit_response.policy.title }}</h3>
-    {{ include(template_from_string(audit_response.policy.description | mustache2twig)) | markdown_to_html }}
+    {{ include(template_from_string(audit_response.policy.description)) | markdown_to_html }}
     <div class="panel panel-info">
       <div class="panel-body">
         {% with audit_response.tokens %}
-        {{ include(template_from_string(audit_response.policy.success | mustache2twig)) | markdown_to_html }}
+        {{ include(template_from_string(audit_response.policy.success)) | markdown_to_html }}
         {% endwith %}
       </div>
     </div>

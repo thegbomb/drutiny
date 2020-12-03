@@ -1,12 +1,12 @@
 #### 🙌 {{ audit_response.policy.title }}
 
 {% with audit_response.tokens %}
-{{ include(template_from_string(audit_response.policy.description | mustache2twig, "description field on success.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.description, "description field on success.md.twig")) }}
 
-{{ include(template_from_string(audit_response.policy.success | mustache2twig, "success field on success.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.success, "success field on success.md.twig")) }}
 
 {% if audit_response.hasWarning %}
 ##### Warning
-{{ include(template_from_string(audit_response.policy.warning | mustache2twig, "warning field on success.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.warning, "warning field on success.md.twig")) }}
 {% endif %}
 {% endwith %}

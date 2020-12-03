@@ -1,6 +1,6 @@
 #### 📢 {{ audit_response.policy.title }}
 
 {% with audit_response.tokens %}
-{{ include(template_from_string(audit_response.policy.description | mustache2twig, "description field on notice.md.twig")) }}
-{{ include(template_from_string(audit_response.policy.success | mustache2twig, "success field on notice.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.description, "description field on notice.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.success, "success field on notice.md.twig")) }}
 {% endwith %}

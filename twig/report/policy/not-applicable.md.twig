@@ -1,7 +1,7 @@
 #### 🚫 {{ audit_response.policy.title }} (Not Applicable)
 
 {% with audit_response.tokens %}
-{{ include(template_from_string(audit_response.policy.description | mustache2twig, "description field on data.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.description, "description field on data.md.twig")) }}
 
-{{ include(template_from_string(audit_response.policy.success | mustache2twig, "success field on data.md.twig")) }}
+{{ include(template_from_string(audit_response.policy.success, "success field on data.md.twig")) }}
 {% endwith %}

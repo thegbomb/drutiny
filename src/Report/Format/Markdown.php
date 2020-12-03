@@ -10,10 +10,10 @@ use Twig\TemplateWrapper;
 
 class Markdown extends HTML
 {
-    protected $format = 'markdown';
-    protected $extension = 'md';
+    protected string $name = 'markdown';
+    protected string $extension = 'md';
 
-    public function render(Profile $profile, AssessmentInterface $assessment)
+    public function render(Profile $profile, AssessmentInterface $assessment):FormatInterface
     {
         parent::render($profile, $assessment);
 
@@ -28,7 +28,7 @@ class Markdown extends HTML
         return $this;
     }
 
-    protected function prepareContent(Profile $profile, AssessmentInterface $assessment)
+    protected function prepareContent(Profile $profile, AssessmentInterface $assessment):array
     {
       $variables = ['profile' => $profile, 'assessment' => $assessment];
       $sections = [];
