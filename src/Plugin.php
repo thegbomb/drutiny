@@ -54,8 +54,12 @@ abstract class Plugin {
         foreach ($this->fields as $name => $field) {
             $storage = $field['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
 
-            // Indicates the plugin is not installed yet.
             if (!isset($storage->{$name})) {
+              if (isset($field['default'])) {
+                $configuration[$name] = $field['default'];
+                continue;
+              }
+              // Indicates the plugin is not installed yet.
               return false;
             }
 
