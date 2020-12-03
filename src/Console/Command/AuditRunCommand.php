@@ -118,7 +118,7 @@ class AuditRunCommand extends DrutinyBaseCommand
         $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
         $assessment->setPolicyResult($response);
 
-        $render = Terminal::renderAuditReponse($container->get('twig'), $response, $assessment);
+        $render = \Drutiny\Report\Twig\Helper::renderAuditReponse($container->get('twig'), $response, $assessment);
 
         $filepath = $input->getOption('report-filename') ?: 'stdout';
         if ($filepath != 'stdout') {

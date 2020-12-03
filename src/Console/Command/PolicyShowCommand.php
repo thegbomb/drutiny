@@ -8,7 +8,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
 use Drutiny\PolicyFactory;
-use Drutiny\Report\BackportTemplateHacks;
 
 /**
  *
@@ -16,7 +15,6 @@ use Drutiny\Report\BackportTemplateHacks;
 class PolicyShowCommand extends DrutinyBaseCommand
 {
   use LanguageCommandTrait;
-  use BackportTemplateHacks;
   protected $policyFactory;
   protected $languageManager;
 

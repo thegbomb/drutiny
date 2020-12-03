@@ -13,7 +13,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  *
  */
-class PluginListCommand extends Command
+class PluginViewCommand extends Command
 {
     protected $container;
 
@@ -29,8 +29,13 @@ class PluginListCommand extends Command
     protected function configure()
     {
         $this
-        ->setName('plugin:list')
-        ->setDescription('List all available plugins.');
+        ->setName('plugin:view')
+        ->setDescription('View configuration of a particular plugin.')
+        ->addArgument(
+            'namespace',
+            InputArgument::REQUIRED,
+            'The plugin name.',
+        );
     }
 
   /**
@@ -39,15 +44,26 @@ class PluginListCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
+        $namespace = $input->getArgument('namespace');
 
-        $rows = [];
         foreach ($this->container->findTaggedServiceIds('plugin') as $id => $info) {
             $plugin = $this->container->get($id);
-            $rows[$plugin->getName()] = [$plugin->getName(), $plugin->load() ? 'Installed' : 'Uninstalled'];
+            if ($plugin->getName() == $namespace) {
+              break;
+            }
         }
-        ksort($rows);
 
-        $io->table(['Namespace', 'Status'], $rows);
+        if ($plugin->getName() != $namespace) {
+            $io->error("No such plugin found: $namespace.");
+            return 1;
+        }
+
+        $config = $plugin->load();
+        foreach (array_keys($config) as $key) {
+          $rows[] = [$key, $config[$key]];
+        }
+        $io->table(['Name', 'Value'], $rows);
+
         return 0;
     }
 }

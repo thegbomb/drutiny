@@ -132,12 +132,19 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         $progress->finish();
         $progress->clear();
 
-        $filepath = $input->getOption('report-filename') ?: 'stdout';
+        foreach ($this->getFormats($input, $profile) as $format) {
+            $format->render($profile, $assessment);
+            foreach ($format->write() as $location) {
+              $output->write("Policy Audit written to $location.");
+            }
+        }
+        $output->write("Policy Audit Complete.");
 
-        $format = $input->getOption('format');
-        $format = $this->getContainer()->get('format.factory')->create($format, $profile->format[$format] ?? []);
-        $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($filepath, 'w')) : $output);
-        $format->render($profile, $assessment)->write();
+        //
+        // $format = $input->getOption('format');
+        // $format = $this->getContainer()->get('format.factory')->create($format, $profile->format[$format] ?? []);
+        // $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($filepath, 'w')) : $output);
+        // $format->render($profile, $assessment)->write();
 
         // Do not use a non-zero exit code when no severity is set (Default).
         $exit_severity = $input->getOption('exit-on-severity');

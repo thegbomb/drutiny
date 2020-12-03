@@ -7,7 +7,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
-use Drutiny\Report\BackportTemplateHacks;
 
 /**
  *
@@ -15,7 +14,6 @@ use Drutiny\Report\BackportTemplateHacks;
 class ProfileShowCommand extends DrutinyBaseCommand
 {
     use LanguageCommandTrait;
-    use BackportTemplateHacks;
   /**
    * @inheritdoc
    */

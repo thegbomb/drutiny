@@ -4,6 +4,7 @@ namespace Drutiny\Console\Command;
 
 use Drutiny\Assessment;
 use Drutiny\AssessmentManager;
+use Drutiny\Report\FilesystemFormatInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -75,6 +76,19 @@ class ProfileRunCommand extends DrutinyBaseCommand
             'Specify policy names to include in the profile in addition to those listed in the profile.',
             []
         )
+        ->addOption(
+            'report-summary',
+            null,
+            InputOption::VALUE_NONE,
+            'Flag to additionally render a summary report for all targets audited.'
+        )
+        ->addOption(
+            'title',
+            't',
+            InputOption::VALUE_OPTIONAL,
+            'Override the title of the profile with the specified value.',
+            false
+        )
         ;
         $this->configureReporting();
         $this->configureDomainSource();
@@ -90,16 +104,13 @@ class ProfileRunCommand extends DrutinyBaseCommand
         $progress->start();
         $progress->setMessage("Loading profile..");
 
-        // Set the filepath where the report will be written to (can be console).
-        $filepath = $input->getOption('report-filename') ?: 'stdout';
-
         $this->initLanguage($input);
 
         $console = new SymfonyStyle($input, $output);
 
         $profile = $this->getProfileFactory()
           ->loadProfileByName($input->getArgument('profile'))
-          ->setReportPerSite($input->getOption('report-per-site'));
+          ->setReportPerSite(true);
 
         $progress->advance();
         $progress->setMessage("Loading policy definitions..");
@@ -109,14 +120,10 @@ class ProfileRunCommand extends DrutinyBaseCommand
             $profile->setProperties(['title' => $title]);
         }
 
-        // Setup the reporting format.
-        $format = $input->getOption('format');
-        $format = $this->getContainer()
-          ->get('format.factory')
-          ->create($format, $profile->format[$format] ?? []);
-
-        // Set the filepath where the report will be written to (can be console).
-        $filepath = $input->getOption('report-filename') ?: $this->getDefaultReportFilepath($input, $format);
+        // Setup the reporting formats. These are intiated before the auditing
+        // incase there is a failure in establishing the format.
+        $progress->setMessage("Loading formats..");
+        $formats = $this->getFormats($input, $profile);
 
         // Allow command line to add policies to the profile.
         $included_policies = $input->getOption('include-policy');
@@ -187,10 +194,19 @@ class ProfileRunCommand extends DrutinyBaseCommand
                 continue;
             }
 
-            $forkManager->run(function () use ($target, $policies, $start, $end, $input, $uri) {
+            $forkManager->run(function () use ($target, $policies, $start, $end, $input, $uri, $formats, $profile, $console) {
               $this->getLogger()->info("Evaluating $uri.");
               $assessment = $this->getContainer()->get('assessment')->setUri($uri);
               $assessment->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
+
+              // Write the report to the provided formats.
+              foreach ($formats as $format) {
+                  $format->setNamespace($this->getReportNamespace($input, $uri));
+                  $format->render($profile, $assessment);
+                  foreach ($format->write() as $written_location) {
+                    $console->success("Writen $written_location");
+                  }
+              }
               return $assessment->export();
             });
         }
@@ -205,30 +221,12 @@ class ProfileRunCommand extends DrutinyBaseCommand
             $assessment = $this->getContainer()->get('assessment');
             $assessment->import($export);
             $assessment_manager->addAssessment($assessment);
-
-            if ($input->getOption('report-per-site') || count($uris) == 1) {
-                // Write the report.
-                $report_filename = strtr($filepath, [
-                  'uri' => $assessment->uri(),
-                ]);
-
-                $format->setOutput(($filepath != 'stdout') ? new StreamOutput(fopen($report_filename, 'w')) : $output);
-                $results[] = $format->render($profile, $assessment);
-
-                if ($filepath != 'stdout') {
-                  $console->success(sprintf("%s report written to %s", $format->getFormat(), $report_filename));
-                }
-            }
             $exit_codes[] = $assessment->getSeverityCode();
         }
         $progress->finish();
         $progress->clear();
 
-        while ($format = array_shift($results)) {
-          $format->write();
-        }
-
-        if (count($assessment_manager->getAssessments()) > 1) {
+        if ($input->getOption('report-summary')) {
 
             $report_filename = strtr($filepath, [
               'uri' => 'multiple_target',
@@ -241,7 +239,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
             $format->render($profile, $assessment_manager)->write();
 
             if ($filepath != 'stdout') {
-              $console->success(sprintf("%s report written to %s", $format->getFormat(), $report_filename));
+              $console->success(sprintf("%s report written to %s", $format->getName(), $report_filename));
             }
         }
 
