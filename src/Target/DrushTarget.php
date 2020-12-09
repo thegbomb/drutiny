@@ -10,6 +10,14 @@ use Drutiny\Target\Service\DrushService;
 class DrushTarget extends Target implements TargetInterface
 {
   /**
+   * {@inheritdoc}
+   */
+  public function getId():string
+  {
+    return $this['drush.alias'];
+  }
+
+  /**
    * @inheritdoc
    * Implements Target::parse().
    */

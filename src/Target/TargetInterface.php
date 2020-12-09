@@ -21,4 +21,9 @@ interface TargetInterface
      * Get a serviced object.
      */
     public function getService($key);
+
+    /**
+     * Return the target identifier.
+     */
+    public function getId():string;
 }
