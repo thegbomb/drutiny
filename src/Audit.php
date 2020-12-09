@@ -144,7 +144,7 @@ abstract class Audit implements AuditInterface
             $this->logger->debug("Tokens:\n".Yaml::dump($tokens, 4, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
             // $this->logger->debug("Parameters:\n" . Yaml::dump($this->dataBag->get('parameters')->all(), 4, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
             // Set the response.
-            $response->set($outcome, $tokens);
+            $response->set($outcome ?? AuditInterface::ERROR, $tokens);
         }
 
         return $response;
