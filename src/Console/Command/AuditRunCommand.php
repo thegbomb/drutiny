@@ -58,7 +58,8 @@ class AuditRunCommand extends DrutinyBaseCommand
             'uri',
             'l',
             InputOption::VALUE_OPTIONAL,
-            'Provide URLs to run against the target. Useful for multisite installs. Accepts multiple arguments.'
+            'Provide URLs to run against the target. Useful for multisite installs. Accepts multiple arguments.',
+            'default'
         );
         parent::configure();
         $this->configureReporting();
@@ -72,26 +73,27 @@ class AuditRunCommand extends DrutinyBaseCommand
     {
         $this->initLanguage($input);
         $container = $this->getApplication()
-        ->getKernel()
-        ->getContainer();
+          ->getKernel()
+          ->getContainer();
 
         $audit_class = $input->getArgument('audit');
 
+        // Fabricate a policy to run the audit.
         $policy = new Policy();
         $policy->setProperties([
-        'title' => 'Audit: ' . $audit_class,
-        'name' => '_test',
-        'class' => $audit_class,
-        'description' => 'Verbatim run of an audit class',
-        'remediation' => 'none',
-        'success' => 'success',
-        'failure' => 'failure',
-        'warning' => 'warning',
-        'uuid' => $audit_class,
-        'severity' => 'normal'
+          'title' => 'Audit: ' . $audit_class,
+          'name' => '_test',
+          'class' => $audit_class,
+          'description' => 'Verbatim run of an audit class',
+          'remediation' => 'none',
+          'success' => 'success',
+          'failure' => 'failure',
+          'warning' => 'warning',
+          'uuid' => $audit_class,
+          'severity' => 'normal'
         ]);
 
-      // Setup any parameters for the check.
+        // Setup any parameters for the check.
         foreach ($input->getOption('set-parameter') as $option) {
             list($key, $value) = explode('=', $option, 2);
 
@@ -102,38 +104,28 @@ class AuditRunCommand extends DrutinyBaseCommand
         // Setup the target.
         $target = $container->get('target.factory')->create($input->getArgument('target'));
 
+        // Setup the reporting report.
         $start = new \DateTime($input->getOption('reporting-period-start'));
         $end   = new \DateTime($input->getOption('reporting-period-end'));
 
+        // If a URI is provided set it on the Target.
         if ($uri = $input->getOption('uri')) {
             $target->setUri($uri);
         }
 
-        $audit = $container->get($policy->class)
-          ->setParameter('reporting_period_start', $start)
-          ->setParameter('reporting_period_end', $end);
-
-        $response = $audit->execute($policy);
-
         $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
-        $assessment->setPolicyResult($response);
+        $assessment->assessTarget($target, [$policy], $start, $end, $input->getOption('remediate'));
 
-        $render = \Drutiny\Report\Twig\Helper::renderAuditReponse($container->get('twig'), $response, $assessment);
+        $profile = Profile::create($container->get('logger'));
 
-        $filepath = $input->getOption('report-filename') ?: 'stdout';
-        if ($filepath != 'stdout') {
-          file_put_contents($filepath, $render);
-          $output->write('<success>Audit response written to '.$filepath.'</success>');
-        }
-        else {
-          $output->write(Terminal::format($render));
-          $output->writeln('');
+        foreach ($this->getFormats($input, $profile) as $format) {
+            $format->setNamespace($this->getReportNamespace($input, $uri));
+            $format->render($profile, $assessment);
+            foreach ($format->write() as $written_location) {
+              // To nothing.
+            }
         }
 
-        if ($response->isSuccessful()) {
-          return 0;
-        }
-
-        return $response->getSeverityCode();
+        return $assessment->getSeverityCode();
     }
 }

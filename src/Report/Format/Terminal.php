@@ -15,7 +15,6 @@ class Terminal extends Markdown
 
     public function render(Profile $profile, AssessmentInterface $assessment):FormatInterface
     {
-        echo '----- Rendering Format -----';
         parent::render($profile, $assessment);
         $this->buffer->write(self::format($this->buffer->fetch()));
         return $this;
@@ -28,7 +27,6 @@ class Terminal extends Markdown
 
     public function write():iterable
     {
-        echo '----- Writing Format -----';
         $output = new ConsoleOutput();
         $output->write($this->buffer->fetch());
         yield 'terminal';

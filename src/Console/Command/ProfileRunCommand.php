@@ -189,7 +189,8 @@ class ProfileRunCommand extends DrutinyBaseCommand
         foreach ($uris as $uri) {
             try {
                 $target->setUri($uri);
-            } catch (\Drutiny\Target\InvalidTargetException $e) {
+            }
+            catch (\Drutiny\Target\InvalidTargetException $e) {
                 $this->getLogger()->warning("Target cannot be evaluated: " . $e->getMessage());
                 continue;
             }

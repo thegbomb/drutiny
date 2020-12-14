@@ -57,12 +57,12 @@ trait ReportingCommandTrait
           return strtr('target-profile-uri-date', [
             'uri' => $uri,
             'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
-            'profile' => $input->getArgument('profile'),
+            'profile' => $input->hasArgument('profile') ? $input->getArgument('profile') : '',
             'date' => date('Ymd-His'),
           ]);
       }
 
-      protected function getFormats(InputInterface $input, Profile $profile):array
+      protected function getFormats(InputInterface $input, Profile $profile = null):array
       {
         foreach ($input->getOption('format') as $format_option) {
           $formats[$format_option] = $this->getContainer()
