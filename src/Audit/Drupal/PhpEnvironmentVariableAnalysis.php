@@ -7,7 +7,7 @@ use Drutiny\Sandbox\Sandbox;
 use Drutiny\Annotation\Param;
 
 
-class PhpExtensionAnalysis extends AbstractAnalysis
+class PhpEnvironmentVariableAnalysis extends AbstractAnalysis
 {
 
   public function configure()
@@ -49,10 +49,10 @@ class PhpExtensionAnalysis extends AbstractAnalysis
   public function gather(Sandbox $sandbox) {
     parent::gather($sandbox);
 
-    $phpext = $this->target->getService('drush')->runtime(function () {
-        return get_loaded_extensions();
+    $env_vars = $this->target->getService('drush')->runtime(function () {
+        return getenv();
     });
 
-    $this->set('phpextensions', $phpext);
+    $this->set('environment_variables', $env_vars);
   }
 }
