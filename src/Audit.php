@@ -217,6 +217,11 @@ abstract class Audit implements AuditInterface
             $contexts[$key] = $this->target->getProperty($key);
         }
 
+        $reflection = new ReflectionClass(__CLASS__);
+        foreach ($this->getConstants() as $key => $value) {
+          $contexts[$key] = $value;
+        }
+
         return $contexts;
     }
 
