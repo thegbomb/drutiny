@@ -33,17 +33,34 @@ class Dependency
   /**
    * @var string Must be one of ON_FAIL constants.
    */
-    protected $onFail = 'fail';
+    protected string $onFail = 'fail';
 
   /**
    * @var string Symfony ExpressionLanguage expression.
    */
-    protected $expression;
+    protected string $expression;
 
-    public function __construct($expression = 'true', $on_fail = self::ON_FAIL_DEFAULT)
+    /**
+     * @var string Evaluation syntax.
+     */
+    protected string $syntax;
+
+    /**
+     * @var string A description of what the dependency is about.
+     */
+    protected string $description;
+
+    public function __construct(
+      $expression = 'true',
+      $on_fail = self::ON_FAIL_DEFAULT,
+      $syntax = 'expression_language',
+      $description = ''
+      )
     {
         $this->expression = $expression;
         $this->setFailBehaviour($on_fail);
+        $this->syntax = $syntax;
+        $this->description = $description;
     }
 
     public function getExpression()
@@ -91,19 +108,28 @@ class Dependency
         }
     }
 
+    /**
+     * Get the description.
+     */
+    public function getDescription():string
+    {
+      return $this->description;
+    }
+
   /**
    * Evaluate the dependency.
    */
     public function execute(AuditInterface $audit)
     {
         try {
-            if ($return = $audit->evaluate($this->expression)) {
-                return $return;
-            }
+          $return = $audit->evaluate($this->expression, $this->syntax);
+          if ($return === 1) {
+            return true;
+          }
         } catch (\Exception $e) {
-            $audit->getLogger()->warning($e->getMessage());
+            $audit->getLogger()->warning($this->syntax . ': ' . $e->getMessage());
         }
-        $audit->getLogger()->debug(__CLASS__ . ": Expression FAILED.");
+        $audit->getLogger()->debug(__CLASS__ . ": Expression FAILED. ");
 
         // Execute the on fail behaviour.
         throw new DependencyException($this);

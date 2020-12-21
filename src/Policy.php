@@ -96,7 +96,7 @@ class Policy implements ExportableInterface
 
         if (isset($new_properties['depends'])) {
             $builder = function ($depends) {
-                return new Dependency($depends['expression'], $depends['on_fail']);
+                return new Dependency($depends['expression'], $depends['on_fail'], $depends['syntax'], $depends['description']);
             };
             $this->dependencies = array_map($builder, $policyData['depends']);
         }
