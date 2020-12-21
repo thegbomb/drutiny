@@ -71,7 +71,8 @@ class CacheClearCommand extends Command
             case  NULL:
               break;
             default:
-              $this->cache->delete($input->getArgument('cache'));
+              $this->cache->delete($cid);
+              $io->success('Cache item cleared: ' . $cid);
               break;
         }
 
