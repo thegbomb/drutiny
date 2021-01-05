@@ -8,6 +8,9 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Console\Helper\TableSeparator;
+use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableCellStyle;
 
 
 /**
@@ -46,20 +49,52 @@ class AuditInfoCommand extends Command
     {
         $audit = $input->getArgument('audit');
         $reflection = new \ReflectionClass($audit);
+        $container = $this->getApplication()
+          ->getKernel()
+          ->getContainer();
+        $container->get('target.factory')->create('@none');
+        $audit_instance = $container->get($audit);
+
         $info = [];
 
-        $info[] = ['Namespace', $audit];
-        $info[] = ['Extends', $reflection->getParentClass()->name];
+        $info[] = ['Namespace', new TableCell($audit, ['colspan' => 4])];
+        $info[] = ['Extends', new TableCell($reflection->getParentClass()->name, ['colspan' => 4])];
+
+        $info[] = new TableSeparator();
+
+        $info[] = [
+           '<info>Parameters</info>',
+           '<fg=yellow>Name</>',
+           '<fg=yellow>Required</>',
+           '<fg=yellow>Description</>',
+           '<fg=yellow>Default value</>'
+        ];
+        foreach ($audit_instance->getDefinition()->getArguments() as $param) {
+          $info[] = [
+            '',
+            $param->getName(),
+            $param->isRequired() ? 'Required' : 'Optional',
+            $param->getDescription(),
+            $param->getDefault(),
+          ];
+        }
+
+        $info[] = new TableSeparator();
 
         $policy_list = array_filter($this->policyFactory->getPolicyList(), function ($policy) use ($audit) {
             return $policy['class'] == $audit;
         });
 
-        $info[] = ['Policies', $this->listing(array_map(function ($policy) {
+        $info[] = ['Policies', new TableCell($this->listing(array_map(function ($policy) {
           return $policy['name'];
-        }, $policy_list))];
+        }, $policy_list)), ['colspan' => 4])];
 
-        $info[] = ['Filename', $reflection->getFilename()];
+        $info[] = new TableSeparator();
+
+        $info[] = ['Filename', new TableCell($reflection->getFilename(), ['colspan' => 4])];
+
+        $info[] = new TableSeparator();
+
         $info[] = ['Methods', $this->listing(array_map(function ($method) use ($audit) {
           if ($method->getDeclaringClass()->name !== $audit) {
             return false;
@@ -68,7 +103,11 @@ class AuditInfoCommand extends Command
           foreach ($method->getParameters() as $parameter) {
             $function .= '$' . $parameter->name . ', ';
           }
-          $function = substr($function, 0, -2) . ')';
+
+          if (count($method->getParameters())) {
+            $function = substr($function, 0, -2);
+          }
+          $function .= ')';
 
           return $function;
         }, $reflection->getMethods()))];

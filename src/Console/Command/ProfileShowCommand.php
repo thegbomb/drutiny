@@ -47,7 +47,7 @@ class ProfileShowCommand extends DrutinyBaseCommand
         $export = $profile->export();
 
         if (!$input->getOption('backward-compatibility')) {
-            foreach ($export['format']['html']['content'] as &$section) {
+            foreach ($export['format']['html']['content'] ?? [] as &$section) {
                 foreach (array_keys($section) as $attribute) {
                     $template = $this->prefixTemplate($section[$attribute]);
 

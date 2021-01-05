@@ -33,7 +33,7 @@ class ModuleDisabled extends Audit implements RemediableInterface
         try {
             $info = $sandbox->drush(['format' => 'json'])->pmList();
         } catch (\Exception $e) {
-            return strpos($e->getOutput(), $module . ' was not found.') !== false;
+            return strpos($e->getProcess()->getOutput(), $module . ' was not found.') !== false;
         }
 
         if (!isset($info[$module])) {
