@@ -103,9 +103,9 @@ abstract class Audit implements AuditInterface
             $outcome = $this->audit(new Sandbox($this));
             // If the audit wasn't successful and remediation is allowed, then
             // attempt to resolve the issue. TODO: Purge Cache
-            if (($this instanceof RemediableInterface) && !$outcome && $remediate) {
-                $outcome = $this->remediate(new Sandbox($this));
-            }
+            // if (($this instanceof RemediableInterface) && !$outcome && $remediate) {
+            //     $outcome = $this->remediate(new Sandbox($this));
+            // }
         } catch (DependencyException $e) {
             $outcome = AuditInterface::ERROR;
             $outcome = $e->getDependency()->getFailBehaviour();
