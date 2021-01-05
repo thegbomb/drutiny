@@ -13,6 +13,7 @@ class LogFileLogger extends AbstractLogger {
     protected $fs;
     protected $logDir;
     protected $progressBar;
+    protected string $filename = 'drutiny.log';
     protected $verbosityLevelMap = [
         LogLevel::EMERGENCY => OutputInterface::VERBOSITY_NORMAL,
         LogLevel::ALERT => OutputInterface::VERBOSITY_NORMAL,
@@ -31,6 +32,31 @@ class LogFileLogger extends AbstractLogger {
         $this->progressBar = $progressBar;
         $this->terminal = new Terminal();
         $this->verbosity = $verbosity;
+    }
+
+    public function setLogFilename(string $filename)
+    {
+      $this->filename = $filename;
+    }
+
+    /**
+     * Clean up the logging directory.
+     */
+    public function clean()
+    {
+      $files = new \FilesystemIterator($this->logDir);
+      foreach ($files as $logfile) {
+        if (strpos($logfile->getFilename(), 'gz') !== FALSE) {
+          continue;
+        }
+
+        $gz = $this->logDir . '/' . $logfile->getFilename() . '.gz';
+        if (file_exists($gz)) {
+          continue;
+        }
+        
+        passthru('gzip ' . $this->logDir . '/' . $logfile->getFilename());
+      }
     }
 
     /**
@@ -58,7 +84,7 @@ class LogFileLogger extends AbstractLogger {
           'message' => $this->interpolate($message, $context),
           'datetime' => $datetime->format("Y-m-d\TH:i:s.vP"),
         ]);
-        $this->fs->appendToFile($this->logDir . '/drutiny.log', $log);
+        $this->fs->appendToFile($this->logDir . '/' . $this->filename, $log);
 
         $message = $this->interpolate($message, $context);
         $message = str_replace(PHP_EOL, " ", $message);
