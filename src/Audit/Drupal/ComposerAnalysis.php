@@ -7,6 +7,7 @@ use Drutiny\Credential\Manager;
 use Drutiny\Acquia\CloudApiDrushAdaptor;
 use Drutiny\Acquia\CloudApiV2;
 use Drutiny\Audit\AbstractAnalysis;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 /**
  * Adds the contents of composer.lock to the dataBag.
@@ -17,11 +18,17 @@ class ComposerAnalysis extends AbstractAnalysis {
    * @inheritdoc
    */
   public function gather(Sandbox $sandbox) {
-    $composer_info = $this->target->getService('exec')->run('cat $DRUSH_ROOT/../composer.lock || cat $DRUSH_ROOT/composer.lock' , function($output){
-      return json_decode($output, true);
-    });
 
-    $this->set('has_composer_lock', is_array($composer_info));
+    try {
+      $composer_info = $this->target->getService('exec')->run('cat $DRUSH_ROOT/../composer.lock || cat $DRUSH_ROOT/composer.lock' , function($output){
+        return json_decode($output, true);
+      });
+    }
+    catch (ProcessFailedException $e) {
+      $composer_info = [];
+    }
+
+    $this->set('has_composer_lock', is_array($composer_info) && !empty($composer_info));
 
     if (!is_array($composer_info)) {
       return;
