@@ -11,6 +11,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableCellStyle;
+use Symfony\Component\Yaml\Yaml;
 
 
 /**
@@ -52,7 +53,7 @@ class AuditInfoCommand extends Command
         $container = $this->getApplication()
           ->getKernel()
           ->getContainer();
-        $container->get('target.factory')->create('@none');
+        $container->get('target.factory')->create('none:');
         $audit_instance = $container->get($audit);
 
         $info = [];
@@ -75,7 +76,7 @@ class AuditInfoCommand extends Command
             $param->getName(),
             $param->isRequired() ? 'Required' : 'Optional',
             $param->getDescription(),
-            $param->getDefault(),
+            Yaml::dump($param->getDefault()),
           ];
         }
 
