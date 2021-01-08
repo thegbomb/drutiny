@@ -3,14 +3,13 @@
 namespace Drutiny;
 
 use Drutiny\PolicySource\PolicySourceInterface;
+use Drutiny\PolicySource\PolicyStorage;
 use Drutiny\Policy\UnavailablePolicyException;
 use Drutiny\Policy\UnknownPolicyException;
 use Drutiny\LanguageManager;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
 use Psr\Log\LoggerInterface;
 
 class PolicyFactory
@@ -18,14 +17,12 @@ class PolicyFactory
 
     use ContainerAwareTrait;
 
-    protected $cache;
     protected $languageManager;
     protected $progress;
 
-    public function __construct(ContainerInterface $container, CacheInterface $cache, LoggerInterface $logger, LanguageManager $languageManager, ProgressBar $progress)
+    public function __construct(ContainerInterface $container, LoggerInterface $logger, LanguageManager $languageManager, ProgressBar $progress)
     {
         $this->setContainer($container);
-        $this->cache = $cache;
         $this->logger = $logger;
         $this->languageManager = $languageManager;
         $this->progress = $progress;
@@ -74,28 +71,26 @@ class PolicyFactory
             return $available_list;
         }
         $lang = $this->languageManager->getCurrentLanguage();
-        $policy_list = $this->cache->get('policy.list.'.$lang, function ($item) {
-            $list = [];
-            // Add steps to the progress bar.
-            $this->progress->setMaxSteps($this->progress->getMaxSteps() + count($this->getSources()));
-            foreach ($this->getSources() as $source) {
-                try {
-                    $items = $source->getList($this->languageManager);
-                    $this->container->get('logger')->notice($source->getName() . " has " . count($items) . " polices.");
-                    foreach ($items as $name => $item) {
-                        $item['source'] = $source->getName();
-                        $list[$name] = $item;
-                    }
-                } catch (\Exception $e) {
-                    $this->container->get('logger')->error(strtr("Failed to load policies from source: @name: @error", [
-                    '@name' => $source->getName(),
-                    '@error' => $e->getMessage(),
-                    ]));
+
+        $policy_list = [];
+        // Add steps to the progress bar.
+        $this->progress->setMaxSteps($this->progress->getMaxSteps() + count($this->getSources()));
+        foreach ($this->getSources() as $source) {
+            try {
+                $items = $source->getList($this->languageManager);
+                $this->container->get('logger')->notice($source->getName() . " has " . count($items) . " polices.");
+                foreach ($items as $name => $item) {
+                    $item['source'] = $source->getName();
+                    $policy_list[$name] = $item;
                 }
-                $this->progress->advance();
+            } catch (\Exception $e) {
+                $this->container->get('logger')->error(strtr("Failed to load policies from source: @name: @error", [
+                '@name' => $source->getName(),
+                '@error' => $e->getMessage(),
+                ]));
             }
-            return $list;
-        });
+            $this->progress->advance();
+        }
 
         if ($include_invalid) {
             return $policy_list;
@@ -112,15 +107,32 @@ class PolicyFactory
     }
 
   /**
+   * Load the policies from a single source.
+   */
+   public function getSourcePolicyList(string $source):array
+   {
+       return $this->getSource($source)
+        ->getList($this->languageManager);
+   }
+
+  /**
    * Load the sources that provide policies.
    *
    * @return array of PolicySourceInterface objects.
    */
     public function getSources()
     {
+        static $sources;
+        if (!empty($sources)) {
+          return $sources;
+        }
+
         $sources = [];
         foreach ($this->container->findTaggedServiceIds('policy.source') as $id => $info) {
-            $sources[] = $this->container->get($id);
+            if (strpos($id, 'PolicyStorage') !== FALSE) {
+              continue;
+            }
+            $sources[] = new PolicyStorage($this->container->get($id), $this->container, $this->container->get('language_manager'));
         }
 
         // If multiple sources provide the same policy by name, then the policy from
@@ -140,8 +152,14 @@ class PolicyFactory
    */
     public function getSource($name):PolicySourceInterface
     {
-        foreach ($this->getSources() as $class => $source) {
+        foreach ($this->getSources() as $source) {
             if ($source->getName() == $name) {
+                return $source;
+            }
+
+            // Attempt lookup without formatting.
+            $raw_name = preg_replace('/<[^>]+>/', '', $source->getName());
+            if ($raw_name == $name) {
                 return $source;
             }
         }

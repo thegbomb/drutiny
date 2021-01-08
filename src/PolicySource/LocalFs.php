@@ -46,7 +46,8 @@ class LocalFs implements PolicySourceInterface
             $list = [];
             foreach ($this->finder as $file) {
                 $policy = Yaml::parse($file->getContents());
-                $policy['uuid'] = $file->getPathname();
+                $policy['uuid'] = md5($file->getPathname());
+                $policy['filepath'] = $file->getPathname();
                 $policy['language'] = $policy['language'] ?? $languageManager->getDefaultLanguage();
 
                 if ($policy['language'] != $languageManager->getCurrentLanguage()) {
@@ -66,9 +67,9 @@ class LocalFs implements PolicySourceInterface
         $policy = new Policy();
 
         // Load from disk rather than cache.
-        if (file_exists($definition['uuid'])) {
+        if (file_exists($definition['filepath'])) {
           $uuid = $definition['uuid'];
-          $definition = Yaml::parseFile($definition['uuid']);
+          $definition = Yaml::parseFile($definition['filepath']);
           $definition['uuid'] = $uuid;
         }
         unset($definition['source']);
