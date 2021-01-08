@@ -11,6 +11,12 @@ use Psr\Log\LoggerInterface;
 class Verbosity
 {
     private $verbosity;
+    private LoggerInterface $logger;
+
+    public function __construct(LoggerInterface $logger)
+    {
+      $this->logger = $logger;
+    }
 
   /**
    * {@inheritdoc}
@@ -18,6 +24,7 @@ class Verbosity
     public function set($level)
     {
         $this->verbosity = (int) $level;
+        $this->logger->setLevel($level);
     }
 
   /**

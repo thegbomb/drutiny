@@ -74,14 +74,6 @@ class Application extends BaseApplication
      */
     protected function doRunCommand(Command $command, InputInterface $input, OutputInterface $output)
     {
-        $logfile = str_replace(':', '_', implode('_', $input->getArguments()) . '_' . date('Ymd_His') . '.log');
-        $this->kernel->getContainer()->get('logger')->setLogFilename($logfile);
-        $this->kernel->getContainer()->get('logger')->clean();
-        $this->kernel->getContainer()->get('verbosity')->set($output->getVerbosity());
-        $this->kernel->getContainer()->get('logger')->notice("Application Running {command} {args}.", [
-          'command' => $command->getName(),
-          'args' => implode(' ', $input->getArguments())
-        ]);
         if (!$command instanceof ListCommand) {
             if ($this->registrationErrors) {
                 $this->renderRegistrationErrors($input, $output);

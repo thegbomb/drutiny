@@ -12,6 +12,9 @@ parameters:
   config.credentials: '%drutiny_config_dir%/.credentials.yml'
   config.old_path: '%drutiny_config_dir%/.drutiny_creds.yml'
   log.directory: '%user_home_dir%/.drutiny/logs'
+  log.name: drutiny
+  log.filepath: '%log.directory%/%log.name%.log'
+  log.max_files: 20
   twig.templates:
     - '%drutiny_core_dir%/twig'
     - '%drutiny_core_dir%/twig/report'
@@ -166,12 +169,36 @@ services:
 
     # Default logger echoes logs out to the console.
     logger:
-      alias: Drutiny\Console\LogFileLogger
-
-    Drutiny\Console\LogFileLogger:
+      class: Monolog\Logger
       arguments:
-        - '%log.directory%'
-        - '@Symfony\Component\Filesystem\Filesystem'
+        - '%log.name%'
+      calls:
+        - [pushProcessor, ['@Monolog\Processor\ProcessIdProcessor']]
+        - [pushHandler, ['@logger.logfile']]
+
+    logger.logfile:
+      class: Monolog\Handler\RotatingFileHandler
+      calls:
+        - [setFormatter,['@Monolog\Formatter\LineFormatter']]
+      arguments:
+        - '%log.filepath%'
+        - '%log.max_files%'
+
+    Monolog\Processor\ProcessIdProcessor:
+
+    Monolog\Formatter\LineFormatter:
+      arguments:
+        - null
+        - null
+        - true
+
+    # logger.process:
+    #   class: Monolog\Processor\ProcessIdProcessor
+    #
+    # Drutiny\Console\LogFileLogger:
+    #   arguments:
+    #     - '%log.directory%'
+    #     - '@Symfony\Component\Filesystem\Filesystem'
 
     # Default output class echoes out to the console.
     output:
@@ -185,7 +212,6 @@ services:
     # Factory for loading policies from their sources.
     policy.factory:
       class: 'Drutiny\PolicyFactory'
-      arguments: ['@service_container', '@cache.filesystem']
 
     policy.override:
       class: 'Drutiny\Entity\PolicyOverride'
@@ -211,7 +237,7 @@ services:
       class: Drutiny\Target\DrushTarget
 
     target.none:
-      class: Drutiny\Target\TargetNone
+      class: Drutiny\Target\NullTarget
 
     twig.loader:
       class: Twig\Loader\ChainLoader
@@ -321,6 +347,10 @@ services:
 
     Drutiny\Assessment:
       shared: false
+
+    Drutiny\PolicySource\PolicyStorage:
+      autowire: false
+      tags: []
 
     assessment:
       alias: Drutiny\Assessment
