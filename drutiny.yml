@@ -173,8 +173,10 @@ services:
       arguments:
         - '%log.name%'
       calls:
+        - [pushProcessor, ['@Monolog\Processor\MemoryUsageProcessor']]
         - [pushProcessor, ['@Monolog\Processor\ProcessIdProcessor']]
         - [pushHandler, ['@logger.logfile']]
+        - [pushHandler, ['@Drutiny\Console\Helper\MonologProgressBarHandler']]
 
     logger.logfile:
       class: Monolog\Handler\RotatingFileHandler
@@ -185,6 +187,7 @@ services:
         - '%log.max_files%'
 
     Monolog\Processor\ProcessIdProcessor:
+    Monolog\Processor\MemoryUsageProcessor:
 
     Monolog\Formatter\LineFormatter:
       arguments:
@@ -192,19 +195,10 @@ services:
         - null
         - true
 
-    # logger.process:
-    #   class: Monolog\Processor\ProcessIdProcessor
-    #
-    # Drutiny\Console\LogFileLogger:
-    #   arguments:
-    #     - '%log.directory%'
-    #     - '@Symfony\Component\Filesystem\Filesystem'
-
     # Default output class echoes out to the console.
     output:
-      class: Symfony\Component\Console\Output\ConsoleOutput
-      arguments:
-        - '@=service("verbosity").get()'
+      class: Symfony\Component\Console\Output\OutputInterface
+      synthetic: true
 
     input:
       class: Symfony\Component\Console\Input\ArgvInput
@@ -307,9 +301,6 @@ services:
     process.manager:
       class: Drutiny\Process\ProcessManager
 
-    verbosity:
-      class: Drutiny\Console\Verbosity
-
     language_manager:
       class: Drutiny\LanguageManager
 
@@ -387,8 +378,10 @@ services:
         - [setBarCharacter, ['▓']]
         - [setFormatDefinition, ['drutiny', '%progress_bar.template%']]
         - [setFormat, ['drutiny']]
+        - [setMessage, ['Drutiny is bootstrapping, please wait...']]
 
     Symfony\Component\Console\Style\SymfonyStyle:
+    Symfony\Component\Console\Terminal:
 
     style:
       alias: Symfony\Component\Console\Style\SymfonyStyle
