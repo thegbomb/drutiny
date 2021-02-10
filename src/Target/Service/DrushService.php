@@ -7,7 +7,7 @@ use Drutiny\Target\Service\RemoteService;
 
 class DrushService {
 
-  protected const LAUNCHERS = ['drush-launcher', 'drush.launcher', 'drush'];
+  protected const LAUNCHERS = ['../vendor/drush/drush/drush', 'drush-launcher', 'drush.launcher', 'drush'];
   protected $supportedCommandMap = [
     'configGet' => 'config:get',
     'pmList' => 'pm:list',
