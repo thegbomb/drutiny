@@ -42,31 +42,16 @@ class Application extends BaseApplication
     /**
      * {@inheritdoc}
      */
-    public function run(InputInterface $input = null, OutputInterface $output = null)
+    public function doRun(InputInterface $input = null, OutputInterface $output = null)
     {
-      if ($output === null) {
-        $output = $this->kernel->getContainer()->get('output');
-      }
+      $this->getKernel()->getContainer()->set('output', $output);
       $this->checkForUpdates($output);
-      return parent::run($input, $output);
-    }
+      $this->registerCommands();
 
-    /**
-     * Runs the current application.
-     *
-     * @return int 0 if everything went fine, or an error code
-     */
-    public function doRun(InputInterface $input, OutputInterface $output)
-    {
-        $this->registerCommands();
-
-        if ($this->registrationErrors) {
-            $this->renderRegistrationErrors($input, $output);
-        }
-
-        //$this->setDispatcher($this->kernel->getContainer()->get('event_dispatcher'));
-
-        return parent::doRun($input, $output);
+      if ($this->registrationErrors) {
+          $this->renderRegistrationErrors($input, $output);
+      }
+      return parent::doRun($input, $output);
     }
 
     /**
