@@ -114,10 +114,8 @@ class PolicyAuditCommand extends DrutinyBaseCommand
 
         $result = [];
 
-        $start = new \DateTime($input->getOption('reporting-period-start'));
-        $end   = new \DateTime($input->getOption('reporting-period-end'));
-        $profile->setReportingPeriod($start, $end);
-
+        $profile->setReportingPeriod($this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input));
+        
         $policies = [];
         $progress->setMessage("Loading policy definitions...");
         foreach ($profile->getAllPolicyDefinitions() as $definition) {

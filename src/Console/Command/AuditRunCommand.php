@@ -114,7 +114,7 @@ class AuditRunCommand extends DrutinyBaseCommand
         }
 
         $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
-        $assessment->assessTarget($target, [$policy], $start, $end, $input->getOption('remediate'));
+        $assessment->assessTarget($target, [$policy], $this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input), $input->getOption('remediate'));
 
         $profile = Profile::create($container->get('logger'));
 

@@ -166,9 +166,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
 
         $results = [];
 
-        $start = new \DateTime($input->getOption('reporting-period-start'));
-        $end   = new \DateTime($input->getOption('reporting-period-end'));
-        $profile->setReportingPeriod($start, $end);
+        $profile->setReportingPeriod($this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input));
 
         $definitions = $profile->getAllPolicyDefinitions();
         $max_steps = $progress->getMaxSteps() + count($definitions) + count($uris);
@@ -195,10 +193,10 @@ class ProfileRunCommand extends DrutinyBaseCommand
                 continue;
             }
 
-            $forkManager->run(function () use ($target, $policies, $start, $end, $input, $uri, $formats, $profile, $console) {
+            $forkManager->run(function () use ($target, $policies, $input, $uri, $formats, $profile, $console) {
               $this->getLogger()->info("Evaluating $uri.");
               $assessment = $this->getContainer()->get('assessment')->setUri($uri);
-              $assessment->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
+              $assessment->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd(), $input->getOption('remediate'));
 
               // Write the report to the provided formats.
               foreach ($formats as $format) {

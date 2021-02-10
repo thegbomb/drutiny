@@ -13,6 +13,8 @@ use Symfony\Component\Console\Input\InputInterface;
  */
 trait ReportingCommandTrait
 {
+    protected \DateTime $reportingPeriodStart;
+    protected \DateTime $reportingPeriodEnd;
   /**
    * @inheritdoc
    */
@@ -46,6 +48,12 @@ trait ReportingCommandTrait
             InputOption::VALUE_OPTIONAL,
             'The end point in time to report to. Can be absolute or relative. Defaults to the current hour.',
             date('Y-m-d H:00:00')
+        )
+        ->addOption(
+            'reporting-period',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'A time range expressed using syntax similar to Sumologic or SignalFx. E.g. 09/02/2021 17:39:30 to 09/02/2021 18:39:30'
         );
     }
 
@@ -74,5 +82,53 @@ trait ReportingCommandTrait
           }
         }
         return $formats;
+      }
+
+      /**
+       * Get the reporting period start DateTime.
+       */
+      protected function getReportingPeriodStart(InputInterface $input): \DateTime
+      {
+        if (isset($this->reportingPeriodStart)) {
+          return $this->reportingPeriodStart;
+        }
+        if ($this->buildReportingPeriod($input)) {
+          return $this->reportingPeriodStart;
+        }
+        $this->reportingPeriodStart = new \DateTime($input->getOption('reporting-period-start'));
+        return $this->reportingPeriodStart;
+      }
+
+      /**
+       * Get the reporting period end DateTime
+       */
+      protected function getReportingPeriodEnd(InputInterface $input): \DateTime
+      {
+        if (isset($this->reportingPeriodEnd)) {
+          return $this->reportingPeriodEnd;
+        }
+        if ($this->buildReportingPeriod($input)) {
+          return $this->reportingPeriodEnd;
+        }
+        $this->reportingPeriodEnd = new \DateTime($input->getOption('reporting-period-end'));
+        return $this->reportingPeriodEnd;
+      }
+
+      /**
+       * Attempt to build the reporting period time.
+       */
+      protected function buildReportingPeriod(InputInterface $input): bool
+      {
+         if (!$range = $input->getOption('reporting-period')) {
+           return false;
+         }
+         $range = strtolower($range);
+         // Parse out format like: 09/02/2021 17:39:30 to 09/02/2021 18:39:30
+         if (!preg_match('/([0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}) to ([0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2})/', $range, $matches)) {
+          return false;
+         }
+         $this->reportingPeriodStart = new \DateTime($matches[1]);
+         $this->reportingPeriodEnd = new \DateTime($matches[2]);
+         return true;
       }
 }

@@ -56,10 +56,17 @@ class ProfileDownloadCommand extends Command
         $export = $profile->export();
         foreach ($export['policies'] as &$override) {
           unset($override['name'], $override['weight']);
+          if (isset($override['severity']) && $override['severity'] == 'normal') {
+              unset($override['severity']);
+          }
         }
         $filename = "{$profile->name}.profile.yml";
+
         $export['uuid'] = $filename;
-        $output = Yaml::dump($export, 6);
+        $export['format']['html']['content'] = str_replace("\r", '', $export['format']['html']['content']);
+
+        $output = Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+
         file_put_contents($filename, $output);
         $render->success("$filename written.");
         return 0;
