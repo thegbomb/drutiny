@@ -2,7 +2,6 @@
 
 namespace Drutiny\Http\Middleware;
 
-use Drutiny\Console\Verbosity;
 use Drutiny\Http\MiddlewareInterface;
 use Drutiny\ConfigFile;
 use GuzzleHttp\MessageFormatter;
@@ -15,16 +14,14 @@ class Logger implements MiddlewareInterface
 {
     protected $config;
     protected $logger;
-    protected $verbosity;
 
   /**
    * @param $container ContainerInterface
    */
-    public function __construct(Verbosity $verbosity, LoggerInterface $logger, ConfigFile $config)
+    public function __construct(LoggerInterface $logger, ConfigFile $config)
     {
         $this->config = $config->setNamespace('http');
         $this->logger = $logger;
-        $this->verbosity = $verbosity;
     }
 
   /**
@@ -32,14 +29,7 @@ class Logger implements MiddlewareInterface
    */
     public function handle(RequestInterface $request)
     {
-        $message_format = " HTTP Request\n\n{req_headers}\n\n{req_body}";
-
-      // Add additional information in higher verbosity.
-        $verbosity = $this->verbosity->get();
-        if ($verbosity <= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-            $message_format = " {code} {phrase} {uri} {error}";
-        }
-
+        $message_format = " {code} {phrase} {uri} {error}\n\nHTTP Request\n\n{req_headers}\n\n{req_body}";
         $formatter = new MessageFormatter($message_format);
         $this->logger->debug($formatter->format($request));
 
