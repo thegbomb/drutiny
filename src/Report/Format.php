@@ -4,7 +4,6 @@ namespace Drutiny\Report;
 
 use Drutiny\AssessmentInterface;
 use Drutiny\Profile;
-use Drutiny\Console\Verbosity;
 use Drutiny\AuditResponse\AuditResponse;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -25,7 +24,7 @@ abstract class Format implements FormatInterface
     public function __construct(ContainerInterface $container, LoggerInterface $logger)
     {
         $this->setContainer($container);
-        $verbosity = $container->get('verbosity')->get();
+        $verbosity = $container->get('output')->getVerbosity();
         $this->buffer = new BufferedOutput($verbosity, true);
         $this->logger = $logger;
         $this->configure();
