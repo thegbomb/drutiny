@@ -132,7 +132,7 @@ abstract class Audit implements AuditInterface
         } catch (\Exception $e) {
             $outcome = AuditInterface::ERROR;
             $message = $e->getMessage();
-            if ($this->container->get('verbosity')->get() > OutputInterface::VERBOSITY_NORMAL) {
+            if ($this->container->get('output')->getVerbosity() > OutputInterface::VERBOSITY_NORMAL) {
                 $message .= PHP_EOL.$e->getTraceAsString();
             }
             $this->set('exception', $message);
