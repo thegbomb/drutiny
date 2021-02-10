@@ -4,7 +4,6 @@ namespace Drutiny\Report\Format;
 
 use Drutiny\AssessmentInterface;
 use Drutiny\AuditResponse\AuditResponse;
-use Drutiny\Console\Verbosity;
 use Drutiny\Profile;
 use Drutiny\Report\FilesystemFormatInterface;
 use Drutiny\Report\Format;
@@ -27,7 +26,7 @@ abstract class TwigFormat extends Format implements FilesystemFormatInterface
     {
         $this->twig = $this->container->get('twig');
         $this->twig->addGlobal('ext', $this->getExtension());
-        $this->buffer = new BufferedOutput($this->container->get('verbosity')->get(), true);
+        $this->buffer = new BufferedOutput($this->container->get('output')->getVerbosity(), true);
     }
 
     /**
