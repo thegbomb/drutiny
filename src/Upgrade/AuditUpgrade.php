@@ -89,10 +89,10 @@ class AuditUpgrade {
       $message .= "// Class: " . $this->reflection->getName() . "\n";
       $message .= "public function configure() {\n";
       foreach ($this->getParamAnnotations() as $param) {
-        $message .= $this->getParameterDeclaration($param['name'], $param['description'], null, $param['default'] ?? null);
+        $message .= $this->getParameterDeclaration($param['name'], $param['description'] ?? '', null, $param['default'] ?? null);
       }
       foreach ($this->params as $param) {
-        $message .= $this->getParameterDeclaration($param['name'], $param['description'], $param['mode'], $param['default'] ?? null);
+        $message .= $this->getParameterDeclaration($param['name'], $param['description'] ?? '', $param['mode'], $param['default'] ?? null);
       }
       $message .= "}\n";
       return $message;
