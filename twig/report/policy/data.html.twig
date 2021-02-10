@@ -2,14 +2,13 @@
   <div class="col">
 
     <h3 id="{{ audit_response.policy.name }}">{{ audit_response.policy.title }}</h3>
+    {% with audit_response.tokens %}
     {{ include(template_from_string(audit_response.policy.description, "description field on data.html.twig" )) | markdown_to_html }}
     <div class="alert alert-secondary py-1 px-2">
       <p class="mb-0">
-        {% with audit_response.tokens %}
         {{ include(template_from_string(audit_response.policy.success, "success field on data.html.twig")) | markdown_to_html }}
-        {% endwith %}
       </p>
     </div> <!-- /alert -->
-
+    {% endwith %}
   </div> <!-- /col -->
 </div> <!-- /row -->
