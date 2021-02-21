@@ -5,8 +5,8 @@
     {% with audit_response.tokens %}
     {{ include(template_from_string(audit_response.policy.description, "description field on notice.html.twig" )) | markdown_to_html }}
 
-    <div class="card border-dark mb-3 assessment-card">
-      <div class="card-body">
+    <div class="mb-3 assessment-card">
+      <div>
 
       {{ include(template_from_string(audit_response.policy.success, "success field on notice.html.twig")) | markdown_to_html }}
       </div>
