@@ -97,7 +97,8 @@ class AuditRunCommand extends DrutinyBaseCommand
         foreach ($input->getOption('set-parameter') as $option) {
             list($key, $value) = explode('=', $option, 2);
 
-            $info = ['default' => Yaml::parse($value)];
+            $info = Yaml::parse($value);
+
             $policy->addParameter($key, $info);
         }
 
