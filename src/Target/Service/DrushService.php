@@ -7,6 +7,9 @@ use Drutiny\Target\Service\RemoteService;
 
 class DrushService {
 
+  protected string $alias;
+  protected string $url;
+
   protected const LAUNCHERS = ['../vendor/drush/drush/drush', 'drush-launcher', 'drush.launcher', 'drush'];
   protected $supportedCommandMap = [
     'configGet' => 'config:get',
@@ -22,6 +25,12 @@ class DrushService {
   public function __construct(ExecutionInterface $service)
   {
     $this->execService = $service;
+  }
+
+  public function setUrl(string $url): DrushService
+  {
+    $this->url = $url;
+    return $this;
   }
 
   public function isRemote()
@@ -98,6 +107,10 @@ class DrushService {
       $options['root'] = '$DRUSH_ROOT';
     }
 
+    if (isset($this->url)) {
+      $options['uri'] = $this->url;
+    }
+
     // Quote all arguments.
     array_walk($args, function (&$arg) {
         $arg = escapeshellarg($arg);
@@ -119,6 +132,7 @@ class DrushService {
 
     // Prepend the drush launcher to use.
     $launcher = '$(which ' . implode(' || which ', static::LAUNCHERS) . ')';
+
     array_unshift($args, $launcher, $this->supportedCommandMap[$cmd]);
 
     $command = implode(' ', $args);
