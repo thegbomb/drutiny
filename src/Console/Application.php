@@ -163,7 +163,7 @@ class Application extends BaseApplication
       $creds = $container->get('credentials');
 
       // If 3.x creds are set or 2.x creds dont' exist, don't continue.
-      if (!file_exists($old_path) || count($config->keys()) || count($creds->keys())) {
+      if (!file_exists($old_path) || count($config->getNamespaces()) || count($creds->getNamespaces())) {
         return;
       }
 

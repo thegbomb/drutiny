@@ -2,6 +2,7 @@
 
 namespace Drutiny;
 
+use Drutiny\Config\Config;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
@@ -17,17 +18,19 @@ abstract class Plugin {
     const FIELD_CHOICE_QUESTION = 5;
     const FIELD_CONFIRMATION_QUESTION = 7;
 
-    protected $fields = [];
-    protected $values = [];
-    private $config;
-    private $credentials;
-    protected $input;
-    protected $output;
+    protected array $fields = [];
+    protected array $values = [];
+
+    private Config $config;
+    private Config $credentials;
+
+    protected InputInterface $input;
+    protected OutputInterface $output;
 
     public function __construct(ContainerInterface $container, InputInterface $input, OutputInterface $output)
     {
-        $this->config = $container->get('config')->setNamespace($this->getName());
-        $this->credentials = $container->get('credentials')->setNamespace($this->getName());
+        $this->config = $container->get('config')->load($this->getName());
+        $this->credentials = $container->get('credentials')->load($this->getName());
         $this->input = $input;
         $this->output = $output;
         $this->configure();
@@ -48,6 +51,12 @@ abstract class Plugin {
         return true;
     }
 
+    final public function getField($name)
+    {
+      $storage = $this->fields[$name]['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
+      return $storage->{$name} ?? null;
+    }
+
     final public function load()
     {
         $configuration = [];
@@ -59,6 +68,7 @@ abstract class Plugin {
                 $configuration[$name] = $field['default'];
                 continue;
               }
+
               // Indicates the plugin is not installed yet.
               return false;
             }

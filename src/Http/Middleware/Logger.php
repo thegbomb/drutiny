@@ -3,7 +3,6 @@
 namespace Drutiny\Http\Middleware;
 
 use Drutiny\Http\MiddlewareInterface;
-use Drutiny\ConfigFile;
 use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
 use Psr\Http\Message\RequestInterface;
@@ -18,9 +17,8 @@ class Logger implements MiddlewareInterface
   /**
    * @param $container ContainerInterface
    */
-    public function __construct(LoggerInterface $logger, ConfigFile $config)
+    public function __construct(LoggerInterface $logger)
     {
-        $this->config = $config->setNamespace('http');
         $this->logger = $logger;
     }
 

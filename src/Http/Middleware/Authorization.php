@@ -18,7 +18,7 @@ class Authorization implements MiddlewareInterface
    */
     public function __construct(ContainerInterface $container)
     {
-        $this->config = $container->get('credentials')->setNamespace('http')->authorization ?? [];
+        $this->config = $container->get('credentials')->load('http')->authorization ?? [];
         $this->logger = $container->get('logger');
     }
 

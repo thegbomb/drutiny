@@ -21,7 +21,7 @@ class HttpAuthListCommand extends Command
     public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
-        $this->credentials = $container->get('credentials')->setNamespace('http');
+        $this->credentials = $container->get('credentials')->load('http');
         parent::__construct();
     }
 

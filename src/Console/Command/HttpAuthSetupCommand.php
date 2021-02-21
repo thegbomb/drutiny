@@ -21,7 +21,7 @@ class HttpAuthSetupCommand extends Command
     public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
-        $this->credentials = $container->get('credentials')->setNamespace('http');
+        $this->credentials = $container->get('credentials')->load('http');
         parent::__construct();
     }
 
@@ -65,7 +65,6 @@ class HttpAuthSetupCommand extends Command
         ];
 
         $this->credentials->authorization = $list;
-        $this->credentials->doWrite();
 
         $io->success("Basic auth credentials for ".$input->getArgument('host')." have been saved.");
         return 0;

@@ -103,12 +103,12 @@ services:
     # Parse a local config file to use as config overrides for the local
     # instance of drutiny.
     config:
-      class: Drutiny\ConfigFile
+      class: Drutiny\Config\ConfigFile
       arguments: ['%config.local%']
       # autowire: false
 
     credentials:
-      class: Drutiny\ConfigFile
+      class: Drutiny\Config\ConfigFile
       arguments: ['%config.credentials%']
       # autowire: false
 
@@ -321,6 +321,7 @@ services:
         exclude:
           - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
           - src/Console/{Application.php}
+          - src/Config/Config.php
           - src/Report/Backport/*
           - src/Console/{LogFileLogger.php}
           - src/Event/*
@@ -340,7 +341,7 @@ services:
     Drutiny\Entity\EventDispatchedDataBag:
       shared: false
 
-    Drutiny\ConfigFile:
+    Drutiny\Config\ConfigFile:
       alias: config
 
     Drutiny\Target\TargetInterface:

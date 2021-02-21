@@ -3,7 +3,7 @@
 namespace Drutiny\Http\Middleware;
 
 use Drutiny\Http\MiddlewareInterface;
-use Drutiny\ConfigFile;
+use Drutiny\Plugin\UserAgentPlugin;
 use Psr\Http\Message\RequestInterface;
 
 class UserAgent implements MiddlewareInterface
@@ -14,9 +14,9 @@ class UserAgent implements MiddlewareInterface
   /**
    * @param $config @config service.
    */
-    public function __construct(ConfigFile $config)
+    public function __construct(UserAgentPlugin $plugin)
     {
-        $this->config = $config->setNamespace('http');
+        $this->config = $plugin->load();
     }
 
   /**
@@ -24,6 +24,6 @@ class UserAgent implements MiddlewareInterface
    */
     public function handle(RequestInterface $request)
     {
-        return isset($this->config->user_agent) ? $request->withHeader('User-Agent', $this->config->user_agent) : $request;
+        return isset($this->config->user_agent) ? $request->withHeader('User-Agent', $this->config['user_agent']) : $request;
     }
 }
