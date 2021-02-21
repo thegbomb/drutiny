@@ -47,6 +47,10 @@ class DrushTarget extends Target implements TargetInterface
     public function buildAttributes() {
         $service = new DrushService($this['service.exec']);
 
+        if ($url = $this->getUri()) {
+          $service->setUrl($url);
+        }
+
         $status = $service->status(['format' => 'json'])
            ->run(function ($output) {
              return json_decode($output, TRUE);
@@ -62,5 +66,15 @@ class DrushTarget extends Target implements TargetInterface
         $this['php_version'] = trim($version);
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setUri(string $uri)
+    {
+      parent::setUri($uri);
+      // Rebuild the drush attributes.
+      return $this->buildAttributes();
     }
 }
