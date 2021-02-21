@@ -42,11 +42,20 @@ class RemoteService implements ExecutionInterface {
   }
 
   /**
+   * Download a resource from a source location.
+   */
+  public function downloadFile($source, $location)
+  {
+    $cmd = ':' . $source . ' ' . $location;
+    return $this->local->run($this->getRemoteCall('scp') . $cmd, null, 0);
+  }
+
+  /**
    * Formulate an SSH command. E.g. ssh -o User=foo hostname.bar
    */
-  protected function getRemoteCall()
+  protected function getRemoteCall($bin = 'ssh')
   {
-    $args = ['ssh'];
+    $args = [$bin];
     $options = $this->sshConfig;
     if (!isset($this->sshConfig['Host'])) {
       throw new \InvalidArgumentException("Missing 'Host' option in SSH Config.");
