@@ -115,7 +115,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         $result = [];
 
         $profile->setReportingPeriod($this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input));
-        
+
         $policies = [];
         $progress->setMessage("Loading policy definitions...");
         foreach ($profile->getAllPolicyDefinitions() as $definition) {
@@ -125,7 +125,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         $progress->setMessage("Assessing target...");
         $assessment = $this->getContainer()->get('assessment')
         ->setUri($uri)
-        ->assessTarget($target, $policies, $start, $end, $input->getOption('remediate'));
+        ->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd(), $input->getOption('remediate'));
 
         $progress->finish();
         $progress->clear();
