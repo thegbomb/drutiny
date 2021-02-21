@@ -285,15 +285,11 @@
             return i.length;
           });
 
-      // if (data.chartBootstrapColumns != undefined) {
-      //   $(this).addClass('col-sm-' + data.chartBootstrapColumns);
-      // }
-      // else {
-      //   $(this).css({
-      //     width: data.chartWidth,
-      //     height: data.chartHeight
-      //   })
-      // }
+      if (data.chartBootstrapColumns != undefined) {
+        $(this)
+          .addClass('col-md-' + data.chartBootstrapColumns)
+          .parent().addClass(['row']);
+      }
 
       $(this).css({
         height: data.chartHeight,
