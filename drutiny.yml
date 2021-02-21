@@ -254,6 +254,8 @@ services:
         - [addExtension, ['@Twig\Extra\Markdown\MarkdownExtension']]
         - [addExtension, ['@Twig\Extra\String\StringExtension']]
         - [addFilter, ['@twig.filters.array_sum']]
+        - [addFilter, ['@twig.filters.array_unique']]
+        - [addFilter, ['@twig.filters.json_decode']]
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.chart']]
         - [addFunction, ['@twig.functions.policy_result']]
@@ -274,6 +276,14 @@ services:
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
+
+    twig.filters.array_unique:
+      class: Twig\TwigFilter
+      arguments: ['unique', 'array_unique']
+
+    twig.filters.json_decode:
+      class: Twig\TwigFilter
+      arguments: ['json_decode', 'json_decode']
 
     twig.test.is_numeric:
       class: Twig\TwigTest
