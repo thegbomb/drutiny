@@ -6,6 +6,7 @@ use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Annotation\Param;
 use Symfony\Component\Yaml\Yaml;
+use Twig\Error\RuntimeError;
 
 /**
  * Audit gathered data.
@@ -76,7 +77,13 @@ class AbstractAnalysis extends Audit
         }
 
         foreach ($this->getParameter('variables',[]) as $key => $value) {
-          $this->set($key, $this->evaluate($value, $syntax));
+          try {
+            $this->set($key, $this->evaluate($value, $syntax));
+          }
+          catch (RuntimeError $e)
+          {
+            throw new \Exception("Failed to create key: $key. Encountered Twig runtime error: " . $e->getMessage());
+          }
         }
 
         $expression = $this->getParameter('expression', 'true');
