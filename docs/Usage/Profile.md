@@ -74,7 +74,7 @@ drutiny profile:run <profile:name> <target> -f html --reporting-period-start='-7
 drutiny profile:run <profile:name> <target> -f html --reporting-period-start='2021-01-01 00:00:00' --reporting-period-end='2021-02-01 00:00:00'
 
 # Using the reporting period syntax.
-drutiny profile:run <profile:name> <target> -f html --reporting-period='01/01/2021 00:00:00 TO 01/02/2021 00:00:00'
+drutiny profile:run <profile:name> <target> -f html --reporting-period='01/01/2021 00:00:00 to 01/02/2021 00:00:00'
 ```
 
 ## Including and excluding policies from a profile

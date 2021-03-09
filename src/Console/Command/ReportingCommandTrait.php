@@ -123,9 +123,9 @@ trait ReportingCommandTrait
            return false;
          }
          $range = strtolower($range);
-         // Parse out format like: 09/02/2021 17:39:30 to 09/02/2021 18:39:30
+         // Parse out format like: 02/02/2021 17:39:30 to 09/02/2021 18:39:30
          if (!preg_match('/([0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}) to ([0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2})/', $range, $matches)) {
-          throw new \InvalidArgumentException("Invalid range given: $range.");
+          throw new \InvalidArgumentException("Invalid range given: $range. Needs to follow a format like: 02/02/2021 17:39:30 to 09/02/2021 18:39:30.");
          }
 
          list($date, $time) = explode(' ', $matches[1]);
