@@ -323,7 +323,7 @@ services:
         exclude:
           - 'src/{ExpressionFunction,DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
           - src/Console/{Application.php}
-          - src/Config/Config.php
+          - src/Config/Config.*
           - src/Report/Backport/*
           - src/Console/{LogFileLogger.php}
           - src/Event/*

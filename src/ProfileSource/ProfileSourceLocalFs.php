@@ -50,7 +50,7 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
     {
         $list = [];
         foreach ($this->finder as $file) {
-            $filename = $file->getRealPath();
+            $filename = $file->getPathname();
             $name = str_replace('.profile.yml', '', pathinfo($filename, PATHINFO_BASENAME));
             $profile = Yaml::parse($file->getContents());
             $profile['language'] = $profile['language'] ?? $languageManager->getDefaultLanguage();
@@ -74,7 +74,7 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
     {
       $filepath = $definition['filepath'];
 
-      $info = Yaml::parseFile($filepath);
+      $info = Yaml::parse(file_get_contents($filepath));
       $info['name'] = str_replace('.profile.yml', '', pathinfo($filepath, PATHINFO_BASENAME));
       $info['uuid'] = $filepath;
 
