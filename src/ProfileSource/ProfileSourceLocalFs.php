@@ -4,22 +4,18 @@ namespace Drutiny\ProfileSource;
 
 use Drutiny\LanguageManager;
 use Drutiny\Profile;
-use Drutiny\Profile\PolicyDefinition;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Finder\Finder;
-use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 
-class ProfileSourceLocalFs implements ProfileSourceInterface
+class ProfileSourceLocalFs extends ProfileSource
 {
-    protected $container;
-    protected $cache;
-    protected $finder;
+    protected int $weight = -10;
+    protected Finder $finder;
 
-    public function __construct(CacheInterface $cache, Finder $finder, ContainerInterface $container)
+    public function __construct(Finder $finder, ContainerInterface $container)
     {
-        $this->cache = $cache;
         $this->finder = $finder
           ->files()
           ->in(DRUTINY_LIB)
@@ -32,21 +28,21 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
           // Ignore not finding an existing config dir.
         }
 
-        $this->container = $container;
+        parent::__construct($container);
     }
 
-  /**
-   * {@inheritdoc}
-   */
-    public function getName()
+    /**
+     * {@inheritdoc}
+     */
+    public function getName():string
     {
         return 'localfs';
     }
 
-  /**
-   * {@inheritdoc}
-   */
-    public function getList(LanguageManager $languageManager)
+    /**
+     * {@inheritdoc}
+     */
+    public function getList(LanguageManager $languageManager):array
     {
         $list = [];
         foreach ($this->finder as $file) {
@@ -70,7 +66,7 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
   /**
    * {@inheritdoc}
    */
-    public function load(array $definition)
+    public function load(array $definition):Profile
     {
       $filepath = $definition['filepath'];
 
@@ -78,17 +74,6 @@ class ProfileSourceLocalFs implements ProfileSourceInterface
       $info['name'] = str_replace('.profile.yml', '', pathinfo($filepath, PATHINFO_BASENAME));
       $info['uuid'] = $filepath;
 
-      $profile = $this->container->get('profile');
-      $profile->setProperties($info);
-
-      return $profile;
-    }
-
-  /**
-   * {@inheritdoc}
-   */
-    public function getWeight()
-    {
-        return -10;
+      return parent::load($info);
     }
 }

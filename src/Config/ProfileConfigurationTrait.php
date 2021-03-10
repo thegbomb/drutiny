@@ -3,9 +3,8 @@
 namespace Drutiny\Config;
 
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
-use Symfony\Component\Config\Definition\ConfigurationInterface;
 
-class ProfileConfiguration implements ConfigurationInterface
+trait ProfileConfigurationTrait
 {
     public function getConfigTreeBuilder()
     {
@@ -30,6 +29,9 @@ class ProfileConfiguration implements ConfigurationInterface
               ->defaultValue('en')
               ->info('Language code')
               ->end()
+            ->booleanNode('hidden')
+              ->defaultFalse()
+              ->end()
 
             // Configuration
             ->scalarNode('uuid')
@@ -50,11 +52,15 @@ class ProfileConfiguration implements ConfigurationInterface
                       ->info('The parameter overrides to use for the policy in this profile.')
                       ->variablePrototype()->end()
                       ->end()
+                    ->integerNode('weight')
+                      ->info('Weighting to influence policy ordering in the profile.')
+                      ->defaultValue(0)
+                      ->end()
                   ->end()
                 ->end()
               ->end()
             ->arrayNode('include')
-              //->useAttributeAsKey('name')
+              ->scalarPrototype()->end()
             ->end()
             ->arrayNode('excluded_policies')
             ->end()
@@ -63,8 +69,13 @@ class ProfileConfiguration implements ConfigurationInterface
               ->info('Configuration for a given format.')
                 ->arrayPrototype()
                   ->children()
-                    ->scalarNode('template')->end()
-                    ->arrayNode('content')->end()
+                    ->scalarNode('template')
+                      ->info('The name of the twig template file to use for the html report.')
+                      ->end()
+                    ->variableNode('content')
+                      ->info('The content structure to use for the html format.')
+                      ->end()
+                    ->end()
                   ->end()
                 ->end()
               ->end();

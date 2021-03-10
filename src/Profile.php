@@ -2,73 +2,90 @@
 
 namespace Drutiny;
 
-use Drutiny\Entity\DataBag;
-use Drutiny\Entity\Exception\DataNotFoundException;
-use Drutiny\Entity\ExportableInterface;
+use Drutiny\Config\ProfileConfigurationTrait;
 use Drutiny\Entity\PolicyOverride;
-use Drutiny\Report\Format;
-use Psr\Log\LoggerInterface;
+use Drutiny\Entity\StrictEntity;
+use Drutiny\Sandbox\ReportingPeriodTrait;
+use Drutiny\Entity\Exception\DataNotFoundException;
 
-class Profile implements ExportableInterface
+
+class Profile extends StrictEntity
 {
-    use \Drutiny\Sandbox\ReportingPeriodTrait;
+    const ENTITY_NAME = 'profile';
 
-    protected $reportPerSite = false;
-    protected $dataBag;
-    protected $logger;
+    use ReportingPeriodTrait;
+    use ProfileConfigurationTrait;
 
-    public function __construct(LoggerInterface $logger)
-    {
-      $this->logger = $logger;
-      $this->dataBag = new DataBag();
-      $this->dataBag->add([
-        // Ensure is available for twig template.
-        'description' => '',
-      ]);
-    }
-
-    public static function create(LoggerInterface $logger)
-    {
-      return new static($logger);
-    }
+    protected bool $reportPerSite = false;
+    protected Profile $parent;
+    protected bool $compiled = false;
+    protected array $policyOverrides = [];
+    protected array $includes = [];
+    protected array $bypassPropertyValidationOnSet = ['include', 'policies'];
 
     /**
-     * Make properties read-only attributes of object.
+     * {@inheritdoc}
      */
-    public function __get($property)
+    protected function setPropertyData($property, $value)
     {
-      return $this->dataBag->get($property);
-    }
+      switch ($property) {
+        case 'policies':
+          $this->setPolicies($value);
+          break;
 
-    /**
-     * Required for __get to work in twig templates.
-     */
-    public function __isset($property)
-    {
-      return $this->dataBag->has($property);
-    }
-
-    public function setProperties(array $data)
-    {
-      $data = array_merge($this->dataBag->all(), $data);
-      $policies = [];
-      if (isset($data['policies'])) {
-          $policies = $data['policies'] instanceof DataBag ? $data['policies']->export() : $data['policies'];
-      }
-      $data['policies'] = (new DataBag())->add($policies);
-
-      $keys = array_keys($data['policies']->all());
-      foreach ($data['policies']->all() as $name => $policy_override) {
-          $weight = array_search($name, $keys);
-          if ($policy_override instanceof PolicyOverride) {
-            $policy_override->set('weight', $weight);
-            continue;
+        case 'include':
+          foreach ($value as $include) {
+            $this->addInclude($include);
           }
-          $policy_override['weight'] = $weight;
-          $policy_override['name'] = $name;
-          $data['policies']->set($name, drutiny()->get('policy.override')->add($policy_override));
+          break;
+
+        default:
+          return parent::setPropertyData($property, $value);
       }
-      $this->dataBag->add($data);
+      return $this;
+    }
+
+    /**
+     * Set the policy definitions.
+     */
+    public function setPolicies(array $policy_definitions):Profile
+    {
+      $this->dataBag->set('policies', []);
+      return $this->addPolicies($policy_definitions);
+    }
+
+    /**
+     * Append policy definitions.
+     */
+    public function addPolicies(array $policy_definitions):Profile
+    {
+      $new_policies = [];
+      foreach ($policy_definitions as $idx => $definition) {
+          $name = is_string($idx) ? $idx : $definition;
+          $policy = new PolicyOverride($name);
+
+          if (is_array($definition)) {
+            foreach ($definition as $key => $value) {
+              $policy->{$key} = $value;
+            }
+            if (!isset($policy->weight)) {
+              $weight = array_search($idx, array_keys($policy_definitions)) + count($this->policies);
+              $policy->weight = $weight;
+            }
+          }
+
+          $new_policies[$name] = $policy;
+      }
+
+      $this->policyOverrides = array_merge($this->policyOverrides, $new_policies);
+
+      $policies = array_map(function (PolicyOverride $policy) {
+        return $policy->export();
+      },
+      $this->policyOverrides);
+
+      $this->dataBag->set('policies', $policies);
+
       return $this;
     }
 
@@ -77,15 +94,10 @@ class Profile implements ExportableInterface
    */
     public function getAllPolicyDefinitions()
     {
-      try {
-        $list = array_filter($this->policies->all(), function ($policy_override) {
-          return !in_array($policy_override->name, $this->excluded_policies);
-        });
-      }
-      catch (DataNotFoundException $e) {
-        $list = $this->policies->all();
-      }
 
+      $list = array_filter($this->policyOverrides, function (PolicyOverride $policy_override) {
+        return !in_array($policy_override->name, $this->excluded_policies ?? []);
+      });
 
       // Sort $policies
       // 1. By weight. Lighter policies float to the top.
@@ -109,23 +121,41 @@ class Profile implements ExportableInterface
      */
     public function addInclude(Profile $profile)
     {
-        $profile->setParent($this);
-
-        $include = $this->include;
-        $include[] = $profile->name;
-        $this->dataBag->set('include', $include);
-
-        $weight = count($this->getAllPolicyDefinitions());
-
-        foreach ($profile->getAllPolicyDefinitions() as $policy_override) {
-          // Do not override policies already specified, they take priority.
-            if ($this->dataBag->get('policies')->get($policy_override->name)) {
-                continue;
-            }
-            $policy_override->set('weight', ++$weight);
-            $this->policies->set($policy_override->name, $policy_override);
+        // Detect recursive loop and skip include.
+        if (!$profile->setParent($this)) {
+          return $this;
         }
+
+        $this->includes[$profile->uuid] = $profile->name;
+        parent::setPropertyData('include', array_values($this->includes));
+
+        $this->addPolicies($profile->getAllPolicyDefinitions());
         return $this;
+    }
+
+    public function hasParent():bool
+    {
+      return !empty($this->parent);
+    }
+
+    public function setParent(Profile $parent):bool
+    {
+      if (!$parent->hasAncestor($this)) {
+        $this->parent = $parent;
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * Traverse ancestry of parent relationships to see if profile is in linage.
+     */
+    public function hasAncestor(Profile $ancestor):bool
+    {
+      if (!$this->hasParent()) {
+        return false;
+      }
+      return $this->parent->name === $ancestor->name || $this->parent->hasAncestor($ancestor);
     }
 
     public function reportPerSite()
@@ -141,6 +171,18 @@ class Profile implements ExportableInterface
 
     public function export()
     {
-        return $this->dataBag->export();
+        return $this->build()->dataBag->export();
+    }
+
+    /**
+     * Compile the profile to validate it is complete.
+     */
+    public function build():Profile
+    {
+      if (!$this->compiled) {
+          $this->validateAllPropertyData();
+          $this->compiled = true;
+      }
+      return $this;
     }
 }

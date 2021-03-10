@@ -3,13 +3,13 @@
 namespace Drutiny\Config;
 
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
-use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Drutiny\Entity\PolicyOverride;
 
-class PolicyOverrideConfiguration implements ConfigurationInterface
+trait PolicyOverrideConfigurationTrait
 {
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder('policy_override');
+        $treeBuilder = new TreeBuilder(PolicyOverride::ENTITY_NAME);
         $treeBuilder->getRootNode()
           ->children()
             ->scalarNode('name')
@@ -28,6 +28,7 @@ class PolicyOverrideConfiguration implements ConfigurationInterface
             ->integerNode('weight')
               ->info('Weighting used to order a policy in a list.')
               ->defaultValue(0)
+              ->treatNullLike(0)
               ->end()
 
             // Working variables.

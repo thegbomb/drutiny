@@ -120,7 +120,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
 
         // Override the title of the profile with the specified value.
         if ($title = $input->getOption('title')) {
-            $profile->setProperties(['title' => $title]);
+            $profile->title = $title;
         }
 
         // Setup the reporting formats. These are intiated before the auditing
@@ -143,8 +143,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
         // Allow command line omission of policies highlighted in the profile.
         // WARNING: This may remove policy dependants which may make polices behave
         // in strange ways.
-        $excluded_policies = $input->getOption('exclude-policy') ?? [];
-        $profile->setProperties(['excluded_policies' => $excluded_policies]);
+        $profile->excluded_policies = $input->getOption('exclude-policy') ?? [];
 
         try {
           // Setup the target.

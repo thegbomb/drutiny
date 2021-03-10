@@ -3,19 +3,20 @@
 namespace Drutiny\Entity;
 
 use Drutiny\PolicyFactory;
-use Drutiny\Entity\ExportableInterface;
-use Drutiny\Entity\DataBag;
 use Symfony\Component\Config\Definition\Processor;
-use Drutiny\Config\PolicyOverrideConfiguration;
+use Drutiny\Config\PolicyOverrideConfigurationTrait;
 
-class PolicyOverride extends EventDispatchedDataBag
+class PolicyOverride extends StrictEntity
 {
+    const ENTITY_NAME = 'policy_override';
 
-    public function validate()
+    use PolicyOverrideConfigurationTrait;
+
+    public function __construct(string $policy_name)
     {
-        $processor = new Processor();
-        $configuration = new PolicyOverrideConfiguration();
-        $processor->processConfiguration($configuration, ['policy_override' => $this->all()]);
+      parent::__construct();
+      $this->name = $policy_name;
+      $this->weight = 0;
     }
 
     /**
@@ -23,18 +24,18 @@ class PolicyOverride extends EventDispatchedDataBag
      */
     public function getPolicy(PolicyFactory $factory)
     {
-        $this->validate();
-        $policy = $factory->loadPolicyByName($this->get('name'));
+        $policy = $factory->loadPolicyByName($this->name);
 
-        $overrides = $this->all();
-        if (isset($overrides['severity'])) {
-            $policy->setSeverity($overrides['severity']);
+        if (isset($this->severity)) {
+            $policy->setSeverity($this->severity);
         }
 
-        $overrides['parameters'] = $overrides['parameters'] ?? [];
-
-        foreach ($overrides['parameters'] as $param => $value) {
+        foreach ($this->parameters ?? [] as $param => $value) {
             $policy->addParameter($param, $value);
+        }
+
+        if (isset($this->weight)) {
+          $policy->weight = $this->weight;
         }
         return $policy;
     }

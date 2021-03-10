@@ -70,13 +70,11 @@ class PolicyListCommand extends DrutinyBaseCommand
             'name' => $listedPolicy['name'],
             'source' => $listedPolicy['source'],
             'profile_util' => count(array_filter($profiles, function ($profile) use ($listedPolicy) {
-                $list = array_keys($profile->policies->all());
-                return in_array($listedPolicy['name'], $list);
+                return in_array($listedPolicy['name'], array_keys($profile->policies));
               })),
             );
             $rows[] = $row;
         }
-
 
         usort($rows, function ($a, $b) {
             $x = [strtolower($a['name']), strtolower($b['name'])];

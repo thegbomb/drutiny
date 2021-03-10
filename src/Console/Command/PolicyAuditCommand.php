@@ -95,13 +95,12 @@ class PolicyAuditCommand extends DrutinyBaseCommand
 
         $name = $input->getArgument('policy');
 
-        $profile->setProperties([
-          'policies' => [
+        $profile->policies = [
             $name => $this->getContainer()->get('policy.override')->add([
               'name' => $name,
               'parameters' => $parameters
             ])
-          ]]);
+          ];
 
         // Setup the target.
         $target = $this->getTargetFactory()->create($input->getArgument('target'));

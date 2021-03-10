@@ -27,13 +27,42 @@ class ProfileFactory
         $this->progress = $progress;
     }
 
-  /**
-   * Load policy by name.
-   *
-   * @param $name string
-   */
-    public function loadProfileByName($name)
+    /**
+     * Create a profile from an array of values.
+     */
+     public function create(array $values):Profile
+     {
+       $profile = new Profile();
+       foreach ($values as $key => $value) {
+         if ($key == 'include') {
+           $includes = is_array($value) ? $value : [$value];
+           $profiles = [];
+           foreach ($includes as $include) {
+             try {
+               $profiles[] = $this->loadProfileByName($include);
+             }
+             catch (\Exception $e) {
+               $this->container->get('logger')->error("{$values['title']} requires $include but is not present: " . $e->getMessage());
+             }
+           }
+           $value = $profiles;
+         }
+         $profile->{$key} = $value;
+       }
+       return $profile->build();
+     }
+
+    /**
+     * Load policy by name.
+     *
+     * @param $name string
+     */
+    public function loadProfileByName($name):Profile
     {
+        if ($name instanceof Profile) {
+          return $name;
+        }
+
         $list = $this->getProfileList();
 
         if (!isset($list[$name])) {
