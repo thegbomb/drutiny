@@ -20,8 +20,8 @@ parameters:
     - '%drutiny_core_dir%/twig'
     - '%drutiny_core_dir%/twig/report'
   twig.cache: '%drutiny_config_dir%/twig'
-  twig.debug: true
-  twig.strict: true
+  twig.debug: false
+  twig.strict: false
   async.forks: 7
   language_default: en
   progress_bar.template: |
@@ -209,14 +209,6 @@ services:
     policy.factory:
       class: 'Drutiny\PolicyFactory'
 
-    policy.override:
-      class: 'Drutiny\Entity\PolicyOverride'
-      shared: false
-
-    profile:
-      shared: false
-      class: 'Drutiny\Profile'
-      factory: ['Drutiny\Profile', create]
     # Factory for loading profiles from their sources.
     profile.factory:
       class: 'Drutiny\ProfileFactory'
@@ -391,7 +383,7 @@ services:
         - [setBarCharacter, ['▓']]
         - [setFormatDefinition, ['drutiny', '%progress_bar.template%']]
         - [setFormat, ['drutiny']]
-        - [setMessage, ['Drutiny is bootstrapping, please wait...']]
+        - [setMessage, ['%progress_bar.loading_message%']]
 
     Symfony\Component\Console\Style\SymfonyStyle:
     Symfony\Component\Console\Terminal:
