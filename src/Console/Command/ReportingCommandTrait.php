@@ -54,7 +54,19 @@ trait ReportingCommandTrait
             null,
             InputOption::VALUE_OPTIONAL,
             'A time range expressed using syntax similar to Sumologic or SignalFx. E.g. 09/02/2021 17:39:30 to 09/02/2021 18:39:30'
+        )
+        ->addOption(
+            'reporting-timezone',
+            'z',
+            InputOption::VALUE_OPTIONAL,
+            'The timezone to use for reporting periods (E.g. Asia/Tokyo, America/Chicago, 	Australia/Sydney). Defaults to UTC.',
+            'UTC'
         );
+    }
+
+    protected function getReportingTimeZone(InputInterface $input): \DateTimeZone
+    {
+      return new \DateTimeZone($input->getOption('reporting-timezone'));
     }
 
     /**
@@ -95,7 +107,7 @@ trait ReportingCommandTrait
         if ($this->buildReportingPeriod($input)) {
           return $this->reportingPeriodStart;
         }
-        $this->reportingPeriodStart = new \DateTime($input->getOption('reporting-period-start'));
+        $this->reportingPeriodStart = new \DateTime($input->getOption('reporting-period-start'), $this->getReportingTimeZone($input));
         return $this->reportingPeriodStart;
       }
 
@@ -110,7 +122,7 @@ trait ReportingCommandTrait
         if ($this->buildReportingPeriod($input)) {
           return $this->reportingPeriodEnd;
         }
-        $this->reportingPeriodEnd = new \DateTime($input->getOption('reporting-period-end'));
+        $this->reportingPeriodEnd = new \DateTime($input->getOption('reporting-period-end'), $this->getReportingTimeZone($input));
         return $this->reportingPeriodEnd;
       }
 
@@ -131,12 +143,12 @@ trait ReportingCommandTrait
          list($date, $time) = explode(' ', $matches[1]);
          list($day, $month, $year) = explode('/', $date);
          $datetime = "$year-$month-$day $time";
-         $this->reportingPeriodStart = new \DateTime($datetime);
+         $this->reportingPeriodStart = new \DateTime($datetime, $this->getReportingTimeZone($input));
 
          list($date, $time) = explode(' ', $matches[2]);
          list($day, $month, $year) = explode('/', $date);
          $datetime = "$year-$month-$day $time";
-         $this->reportingPeriodEnd = new \DateTime($datetime);
+         $this->reportingPeriodEnd = new \DateTime($datetime, $this->getReportingTimeZone($input));
          return true;
       }
 }
