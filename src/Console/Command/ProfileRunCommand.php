@@ -132,10 +132,9 @@ class ProfileRunCommand extends DrutinyBaseCommand
         $included_policies = $input->getOption('include-policy');
         foreach ($included_policies as $policy_name) {
             $this->getLogger()->debug("Loading policy definition: $policy_name");
-            $profile->policies->set(
-              $policy_name,
-              $this->getContainer()->get('policy.override')->add(['name' => $policy_name])
-            );
+            $profile->addPolicies([
+              $policy_name => ['name' => $policy_name]
+            ]);
         }
         $progress->advance();
         $progress->setMessage("Loading targets..");
