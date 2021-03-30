@@ -59,8 +59,8 @@ trait ReportingCommandTrait
             'reporting-timezone',
             'z',
             InputOption::VALUE_OPTIONAL,
-            'The timezone to use for reporting periods (E.g. Asia/Tokyo, America/Chicago, 	Australia/Sydney). Defaults to UTC.',
-            'UTC'
+            'The timezone to use for reporting periods (E.g. Asia/Tokyo, America/Chicago, Australia/Sydney).',
+            date_default_timezone_get()
         );
     }
 
@@ -75,7 +75,13 @@ trait ReportingCommandTrait
       protected function getReportNamespace(InputInterface $input, $uri = ''):string
       {
           return strtr('target-profile-uri-date', [
-            'uri' => $uri,
+            'uri' => strtr($uri, [
+              ':' => '',
+              '/' => '',
+              '?' => '',
+              '#' => '',
+              '&' => '',
+            ]),
             'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
             'profile' => $input->hasArgument('profile') ? $input->getArgument('profile') : '',
             'date' => date('Ymd-His'),
