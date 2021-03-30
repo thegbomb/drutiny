@@ -23,18 +23,18 @@ class Assessment implements ExportableInterface, AssessmentInterface
     /**
      * @var string URI
      */
-    protected $uri = '';
-    protected $results = [];
-    protected $successful = true;
-    protected $severityCode = 1;
-    protected $logger;
-    protected $container;
-    protected $remediable = [];
-    protected $forkManager;
-    protected $statsByResult = [];
-    protected $statsBySeverity = [];
-    protected $policyOrder = [];
-    protected $progressBar;
+    protected string $uri = '';
+    protected array $results = [];
+    protected bool $successful = true;
+    protected int $severityCode = 1;
+    protected LoggerInterface $logger;
+    protected ContainerInterface $container;
+    protected ForkManager $forkManager;
+    protected array $statsByResult = [];
+    protected array $statsBySeverity = [];
+    protected array $policyOrder = [];
+    protected ProgressBar $progressBar;
+    protected string $uuid;
 
     public function __construct(LoggerInterface $logger, ContainerInterface $container, ForkManager $forkManager, ProgressBar $progressBar)
     {
@@ -42,6 +42,16 @@ class Assessment implements ExportableInterface, AssessmentInterface
         $this->container = $container;
         $this->forkManager = $forkManager;
         $this->progressBar = $progressBar;
+
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        $this->uuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+
+    public function getUuid():string
+    {
+      return $this->uuid;
     }
 
     public function setUri($uri = 'default')
@@ -145,9 +155,6 @@ class Assessment implements ExportableInterface, AssessmentInterface
         if (!$response->isSuccessful() && ($this->severityCode < $severity)) {
             $this->severityCode = $severity;
         }
-        if ($response->isFailure()) {
-          $this->remediable[] = $response;
-        }
 
         // Statistics.
         $this->statsByResult[$response->getType()] = $this->statsByResult[$response->getType()] ?? 0;
@@ -179,7 +186,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
     public function getPolicyResult(string $name)
     {
         if (!isset($this->results[$name])) {
-            throw new NoAuditResponseFoundException($name, "Policy '$name' does not have an AuditResponse.");
+            throw new NoAuditResponseFoundException($name, "Policy '$name' does not have an AuditResponse. Found " . implode(', ', array_keys($this->results)));
         }
         return $this->results[$name];
     }
@@ -194,11 +201,6 @@ class Assessment implements ExportableInterface, AssessmentInterface
         return array_filter(array_map(function ($name) {
             return $this->results[$name] ?? false;
         }, $this->policyOrder));
-    }
-
-    public function getRemediableResults()
-    {
-      $this->remediable;
     }
 
     /**
@@ -230,8 +232,8 @@ class Assessment implements ExportableInterface, AssessmentInterface
         // 'statsBySeverity' => $this->statsBySeverity,
         // 'statsBySeverity' => $this->statsBySeverity,
         'uri' => $this->uri,
+        'uuid' => $this->uuid,
         'results' => $this->results,
-        'remediable' => $this->remediable,
         'policyOrder' => $this->policyOrder,
       ];
     }
