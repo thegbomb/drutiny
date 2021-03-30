@@ -63,6 +63,8 @@ class ProfileDownloadCommand extends Command
         $filename = "{$profile->name}.profile.yml";
 
         $export['uuid'] = $filename;
+
+        // Convert \n\r to just \n
         $export['format']['html']['content'] = str_replace("\r", '', $export['format']['html']['content']);
 
         $output = Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
