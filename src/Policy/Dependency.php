@@ -125,7 +125,7 @@ class Dependency
           $return = $audit->evaluate($this->expression, $this->syntax, [
             'dependency' => $this
           ]);
-          if ($return === 1) {
+          if ($return === 1 || $return === true) {
             return true;
           }
         } catch (\Exception $e) {
