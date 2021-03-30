@@ -64,6 +64,10 @@ class ProfileShowCommand extends DrutinyBaseCommand
             }
         }
 
+        if (isset($export['format']['html']['content'])) {
+          $export['format']['html']['content'] = str_replace("\r", '', $export['format']['html']['content']);
+        }
+
         $output->write(Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
 
         return 0;
