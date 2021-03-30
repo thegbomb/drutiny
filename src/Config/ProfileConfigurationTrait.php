@@ -63,6 +63,7 @@ trait ProfileConfigurationTrait
               ->scalarPrototype()->end()
             ->end()
             ->arrayNode('excluded_policies')
+              ->scalarPrototype()->end()
             ->end()
             ->arrayNode('format')
               ->useAttributeAsKey('name')
