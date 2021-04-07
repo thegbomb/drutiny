@@ -47,7 +47,7 @@ trait ReportingCommandTrait
             null,
             InputOption::VALUE_OPTIONAL,
             'The end point in time to report to. Can be absolute or relative. Defaults to the current hour.',
-            date('Y-m-d H:00:00')
+            'now'
         )
         ->addOption(
             'reporting-period',
