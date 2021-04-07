@@ -42,6 +42,13 @@ class PolicyShowCommand extends DrutinyBaseCommand
         $this->initLanguage($input);
         $policy = $this->getPolicyFactory()->loadPolicyByName($input->getArgument('policy'));
         $export = $policy->export();
+
+        foreach (['description', 'success', 'remediation', 'failure', 'warning'] as $field) {
+          if (isset($export[$field])) {
+            $export[$field] = str_replace("\r", '', $export[$field]);
+          }
+        }
+
         $output->write(Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
 
         return 0;
