@@ -44,34 +44,29 @@ class CSV extends Format implements FilesystemFormatInterface
     public function render(Profile $profile, AssessmentInterface $assessment):FormatInterface
     {
 
-        $uuid = $this->uuid();
-        $date = date('c', REQUEST_TIME);
+        $date = $profile->getReportingPeriodEnd()->format('c');
         $schemas = [];
         $insert = [];
 
         $target = $this->container->get('target');
         $target_class = str_replace('\\', '', get_class($target));
+        $schema_name = $target_class.'Data';
 
-        $insert['Drutiny_Target_'.$target_class.'_Data'][0] = [
-          'assessment_uuid' => $uuid,
+        $insert[$schema_name][0] = [
+          'assessment_uuid' => $assessment->getUuid(),
           'target' => $target->getId(),
           'date' => $date,
         ];
 
         foreach ($target->getPropertyList() as $property_name) {
-          $data = $target[$property_name];
-          // Can't store objects.
-          if (is_object($data)) {
-            continue;
+          try {
+            $insert[$schema_name][0] += $this->normalizeToColumns($property_name, $target[$property_name]);
           }
-          if (is_array($data) && isset($data['field_derived_key_salt'])) {
-            unset($data['field_derived_key_salt']);
-          }
-          $insert['Drutiny_Target_'.$target_class.'_Data'][0][$property_name] = json_encode($data);
+          catch (\InvalidArgumentException $e) {}
         }
 
         $defaults = [
-          'assessment_uuid' => $uuid,
+          'assessment_uuid' => $assessment->getUuid(),
           'profile' => $profile->name,
           'target' => $target->getId(),
           'start' => $profile->getReportingPeriodStart()->format('c'),
@@ -89,7 +84,9 @@ class CSV extends Format implements FilesystemFormatInterface
           $policy = $response->getPolicy();
           $dataset_name = $this->getPolicyDatasetName($policy);
 
-          $insert[$dataset_name][] =  $this->getPolicyDatasetValues($policy, $response);
+          $policy_row = $this->getPolicyDatasetValues($policy, $response);
+          $policy_row['assessment_uuid'] = $assessment->getUuid();
+          $insert[$dataset_name][] =  $policy_row;
 
           $assessment_row = $defaults;
           $assessment_row['policy_name'] = $policy->name;
@@ -98,7 +95,7 @@ class CSV extends Format implements FilesystemFormatInterface
           $assessment_row['type'] = $policy->type;
           $assessment_row['result_type'] = $response->getType();
           $assessment_row['result_severity'] = $response->getSeverity();
-          $insert['Drutiny_assessment_results'][] = $assessment_row;
+          $insert['DrutinyAssessmentResults'][] = $assessment_row;
         }
 
         $this->datasets =  $insert;
@@ -128,14 +125,14 @@ class CSV extends Format implements FilesystemFormatInterface
         }
     }
 
-    public function getPolicyDatasetName(Policy $policy)
+    public function getPolicyDatasetName(Policy $policy):string
     {
-        return 'Drutiny_Policy_'.strtr($policy->name, [
-          ':' => '_',
-          ]).'_results';
+        return 'DrutinyPolicyResults_'.strtr($policy->name, [
+          ':' => '',
+          ]);
     }
 
-    public function getPolicyDatasetValues(Policy $policy, AuditResponse $response)
+    public function getPolicyDatasetValues(Policy $policy, AuditResponse $response):array
     {
         $row = [
           'assessment_uuid' => '',
@@ -155,35 +152,79 @@ class CSV extends Format implements FilesystemFormatInterface
         ];
 
         foreach ($policy->parameters as $key => $value) {
-          $row['parameters_' . $key] = $this->prepareValue($value);
+          try {
+            $row += $this->normalizeToColumns('parameters_' . $key, $value);
+          }
+          catch (\InvalidArgumentException $e) {
+            $this->logger->error("Omitting data from column parameters_{$key}");
+          }
         }
 
         foreach ($response->getTokens() as $key => $value) {
-          $row['result_token_' . $key] = $this->prepareValue($value);
+          // Omit parameters as they're already exported above.
+          if (in_array($key, ['chart', 'parameters'])) {
+            continue;
+          }
+          try {
+            $row += $this->normalizeToColumns('result_token_' . $key, $value);
+          }
+          catch (\InvalidArgumentException $e) {
+            $this->logger->error("Omitting data from column result_token_{$key}");
+          }
         }
         return $row;
     }
 
-    protected function prepareValue($value) {
-      switch (gettype($value)) {
+    /**
+     * Flatten an array into a set of columns.
+     */
+    protected function normalizeToColumns(string $name, $data, $depth = 0):array
+    {
+      if ($depth > 1) {
+        return [];
+      }
+
+      switch (gettype($data)) {
          case 'string':
          case 'integer':
          case 'double':
          case 'boolean':
-             return $value;
+         case 'NULL':
+             return [$name => $data];
              break;
-         default:
-             return json_encode($value);
-             break;
-      }
-      return $column;
-    }
 
-    private function uuid()
-    {
-      $data = random_bytes(16);
-      $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-      $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-      return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+        case 'object':
+          switch (get_class($data)) {
+            case 'DateTime':
+              return [$name => $data->format('c')];
+              break;
+
+            default:
+              $this->logger->warning("Cannot convert data of type " . gettype($data) . " into CSV format. Omitting value of $name.");
+              return [$name => '-'];
+              break;
+          }
+
+          case 'array':
+            $cells = [];
+            if (count($data) > 8) {
+              $this->logger->warning("Omitting field $name as it contains too many keys to normalize.");
+              return [];
+            }
+            foreach ($data as $key => $value) {
+                if (is_numeric($key)) {
+                  $this->logger->warning("Omitting field $name.$key. Numeric fields are not supported in CSV schema.");
+                  continue;
+                }
+                $cells += $this->normalizeToColumns("$name.$key", $value, $depth + 1);
+            }
+            return $cells;
+            break;
+
+         default:
+            $this->logger->warning("Data of type " . gettype($data) . " no supported. Omitting field $name.");
+            return [];
+            break;
+      }
     }
 }
