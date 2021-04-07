@@ -97,6 +97,8 @@ services:
         calls:
           - [setLogger, ['@logger']]
           - [prune]
+    cache:
+      alias: cache.filesystem
 
     yaml:
       class: Symfony\Component\Yaml\Yaml
