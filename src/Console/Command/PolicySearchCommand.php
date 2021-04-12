@@ -53,7 +53,7 @@ class PolicySearchCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $list = $this->policyFactory->getPolicyList();
-        $keyword = $input->getArgument('keyword');
+        $keyword = strtolower($input->getArgument('keyword'));
 
         $rows = array();
         foreach ($list as $listedPolicy) {

@@ -40,7 +40,11 @@ trait HttpTrait
     {
 
       // This allows policies to specify urls that still contain a domain.
-        $url = $this->target['uri'];
+        $url = $this->target->getUri();
+
+        if (strpos($url, 'http') === FALSE) {
+          $url = 'https://' . $url;
+        }
 
         if ($this->getParameter('force_ssl', false)) {
             $url = strtr($url, [

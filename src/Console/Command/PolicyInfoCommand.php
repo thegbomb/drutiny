@@ -80,7 +80,7 @@ class PolicyInfoCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Profiles');
         $profiles = array_filter($profiles, function ($profile) use ($policy) {
-          $list = array_keys($profile->policies->all());
+          $list = array_keys($profile->getAllPolicyDefinitions());
           return in_array($policy->name, $list);
         });
         $io->listing(array_map(function ($profile) {
