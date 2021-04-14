@@ -30,6 +30,13 @@ class PolicyShowCommand extends DrutinyBaseCommand
             'policy',
             InputArgument::REQUIRED,
             'The name of the profile to show.'
+        )
+        ->addOption(
+            'format',
+            'f',
+            InputOption::VALUE_OPTIONAL,
+            'An output format. Default YAML. Support: yaml, json',
+            'yaml'
         );
         $this->configureLanguage();
     }
@@ -49,7 +56,16 @@ class PolicyShowCommand extends DrutinyBaseCommand
           }
         }
 
-        $output->write(Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+        switch ($input->getOption('format')) {
+          case 'json':
+            $format = json_encode($export, JSON_PRETTY_PRINT);
+            break;
+          default:
+            $format = Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+            break;
+        }
+
+        $output->write($format);
 
         return 0;
     }

@@ -41,6 +41,11 @@ class PolicyStorage implements PolicySourceInterface
       return $this->source->getName();
     }
 
+    public function getDriver()
+    {
+      return $this->source;
+    }
+
     /**
      * Sync contents from source.
      */

@@ -87,8 +87,6 @@ abstract class Plugin {
             $value = $this->setupField($name, $config[$name] ?? null);
             $storage->{$name} = $value;
         }
-        $this->config->doWrite();
-        $this->credentials->doWrite();
     }
 
     public function setField($name, $value = null):void
