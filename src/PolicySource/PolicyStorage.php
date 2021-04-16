@@ -13,22 +13,16 @@ class PolicyStorage implements PolicySourceInterface
 {
     protected PolicySourceInterface $source;
     protected LanguageManager $languageManager;
-    protected string $list;
     protected LoggerInterface $logger;
+    protected string $dir;
 
     public function __construct(PolicySourceInterface $source, ContainerInterface $container, LanguageManager $languageManager)
     {
       $this->source = $source;
-      $this->store = strtr('%dir/sources/%lang/%source', [
-        '%dir' => $container->getParameter('policy.library.fs'),
-        '%lang' => $languageManager->getCurrentLanguage(),
-        '%source' => str_replace('\\', '', get_class($source))
-      ]);
+      $this->dir = $container->getParameter('policy.library.fs');
       $this->languageManager = $languageManager;
 
-      is_dir($this->store) || mkdir($this->store, 0744, true);
-
-      $this->list = $this->store . '/list.json';
+      is_dir($this->getStoreLocation()) || mkdir($this->getStoreLocation(), 0744, true);
 
       $this->logger = $container->get('Psr\Log\LoggerInterface');
     }
@@ -51,7 +45,7 @@ class PolicyStorage implements PolicySourceInterface
      */
     public function refresh()
     {
-      file_exists($this->list) && unlink($this->list);
+      file_exists($this->getListFilename()) && unlink($this->getListFilename());
 
       foreach ($this->getList($this->languageManager) as $definition) {
         $filename = $this->policyLocation($definition);
@@ -65,9 +59,23 @@ class PolicyStorage implements PolicySourceInterface
       }
     }
 
+    protected function getListFilename()
+    {
+      return $this->getStoreLocation() . '/list-' . $this->languageManager->getCurrentLanguage() . '.json';
+    }
+
+    protected function getStoreLocation()
+    {
+      return strtr('%dir/sources/%lang/%source', [
+        '%dir' => $this->dir,
+        '%lang' => $this->languageManager->getCurrentLanguage(),
+        '%source' => str_replace('\\', '', get_class($this->source))
+      ]);
+    }
+
     private function policyLocation(array $definition)
     {
-      return $this->store . '/' . $definition['uuid'] . '.policy.json';
+      return $this->getStoreLocation() . '/' . $definition['uuid'] . '.policy.json';
     }
 
     /**
@@ -75,11 +83,13 @@ class PolicyStorage implements PolicySourceInterface
      */
     public function getList(LanguageManager $languageManager)
     {
-      if (file_exists($this->list)) {
-        return json_decode(file_get_contents($this->list), true);
+      if (file_exists($this->getListFilename())) {
+        $this->logger->notice("Loading policies from " . $this->getListFilename());
+        return json_decode(file_get_contents($this->getListFilename()), true);
       }
-      $contents = $this->source->getList($languageManager);
-      file_put_contents($this->list, json_encode($contents));
+      $contents = $this->source->getList($this->languageManager);
+      $this->logger->notice("Writting policies to " . $this->getListFilename());
+      file_put_contents($this->getListFilename(), json_encode($contents));
       return $contents;
     }
 

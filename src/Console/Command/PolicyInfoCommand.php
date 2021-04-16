@@ -17,22 +17,14 @@ use Twig\Environment;
 /**
  *
  */
-class PolicyInfoCommand extends Command
+class PolicyInfoCommand extends DrutinyBaseCommand
 {
+
+  use LanguageCommandTrait;
+
   protected $policyFactory;
   protected $profileFactory;
-  protected $languageManager;
   protected $twig;
-
-
-  public function __construct(ProfileFactory $profileFactory, PolicyFactory $factory, Environment $twig, LanguageManager $languageManager)
-  {
-      $this->policyFactory = $factory;
-      $this->twig = $twig;
-      $this->languageManager = $languageManager;
-      $this->profileFactory = $profileFactory;
-      parent::__construct();
-  }
 
   /**
    * @inheritdoc
@@ -46,14 +38,8 @@ class PolicyInfoCommand extends Command
             'policy',
             InputArgument::REQUIRED,
             'The name of the check to run.'
-        )
-        ->addOption(
-            'language',
-            '',
-            InputOption::VALUE_OPTIONAL,
-            'Define which language to use for policies and profiles. Defaults to English (en).',
-            'en'
         );
+        $this->configureLanguage();
     }
 
   /**
@@ -62,11 +48,11 @@ class PolicyInfoCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Set global language used by policy/profile sources.
-        $this->languageManager->setLanguage($input->getOption('language'));
+        $this->initLanguage($input);
 
-        $policy = $this->policyFactory->loadPolicyByName($input->getArgument('policy'));
+        $policy = $this->getPolicyFactory()->loadPolicyByName($input->getArgument('policy'));
 
-        $template = $this->twig->load('docs/policy.md.twig');
+        $template = $this->getContainer()->get('twig')->load('docs/policy.md.twig');
         $markdown = $template->render($policy->export());
 
         $formatted_output = Renderer::createFromMarkdown($markdown);
@@ -74,8 +60,8 @@ class PolicyInfoCommand extends Command
 
 
         $profiles = array_map(function ($profile) {
-          return $this->profileFactory->loadProfileByName($profile['name']);
-        }, $this->profileFactory->getProfileList());
+          return $this->getProfileFactory()->loadProfileByName($profile['name']);
+        }, $this->getProfileFactory()->getProfileList());
 
         $io = new SymfonyStyle($input, $output);
         $io->title('Profiles');

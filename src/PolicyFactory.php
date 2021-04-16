@@ -132,7 +132,7 @@ class PolicyFactory
             if (strpos($id, 'PolicyStorage') !== FALSE) {
               continue;
             }
-            $sources[] = new PolicyStorage($this->container->get($id), $this->container, $this->container->get('language_manager'));
+            $sources[] = new PolicyStorage($this->container->get($id), $this->container, $this->container->get('Drutiny\LanguageManager'));
         }
 
         // If multiple sources provide the same policy by name, then the policy from

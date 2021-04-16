@@ -37,6 +37,6 @@ trait LanguageCommandTrait
      */
     protected function getLanguageManager():LanguageManager
     {
-        return $this->getContainer()->get('language_manager');
+        return $this->getContainer()->get('Drutiny\LanguageManager');
     }
 }
