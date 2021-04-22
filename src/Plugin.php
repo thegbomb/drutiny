@@ -51,17 +51,21 @@ abstract class Plugin {
         return true;
     }
 
+    protected function getStorage($name)
+    {
+      return $this->fields[$name]['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
+    }
+
     final public function getField($name)
     {
-      $storage = $this->fields[$name]['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
-      return $storage->{$name} ?? null;
+      return $this->getStorage($name)->{$name} ?? null;
     }
 
     final public function load()
     {
         $configuration = [];
         foreach ($this->fields as $name => $field) {
-            $storage = $field['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
+            $storage = $this->getStorage($name);
 
             if (!isset($storage->{$name})) {
               if (isset($field['default'])) {
@@ -83,7 +87,7 @@ abstract class Plugin {
     {
         $config = $this->load();
         foreach ($this->fields as $name => $field) {
-            $storage = $field['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
+            $storage = $this->getStorage($name);
             $value = $this->setupField($name, $config[$name] ?? null);
             $storage->{$name} = $value;
         }
@@ -91,9 +95,8 @@ abstract class Plugin {
 
     public function setField($name, $value = null):void
     {
-      $storage = $this->fields[$name]['type'] == static::FIELD_TYPE_CREDENTIAL ? $this->credentials : $this->config;
+      $storage = $this->getStorage($name);
       $storage->{$name} = $value;
-      $storage->doWrite();
     }
 
     /**
