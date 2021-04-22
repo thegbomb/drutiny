@@ -194,6 +194,10 @@ class Application extends BaseApplication
       foreach ($container->findTaggedServiceIds('plugin') as $id => $info) {
           $plugin = $container->get($id);
 
+          if (!isset($map[$plugin->getName()])) {
+            continue;
+          }
+
           if (!isset($old_creds[$map[$plugin->getName()]])) {
             continue;
           }
