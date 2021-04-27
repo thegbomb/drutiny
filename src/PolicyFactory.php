@@ -7,6 +7,7 @@ use Drutiny\PolicySource\PolicyStorage;
 use Drutiny\Policy\UnavailablePolicyException;
 use Drutiny\Policy\UnknownPolicyException;
 use Drutiny\LanguageManager;
+use Drutiny\Plugin\PluginRequiredException;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -132,7 +133,13 @@ class PolicyFactory
             if (strpos($id, 'PolicyStorage') !== FALSE) {
               continue;
             }
-            $sources[] = new PolicyStorage($this->container->get($id), $this->container, $this->container->get('Drutiny\LanguageManager'));
+            try {
+              $sources[] = new PolicyStorage($this->container->get($id), $this->container, $this->container->get('Drutiny\LanguageManager'));
+            }
+            catch (PluginRequiredException $e) {
+              $this->logger->warning("Cannot load policy source: $id: " . $e->getMessage());
+            }
+
         }
 
         // If multiple sources provide the same policy by name, then the policy from

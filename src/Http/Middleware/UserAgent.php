@@ -4,6 +4,7 @@ namespace Drutiny\Http\Middleware;
 
 use Drutiny\Http\MiddlewareInterface;
 use Drutiny\Plugin\UserAgentPlugin;
+use Drutiny\Plugin\PluginRequiredException;
 use Psr\Http\Message\RequestInterface;
 
 class UserAgent implements MiddlewareInterface
@@ -16,7 +17,10 @@ class UserAgent implements MiddlewareInterface
    */
     public function __construct(UserAgentPlugin $plugin)
     {
-        $this->config = $plugin->load();
+        try {
+          $this->config = $plugin->load();
+        }
+        catch (PluginRequiredException $e){}
     }
 
   /**

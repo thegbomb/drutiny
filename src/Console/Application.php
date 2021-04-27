@@ -13,6 +13,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\Yaml\Yaml;
 use Drutiny\Kernel;
+use Drutiny\Plugin\PluginRequiredException;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -148,7 +149,12 @@ class Application extends BaseApplication
         $container = $this->kernel->getContainer();
         $container->findTags();
         foreach ($container->findTaggedServiceIds('command') as $id => $definition) {
-            $this->add($container->get($id));
+            try {
+              $this->add($container->get($id));
+            }
+            catch (PluginRequiredException $e) {
+              $this->kernel->getContainer()->get('logger')->warning("Cannot initiatize command $id as it requires a plugin that is not setup: " . $e->getMessage());
+            }
         }
     }
 

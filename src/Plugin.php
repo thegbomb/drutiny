@@ -3,6 +3,7 @@
 namespace Drutiny;
 
 use Drutiny\Config\Config;
+use Drutiny\Plugin\PluginRequiredException;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
@@ -74,7 +75,7 @@ abstract class Plugin {
               }
 
               // Indicates the plugin is not installed yet.
-              return false;
+              throw new PluginRequiredException($this->getName());
             }
 
             $value = $storage->{$name};
@@ -85,7 +86,11 @@ abstract class Plugin {
 
     final public function setup()
     {
-        $config = $this->load();
+        try {
+          $config = $this->load();
+        }
+        catch (PluginRequiredException $e) {}
+
         foreach ($this->fields as $name => $field) {
             $storage = $this->getStorage($name);
             $value = $this->setupField($name, $config[$name] ?? null);

@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drutiny\Plugin\PluginRequiredException;
 
 /**
  *
@@ -43,7 +44,15 @@ class PluginListCommand extends Command
         $rows = [];
         foreach ($this->container->findTaggedServiceIds('plugin') as $id => $info) {
             $plugin = $this->container->get($id);
-            $rows[$plugin->getName()] = [$plugin->getName(), $plugin->load() ? 'Installed' : 'Uninstalled'];
+            $state = 'Installed';
+            try {
+              $plugin->load();
+            }
+            catch (PluginRequiredException $e) {
+              $state = 'Not Installed';
+            }
+
+            $rows[$plugin->getName()] = [$plugin->getName(), $state];
         }
         ksort($rows);
 
