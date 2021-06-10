@@ -21,8 +21,8 @@ trait LanguageCommandTrait
             'language',
             '',
             InputOption::VALUE_OPTIONAL,
-            'Define which language to use for policies and profiles. Defaults to English (en).',
-            'en'
+            'Define which language to use for policies and profiles.',
+            $this->getLanguageManager()->getDefaultLanguage()
         );
     }
 
@@ -37,6 +37,6 @@ trait LanguageCommandTrait
      */
     protected function getLanguageManager():LanguageManager
     {
-        return $this->getContainer()->get('Drutiny\LanguageManager');
+        return \drutiny()->get('Drutiny\LanguageManager');
     }
 }
