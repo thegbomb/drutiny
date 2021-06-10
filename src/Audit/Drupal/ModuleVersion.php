@@ -8,26 +8,13 @@ use Drutiny\Annotation\Param;
 
 /**
  * Check the version of Drupal project in a site.
- *
- * @Param(
- *  name = "module",
- *  description = "The module to version information for",
- *  type = "string"
- * )
- * @Param(
- *  name = "version",
- *  description = "The static version to check against.",
- *  type = "string"
- * )
- * @Param(
- *  name = "comparator",
- *  description = "How to compare the version (greaterThan, greaterThanOrEqualTo, lessThan etc. See https://github.com/composer/semver)",
- *  type = "string",
- *  default = "greaterThanOrEqualTo"
- * )
  */
 class ModuleVersion extends Audit
 {
+
+    public function configure() {
+      $this->setDeprecated();
+    }
 
     public function audit(Sandbox $sandbox)
     {
