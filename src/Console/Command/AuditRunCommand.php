@@ -117,7 +117,11 @@ class AuditRunCommand extends DrutinyBaseCommand
         $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
         $assessment->assessTarget($target, [$policy], $this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input), $input->getOption('remediate'));
 
-        $profile = Profile::create($container->get('logger'));
+        $profile = $container->get('profile.factory')->create([
+          'title' => 'Audit:Run',
+          'name' => 'audit_run',
+          'uuid' => 'audit_run'
+        ]);
 
         foreach ($this->getFormats($input, $profile) as $format) {
             $format->setNamespace($this->getReportNamespace($input, $uri));
