@@ -114,14 +114,29 @@ class Kernel
             unset($this->loadingPaths[$idx]);
         }
 
-        $location = fn () => implode('/', func_get_args());
-
-        // Search top level for config.
-        $loader->load($location($this->getProjectDir(), '{drutiny}'.self::CONFIG_EXTS), 'glob');
+        // Create config loader.
+        $load = function () use ($loader) {
+          $args = func_get_args();
+          $args[] = '{drutiny}'.self::CONFIG_EXTS;
+          $loading_path = implode('/', $args);
+          $loader->load($loading_path, 'glob');
+        };
 
         foreach ($this->loadingPaths as $path) {
-          $loading_path = $location($this->getProjectDir(), $path, '{drutiny}'.self::CONFIG_EXTS);
-          $loader->load($loading_path, 'glob');
+          $load($this->getProjectDir(), $path);
+        }
+
+        // Load project level config last as it should override all others.
+        $load($this->getProjectDir());
+
+        // Load any available global configuration. This should really use
+        // user_home_dir but since the container isn't compiled we can't.
+        $load(getenv('HOME').'/.drutiny');
+
+        // If we're in a different working directory (e.g. executing from phar)
+        // then there may be one last level of config we should inherit from.
+        if ($this->getProjectDir() != getcwd()) {
+          $load(getcwd());
         }
 
         return $container;
