@@ -8,18 +8,13 @@ use Drutiny\Annotation\Param;
 
 /**
  * Generic modules are enabled check.
- * @Param(
- *  name = "modules",
- *  description = "List of modules to check that are enabled.",
- *  type = "array",
- * )
  */
 class ModulesEnabled extends Audit {
 
   public function configure() {
     $this->setDeprecated();
   }
-  
+
   /**
    * @inheritdoc
    */
