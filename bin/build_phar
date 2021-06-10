@@ -43,7 +43,7 @@ $dirs = [
   'Profiles'
 ];
 
-foreach ($dirs as $dir) {
+foreach (array_filter($dirs, 'is_dir') as $dir) {
   $console->log('info', 'Copying directory: ' . $dir);
   $fs->mirror($dir, BUILD_DIRECTORY . '/' . $dir);
 }
