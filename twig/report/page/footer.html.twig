@@ -310,7 +310,17 @@
       $(this).removeClass('chart-unprocessed').addClass('chart');
 
       if ((data.chartHideTable !== undefined) && data.chartHideTable) {
-        $(table).hide();
+        let tbl_toggle = document.createElement( "a" );
+        $(tbl_toggle)
+          .text('view data table')
+          .attr('href', '#')
+          .addClass('d-print-none')
+          .click(function (e) {
+            e.preventDefault();
+            $(table).toggle();
+
+          });
+        $(table).hide().before(tbl_toggle);
       }
     });
 
