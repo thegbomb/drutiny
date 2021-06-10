@@ -12,6 +12,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ProfileListCommand extends DrutinyBaseCommand
 {
 
+  use LanguageCommandTrait;
+
   /**
    * @inheritdoc
    */
@@ -20,6 +22,7 @@ class ProfileListCommand extends DrutinyBaseCommand
         $this
         ->setName('profile:list')
         ->setDescription('Show all profiles available.');
+        $this->configureLanguage();
     }
 
   /**
@@ -27,6 +30,7 @@ class ProfileListCommand extends DrutinyBaseCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->initLanguage($input);
         $render = new SymfonyStyle($input, $output);
         $progress = $this->getProgressBar();
         $progress->start(1);
