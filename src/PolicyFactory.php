@@ -48,7 +48,9 @@ class PolicyFactory
         $definition = $list[$name];
 
         try {
-            return $this->getSource($definition['source'])->load($definition);
+            $policy = $this->getSource($definition['source'])->load($definition);
+            $policy->source = $definition['source'];
+            return $policy;
         } catch (\InvalidArgumentException $e) {
             $this->container->get('logger')->warning($e->getMessage());
             throw new UnavailablePolicyException("$name requires {$list[$name]['class']} but is not available in this environment.");
