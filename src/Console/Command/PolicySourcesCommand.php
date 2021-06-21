@@ -6,6 +6,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Drutiny\PolicySource\PushablePolicySourceInterface;
 
 /**
  *
@@ -30,11 +31,12 @@ class PolicySourcesCommand extends DrutinyBaseCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         foreach ($this->getPolicyFactory()->getSources() as $source) {
-          $rows[] = [$source->getName(), get_class($source), $source->getWeight()];
+          $pushable = ($source->getDriver() instanceof PushablePolicySourceInterface) ? 'Yes' : 'No';
+          $rows[] = [$source->getName(), get_class($source->getDriver()), $source->getWeight(), $pushable];
         }
 
         $io = new SymfonyStyle($input, $output);
-        $headers = ['Source', 'Class', 'Weight'];
+        $headers = ['Source', 'Class', 'Weight', 'Pushable'];
         $io->table($headers, $rows);
 
         return 0;
