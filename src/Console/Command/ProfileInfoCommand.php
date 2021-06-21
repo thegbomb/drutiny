@@ -9,6 +9,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Drutiny\ProfileFactory;
+use Drutiny\PolicyFactory;
+use Drutiny\Entity\PolicyOverride;
 use Twig\Environment;
 
 /**
@@ -17,12 +19,14 @@ use Twig\Environment;
 class ProfileInfoCommand extends Command
 {
 
-  protected $profileFactory;
-  protected $twig;
+  protected ProfileFactory $profileFactory;
+  protected PolicyFactory $policyFactory;
+  protected Environment $twig;
 
-  public function __construct(ProfileFactory $factory, Environment $twig)
+  public function __construct(ProfileFactory $factory, Environment $twig, PolicyFactory $policyFactory)
   {
       $this->profileFactory = $factory;
+      $this->policyFactory = $policyFactory;
       $this->twig = $twig;
       parent::__construct();
   }
@@ -51,11 +55,21 @@ class ProfileInfoCommand extends Command
 
         $profile = $this->profileFactory->loadProfileByName($input->getArgument('profile'));
 
-        $template = $this->twig->load('docs/profile.md.twig');
-        $markdown = $template->render($profile->export());
+        $policies = array_map(fn (PolicyOverride $p) => $p->getPolicy($this->policyFactory), $profile->getAllPolicyDefinitions());
 
-        $formatted_output = Renderer::createFromMarkdown($markdown);
-        $output->writeln((string) $formatted_output);
+
+        $render->title($profile->title);
+        $render->block($profile->description);
+
+        $render->section('Usage');
+        $render->block('drutiny profile:run ' . $profile->name . ' <target>');
+
+        $render->section('Policies');
+        $headers = ['Title', 'Name', 'Source'];
+        $render->table($headers, array_map(function ($policy) {
+          return [$policy->title, $policy->name, $policy->source];
+        }, $policies));
+
         return 0;
     }
 }
