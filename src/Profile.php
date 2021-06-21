@@ -92,7 +92,7 @@ class Profile extends StrictEntity
   /**
    * Add a PolicyDefinition to the profile.
    */
-    public function getAllPolicyDefinitions()
+    public function getAllPolicyDefinitions():array
     {
 
       $list = array_filter($this->policyOverrides, function (PolicyOverride $policy_override) {
