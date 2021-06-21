@@ -269,6 +269,12 @@ services:
         - is_safe: [html]
           needs_environment: true
 
+    twig.functions.parse_url:
+      class: Twig\TwigFunction
+      arguments:
+        - parse_url
+        - parse_url
+
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
