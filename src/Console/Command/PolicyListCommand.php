@@ -52,7 +52,9 @@ class PolicyListCommand extends DrutinyBaseCommand
         if ($source_filter = $input->getOption('source')) {
             $progress->setMessage("Filtering policies by source: $source_filter");
             $list = array_filter($list, function ($policy) use ($source_filter) {
-                return $source_filter == $policy['source'];
+                if ($source_filter == $policy['source']) return true;
+                if ($source_filter == preg_replace('/\<.+\>/U', '', $policy['source'])) return true;
+                return false;
             });
         }
         $progress->advance();
