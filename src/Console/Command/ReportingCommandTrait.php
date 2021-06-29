@@ -74,7 +74,7 @@ trait ReportingCommandTrait
      */
       protected function getReportNamespace(InputInterface $input, $uri = ''):string
       {
-          return strtr('target-profile-uri-date', [
+          return strtr('target-profile-uri-date.language', [
             'uri' => strtr($uri, [
               ':' => '',
               '/' => '',
@@ -84,7 +84,8 @@ trait ReportingCommandTrait
             ]),
             'target' => preg_replace('/[^a-z0-9]/', '', strtolower($input->getArgument('target'))),
             'profile' => $input->hasArgument('profile') ? $input->getArgument('profile') : '',
-            'date' => date('Ymd-His'),
+            'date' => $this->getReportingPeriodStart($input)->format('Ymd-His'),
+            'language' => $this->getLanguageManager()->getCurrentLanguage(),
           ]);
       }
 
