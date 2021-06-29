@@ -78,6 +78,7 @@ class AbstractAnalysis extends Audit
 
         foreach ($this->getParameter('variables',[]) as $key => $value) {
           try {
+            $this->logger->debug(__CLASS__ . ':VARIABLE('.$key.'): ' . $value);
             $this->set($key, $this->evaluate($value, $syntax));
           }
           catch (RuntimeError $e)
