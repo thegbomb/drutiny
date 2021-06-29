@@ -150,6 +150,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
         }
         catch (InvalidTargetException $e) {
           $console->error("Invalid target: " . $input->getArgument('target') . ': ' . $e->getMessage());
+          $this->getLogger()->debug($e->getTraceAsString());
           return self::EXIT_INVALID_TARGET;
         }
 
