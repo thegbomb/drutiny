@@ -46,8 +46,9 @@ class RemoteService implements ExecutionInterface {
    */
   public function downloadFile($source, $location)
   {
-    $cmd = ':' . $source . ' ' . $location;
-    return $this->local->run($this->getRemoteCall('scp') . $cmd, null, 0);
+    return $this->run(sprintf('cat %s', $source), function ($output) use ($location) {
+      return file_put_contents($location, $output);
+    }, 0);
   }
 
   /**
