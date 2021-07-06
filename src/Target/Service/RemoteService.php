@@ -46,8 +46,12 @@ class RemoteService implements ExecutionInterface {
    */
   public function downloadFile($source, $location)
   {
-    return $this->run(sprintf('cat %s', $source), function ($output) use ($location) {
-      return file_put_contents($location, $output);
+    return $this->run(sprintf('test -f % s && cat %s', $source, $source), function ($output) use ($location) {
+      if (empty($output)) {
+        return false;
+      }
+      file_put_contents($location, $output);
+      return true;
     }, 0);
   }
 
