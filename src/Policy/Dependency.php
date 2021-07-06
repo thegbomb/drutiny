@@ -122,7 +122,7 @@ class Dependency
     public function execute(AuditInterface $audit)
     {
         try {
-          $return = $audit->evaluate($this->expression, $this->syntax, [
+          $return = $audit->evaluate($audit->interpolate($this->expression), $this->syntax, [
             'dependency' => $this
           ]);
           if ($return === 1 || $return === true) {
