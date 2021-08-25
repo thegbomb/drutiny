@@ -20,7 +20,7 @@ parameters:
     - '%drutiny_core_dir%/twig'
     - '%drutiny_core_dir%/twig/report'
   twig.cache: '%drutiny_config_dir%/twig'
-  twig.debug: false
+  twig.debug: true
   twig.strict: false
   async.forks: 7
   language_default: en
@@ -254,6 +254,7 @@ services:
         - [addFilter, ['@twig.filters.json_decode']]
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.chart']]
+        - [addFilter, ['@twig.filters.array_merge']]
         - [addFunction, ['@twig.functions.policy_result']]
         - [addTest, ['@twig.test.is_numeric']]
         - [addTest, ['@twig.test.keyed']]
@@ -275,9 +276,27 @@ services:
         - parse_url
         - parse_url
 
+    twig.functions.semver_gt:
+      class: Twig\TwigFunction
+      arguments:
+        - semver_gt
+        - ['Composer\Semver\Comparator', 'greaterThan']
+        - is_safe: [html]
+
+    twig.functions.semver_gte:
+      class: Twig\TwigFunction
+      arguments:
+        - semver_gte
+        - ['Composer\Semver\Comparator', 'greaterThanOrEqualTo']
+        - is_safe: [html]
+
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
+
+    twig.filters.array_merge:
+      class: Twig\TwigFilter
+      arguments: ['array_merge', 'array_merge']
 
     twig.filters.array_unique:
       class: Twig\TwigFilter
