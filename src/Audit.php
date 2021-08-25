@@ -13,6 +13,7 @@ use Drutiny\Target\TargetInterface;
 use Drutiny\Upgrade\AuditUpgrade;
 use Drutiny\Entity\Exception\DataNotFoundException;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
@@ -37,13 +38,15 @@ abstract class Audit implements AuditInterface
     protected Policy $policy;
     protected ProgressBar $progressBar;
     protected bool $deprecated = false;
+    private CacheInterface $cache;
 
     final public function __construct(
       ContainerInterface $container,
       TargetInterface $target,
       LoggerInterface $logger,
       ExpressionLanguage $expressionLanguage,
-      ProgressBar $progressBar
+      ProgressBar $progressBar,
+      CacheInterface $cache
       ) {
         $this->container = $container;
         $this->target = $target;
@@ -55,6 +58,7 @@ abstract class Audit implements AuditInterface
         $this->dataBag->add([
         'parameters' => new DataBag(),
       ]);
+        $this->cache = $cache;
         $this->configure();
     }
 
@@ -331,5 +335,11 @@ abstract class Audit implements AuditInterface
     public function isDeprecated():bool
     {
       return $this->deprecated;
+    }
+
+    protected function runCacheable($contexts, callable $func)
+    {
+      $cid = md5(get_class($this) . json_encode($contexts));
+      return $this->cache->get($cid, $func);
     }
 }
