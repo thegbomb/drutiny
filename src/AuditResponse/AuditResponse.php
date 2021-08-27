@@ -120,14 +120,17 @@ class AuditResponse implements ExportableInterface
         if ($this->isNotice()) {
             return 'notice';
         }
-        if ($this->hasWarning()) {
-            return 'warning';
-        }
         $policy_type = $this->policy->type;
         if ($policy_type == 'data') {
             return 'notice';
         }
-        return $this->isSuccessful() ? 'success' : 'failure';
+        if (!$this->isSuccessful()) {
+          return 'failure';
+        }
+        if ($this->hasWarning()) {
+            return 'warning';
+        }
+        return 'success';
     }
 
     /**
