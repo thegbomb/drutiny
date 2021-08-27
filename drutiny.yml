@@ -255,7 +255,9 @@ services:
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.chart']]
         - [addFilter, ['@twig.filters.array_merge']]
+        - [addFilter, ['@twig.filters.yaml_dump']]
         - [addFunction, ['@twig.functions.policy_result']]
+        - [addFunction, ['@twig.functions.semver_satisfies']]
         - [addTest, ['@twig.test.is_numeric']]
         - [addTest, ['@twig.test.keyed']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
@@ -290,6 +292,13 @@ services:
         - ['Composer\Semver\Comparator', 'greaterThanOrEqualTo']
         - is_safe: [html]
 
+    twig.functions.semver_satisfies:
+      class: Twig\TwigFunction
+      arguments:
+        - semver_satisfies
+        - ['Composer\Semver\Semver', 'satisfies']
+        - is_safe: [html]
+
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
@@ -321,6 +330,13 @@ services:
         - ['Drutiny\Report\Twig\Helper', 'filterSectionHeading']
         - needs_environment: true
           is_safe: ['html']
+
+    twig.filters.yaml_dump:
+      class: Twig\TwigFilter
+      arguments:
+        - yaml_dump
+        - ['Symfony\Component\Yaml\Yaml', 'dump']
+        - is_safe: ['html']
 
     twig.filters.chart:
       class: Twig\TwigFilter
