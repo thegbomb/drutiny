@@ -158,7 +158,7 @@ class ModuleUpdateAnalysis extends ModuleAnalysis
               return false;
             }
           }
-          return Comparator::greaterThan($this->getSemanticVersion($release['version']), $semantic_version);
+          return Comparator::greaterThanOrEqualTo($this->getSemanticVersion($release['version']), $semantic_version);
         });
 
         if (isset($history['supported_branches'])) {
@@ -175,6 +175,8 @@ class ModuleUpdateAnalysis extends ModuleAnalysis
           $release['supported'] = count(array_filter($history['supported_branches'], function ($branch) use ($release) {
             return strpos($release['version'], $branch) === 0;
           })) > 0;
+
+          $release['semantic_version'] = $this->parseSemanticVersion($this->getSemanticVersion($release['version']));
 
           if (empty($release['terms'])) {
             continue;
@@ -219,10 +221,30 @@ class ModuleUpdateAnalysis extends ModuleAnalysis
       return $array;
     }
 
-    protected function getSemanticVersion($version) {
+    protected function getSemanticVersion($version)
+    {
       if (preg_match('/([0-9]+).x-(.*)/', $version, $matches)) {
         $version = $matches[2];
       }
       return $version;
+    }
+
+    protected function parseSemanticVersion($version)
+    {
+      if (!preg_match('/^(([0-9]+)\.)?([0-9x]+)\.([0-9x]+)(.*)$/', $version, $matches)) {
+        return false;
+      }
+      list(,,$major, $minor, $patch, $prerelease) = $matches;
+      if (empty($major)) {
+        $major = $minor;
+        $minor = $patch;
+        $patch = '';
+      }
+      return [
+        'major' => $major,
+        'minor' => $minor,
+        'patch' => $patch,
+        'pre-release' => substr($prerelease, 1),
+      ];
     }
 }
