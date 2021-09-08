@@ -251,6 +251,7 @@ services:
         - [addExtension, ['@Twig\Extra\String\StringExtension']]
         - [addFilter, ['@twig.filters.array_sum']]
         - [addFilter, ['@twig.filters.array_unique']]
+        - [addFilter, ['@twig.filters.array_values']]
         - [addFilter, ['@twig.filters.json_decode']]
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.chart']]
@@ -302,6 +303,10 @@ services:
     twig.filters.array_sum:
       class: Twig\TwigFilter
       arguments: ['sum', 'array_sum']
+
+    twig.filters.array_values:
+      class: Twig\TwigFilter
+      arguments: ['values', 'array_values']
 
     twig.filters.array_merge:
       class: Twig\TwigFilter
