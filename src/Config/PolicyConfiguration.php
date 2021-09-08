@@ -60,6 +60,12 @@ class PolicyConfiguration implements ConfigurationInterface
               ->variablePrototype()->end()
               ->end()
 
+            // Twig expressions to evaluate parameters.
+            ->arrayNode('build_parameters')
+              ->info('Create parameters to pass to the audit before it is executed. Target object is available.')
+              ->variablePrototype()->end()
+              ->end()
+
             // Messaging
             ->scalarNode('remediation')
               ->info('Content to communicate how to remediate a policy failure.')

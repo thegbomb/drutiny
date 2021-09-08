@@ -23,6 +23,7 @@ use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\Yaml\Yaml;
+use Twig\Error\RuntimeError;
 
 /**
  * Base class for Audit.
@@ -100,6 +101,26 @@ abstract class Audit implements AuditInterface
                 // Throws DependencyException if dependency is not met.
                 $dependency->execute($this);
                 $this->progressBar->advance();
+            }
+
+            // Build parameters to be used in the audit.
+            foreach ($policy->build_parameters ?? [] as $key => $value) {
+              try {
+                $this->logger->debug(__CLASS__ . ':build_parameters('.$key.'): ' . $value);
+                $value = $this->evaluate($value, 'twig');
+
+                // Set the token to be available for other build_parameters.
+                $this->set($key, $value);
+
+                // Set the parameter to be available in the audit().
+                if ($this->definition->hasArgument($key)) {
+                  $policy->addParameter($key, $value);
+                }
+              }
+              catch (RuntimeError $e)
+              {
+                throw new \Exception("Failed to create key: $key. Encountered Twig runtime error: " . $e->getMessage());
+              }
             }
 
             $input = new ArrayInput($policy->getAllParameters(), $this->definition);
