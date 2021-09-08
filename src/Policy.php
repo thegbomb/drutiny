@@ -173,6 +173,14 @@ class Policy implements ExportableInterface
     {
         $data = $this->propertyBag->all();
         $data['parameters'] = $this->parameterBag->all();
+
+        // Fix Yaml::dump bug where it doesn't correctly split \r\n to multiple
+        // lines.
+        foreach ($data as $key => $value) {
+          if (is_string($value)) {
+            $data[$key] = str_replace("\r\n", "\n", $value);
+          }
+        }
         return $data;
     }
 }
