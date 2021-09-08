@@ -164,6 +164,9 @@ class ModuleUpdateAnalysis extends ModuleAnalysis
         if (isset($history['supported_branches'])) {
           $history['supported_branches'] = explode(',', $history['supported_branches']);
         }
+        else {
+          $history['supported_branches'] = [];
+        }
 
         foreach ($history['releases'] as &$release) {
           $release['is_current_release'] = $this->getSemanticVersion($release['version']) == $semantic_version;
