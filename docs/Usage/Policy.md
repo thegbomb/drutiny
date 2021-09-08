@@ -16,6 +16,14 @@ drutiny policy:list
 This should provide you with a table of available policies including the policy
 title, name, source and profile utilisation.
 
+Drutiny defaults to english but will provides policies in other languages if
+your Policy sources support multilingual policies.
+
+```
+# List policies written in Japanese.
+drutiny policy:list --language=ja
+```
+
 ## Policy information
 
 The title and name of the policy should be indicative of what the policy
