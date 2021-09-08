@@ -51,3 +51,39 @@ twig.strict        | true                                      | Whether twig is
 async.forks        | 7                                         | Max number of forks to run in parallel
 language_default   | en                                        | The default language to operate in.
 progress_bar.template | %%message%%\n%%current%%/%%max%% [%%bar%%] %%percent:3s%%%% %%elapsed:6s%% | The template to use for the progress bar.
+
+## Language support
+Drutiny is written in english but supports the ability for policies and profiles
+to be provided in any language. This can be done with the `--language` option on
+any language aware command in Drutiny.
+
+```
+# List Spanish policies.
+drutiny policy:list --language=es
+
+# List German profiles
+drutiny profile:list --language=de
+
+# Execute a policy audit with a Japanese policy.
+drutiny policy:audit <policy_name> <target> --language=ja
+
+# Execute a profile audit in Spanish.
+drutiny profile:run <profile_name> <target> --language=es
+```
+
+**Note**: The policy and profile sources you use must provide the policies and
+profiles you wish to use in the language you wish to use. You cannot use a
+language that no sources provide support for.
+
+If you wish to work exclusively with a non-english language you can set your
+default language to the language code of your choice which will allow you to
+omit the use of the `--language` paramenter.
+
+Edit `drutiny.yml` and set the `language_default` parameter to your preferred
+language code.
+
+```yaml
+parameters:
+  # Default language to Japanese.
+  language_default: ja
+```
