@@ -62,7 +62,7 @@ class LocalCommandOutputAnalysis extends AbstractAnalysis
 
 
         // Transfer the files from target to local working dir.
-        foreach ($this->getParameter('transfer') as $filename => $remote_filepath) {
+        foreach ($this->getParameter('transfer', []) as $filename => $remote_filepath) {
           $this->getLogger()->debug("Downloading $remote_filepath to $working_dir/$filename");
           $this->getTarget()->getService('exec')->downloadFile(
             // Remote location
@@ -73,11 +73,18 @@ class LocalCommandOutputAnalysis extends AbstractAnalysis
         }
 
         // Execute the commands
+        $command_outputs = [];
         foreach ($this->getParameter('commands') as $variable_name => $command) {
-          $this->getTarget()->getService('local')->run($this->interpolate($command), function ($output) use ($variable_name) {
-            $this->set($variable_name, $output);
-          });
+          $command_outputs[$variable_name] = $this->getTarget()
+            ->getService('local')
+            ->run($this->interpolate($command));
+
+          if (!is_numeric($variable_name)) {
+            $this->set($variable_name, $command_outputs[$variable_name]);
+          }
         }
+
+        $this->set('command_outputs', $command_outputs);
 
         // clean up.
         exec(sprintf('rm -rf %s', $working_dir));
