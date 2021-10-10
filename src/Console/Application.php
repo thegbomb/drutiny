@@ -27,7 +27,7 @@ class Application extends BaseApplication
     public function __construct(Kernel $kernel, $version)
     {
         $this->kernel = $kernel;
-        parent::__construct('Drutiny', $version);
+        parent::__construct($kernel->getContainer()->getParameter('name'), $version);
     }
 
     /**

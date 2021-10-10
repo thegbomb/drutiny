@@ -14,18 +14,22 @@ require 'vendor/autoload.php';
 
 const DRUTINY_LIB = '.';
 
-$version_filename = dirname(__DIR__) . '/VERSION';
-if (file_exists($version_filename)) {
-  $version = file_get_contents($version_filename);
+$version_files = [DRUTINY_LIB.'/VERSION', dirname(__DIR__).'/VERSION'];
+
+// Load in the version if it can be found.
+$versions = array_filter(array_map(function($file) {
+  return file_exists($file) ? file_get_contents($file) : FALSE;
+}, $version_files));
+
+// Load from git.
+if (empty($versions) && !Phar::running() && file_exists(DRUTINY_LIB . '/.git') && $git_bin = exec('which git')) {
+  $versions[] = exec(sprintf('%s -C %s branch --no-color | cut -b 3-', $git_bin, DRUTINY_LIB)) . '-dev';
 }
-elseif ($git_bin = exec('which git')) {
-  $version = exec(sprintf('%s -C %s branch', $git_bin, dirname(__DIR__))) . '-dev';
-}
-else {
-  $version = 'dev';
-}
+
+// Fallback option.
+$versions[] = 'dev';
 
 $kernel = new Kernel('production');
 
-$application = new Application($kernel, $version);
+$application = new Application($kernel, reset($versions));
 $application->run();
