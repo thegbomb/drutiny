@@ -8,11 +8,20 @@ if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
     echo 'Warning: The console should be invoked via the CLI version of PHP, not the '.PHP_SAPI.' SAPI'.PHP_EOL;
 }
 
+list($major, $minor, ) = explode('.', phpversion());
+
+// Identify PHP versions lower than PHP 7.4.
+if ($major < 7 || ($major > 7 && $minor < 4)) {
+  echo "ERROR: Application requires PHP 7.4 or later. Currently running: ".phpversion()."\n";
+  exit;
+}
+
 set_time_limit(0);
 
-require 'vendor/autoload.php';
+$lib = Phar::running() ?: '.';
+define('DRUTINY_LIB', $lib);
 
-const DRUTINY_LIB = '.';
+require DRUTINY_LIB.'/vendor/autoload.php';
 
 $version_files = [DRUTINY_LIB.'/VERSION', dirname(__DIR__).'/VERSION'];
 

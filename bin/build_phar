@@ -64,6 +64,18 @@ foreach ($repos as $repo) {
 
 $fs->remove($repos);
 
+$docs = new Finder();
+$docs
+  ->in(BUILD_DIRECTORY)
+  ->name('*.rst')
+  ->name('*.md');
+
+foreach ($docs as $doc) {
+  $console->log('info', 'Removing ' . $doc->getRealPath());
+}
+
+$fs->remove($docs);
+
 // Determine the version of the phar by either argument (Provided by Travis CI)
 // of by pulling the current branch name (if not built by travis).
 if (isset($argv[1])) {
