@@ -229,7 +229,8 @@ class ModuleUpdateAnalysis extends ModuleAnalysis
       if (preg_match('/([0-9]+).x-(.*)/', $version, $matches)) {
         $version = $matches[2];
       }
-      return $version;
+      list($semver, ) = explode('-', $version);
+      return $semver;
     }
 
     protected function parseSemanticVersion($version)
