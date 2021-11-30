@@ -89,13 +89,19 @@
         return $(e).text();
       });
 
+      var bgColors = [];
+      do {
+        bgColors = bgColors.concat(data.chartColors);
+      }
+      while (bgColors.length < config.data.labels.length);
+
       config.data.datasets = $.map(series, function (s, i) {
         var set = $.map($(s, table), function (e) {
           return $(e).text().replace(',', '');
         });
         return {
           data: set,
-          backgroundColor: data.chartColors
+          backgroundColor: bgColors
         }
       });
 
