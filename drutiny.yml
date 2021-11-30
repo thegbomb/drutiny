@@ -227,6 +227,9 @@ services:
     target.drush:
       class: Drutiny\Target\DrushTarget
 
+    target.ddev:
+      class: Drutiny\Target\DdevTarget
+
     target.none:
       class: Drutiny\Target\NullTarget
 
