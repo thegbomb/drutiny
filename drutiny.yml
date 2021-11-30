@@ -257,6 +257,7 @@ services:
         - [addFilter, ['@twig.filters.sectionHeading']]
         - [addFilter, ['@twig.filters.chart']]
         - [addFilter, ['@twig.filters.array_merge']]
+        - [addFilter, ['@twig.filters.format_bytes']]
         - [addFilter, ['@twig.filters.yaml_dump']]
         - [addFunction, ['@twig.functions.policy_result']]
         - [addFunction, ['@twig.functions.semver_satisfies']]
@@ -328,6 +329,12 @@ services:
     twig.test.keyed:
       class: Twig\TwigTest
       arguments: ['keyed', ['Drutiny\Report\Twig\Helper', 'keyed']]
+
+    twig.filters.format_bytes:
+      class: Twig\TwigFilter
+      arguments:
+        - 'format_bytes'
+        - ['Drutiny\Report\Twig\Helper', 'formatBytes']
 
     twig.filters.sectionHeading:
       class: Twig\TwigFilter
