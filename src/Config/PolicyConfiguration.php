@@ -144,6 +144,7 @@ class PolicyConfiguration implements ConfigurationInterface
                     ->scalarNode('height')->end()
                     ->scalarNode('width')->end()
                     ->scalarNode('y-axis')->end()
+                    ->scalarNode('x-axis')->end()
                     ->enumNode('legend')
                       ->values(['top', 'bottom', 'left', 'right', 'none'])
                       ->defaultValue('right')
