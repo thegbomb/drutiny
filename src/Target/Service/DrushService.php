@@ -77,13 +77,20 @@ class DrushService {
       }
       // Compress.
       $initCode = str_replace(PHP_EOL, '', $initCode);
-      $wrapper = strtr('$f=function(){@code}; echo json_encode($f());', [
+      $wrapper = strtr('$f=function(){@code}; echo json_encode($f(), JSON_PARTIAL_OUTPUT_ON_ERROR);', [
         '@code' => $initCode.$code
       ]);
       $wrapper = base64_encode($wrapper);
-      $command = strtr('echo @code | base64 --decode | @launcher -r $DRUSH_ROOT php-script -', [
+
+      $options = ['--root=$DRUSH_ROOT'];
+      if (isset($this->url)) {
+        $options[] = '--uri='.escapeshellarg($this->url);
+      }
+
+      $command = strtr('echo @code | base64 --decode | @launcher @options php-script -', [
         '@code' => $wrapper,
         '@launcher' => $launcher = '$(which ' . implode(' || which ', static::LAUNCHERS) . ')',
+        '@options' => implode(' ', $options),
       ]);
       return $this->execService->run($command, function ($output) {
         return json_decode($output, true);
