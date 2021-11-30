@@ -11,10 +11,10 @@ class Helper {
   /**
    * Registered as a Twig filter to be used as: "Title here"|heading.
    */
-  public static function filterSectionHeading(Environment $env, $heading)
+  public static function filterSectionHeading(Environment $env, $heading, $level = 2)
   {
     return $env
-      ->createTemplate('<h2 class="section-title" id="section_{{ heading | u.snake }}">{{ heading }}</h2>')
+      ->createTemplate('<h'.$level.' class="section-title" id="section_{{ heading | u.snake }}">{{ heading }}</h'.$level.'>')
       ->render(['heading' => $heading]);
   }
 
@@ -50,6 +50,19 @@ class Helper {
   public static function keyed($variable) {
     return is_array($variable) && is_string(key($variable));
   }
+
+  public static function formatBytes($bytes, $precision = 2) {
+    $units = array('B', 'KB', 'MB', 'GB', 'TB');
+    $bytes = max($bytes, 0);
+    $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+    $pow = min($pow, count($units) - 1);
+
+    // Uncomment one of the following alternatives
+      $bytes /= pow(1024, $pow);
+
+    return round($bytes, $precision) . ' ' . $units[$pow];
+  }
+
 }
 
  ?>
