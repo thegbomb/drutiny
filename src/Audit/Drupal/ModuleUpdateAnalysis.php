@@ -230,6 +230,11 @@ class ModuleUpdateAnalysis extends ModuleAnalysis
         $version = $matches[2];
       }
       list($semver, ) = explode('-', $version);
+
+      // 3.x => 3.0-dev
+      $semver = strtr($semver, [
+        'x' => '0-dev'
+      ]);
       return $semver;
     }
 
