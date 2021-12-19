@@ -3,12 +3,26 @@
 
     <h3 id="{{ audit_response.policy.name }}">{{ audit_response.policy.title }}</h3>
     {% with audit_response.tokens %}
-    {{ include(template_from_string(audit_response.policy.description, "description field on data.html.twig" )) | markdown_to_html }}
-    <div class="alert alert-secondary py-1 px-2">
-      <p class="mb-0">
-        {{ include(template_from_string(audit_response.policy.success, "success field on data.html.twig")) | markdown_to_html }}
-      </p>
-    </div> <!-- /alert -->
+    {{ include(template_from_string(audit_response.policy.description, "description field on notice.html.twig" )) | markdown_to_html }}
+
+    <div class="mb-3 assessment-card">
+      <div>
+      {{ include(template_from_string(audit_response.policy.success, "success field on notice.html.twig")) | markdown_to_html }}
+      </div>
+    </div> <!-- /assessment-card -->
+
+    {% if audit_response.hasWarning %}
+    <div class="card border-warning mb-3 assessment-card">
+      <div class="badge badge-warning"><span class="fa fa-exclamation-triangle" aria-hidden="true"></span> Warning</div>
+      <!-- <div class="badge badge-warning"><span class="fa fa-exclamation-triangle" aria-hidden="true"></span></div> -->
+      <div class="card-body">
+        {% with audit_response.tokens %}
+        {{ include(template_from_string(audit_response.policy.warning, "warning field on data.html.twig")) | markdown_to_html }}
+        {% endwith %}
+      </div>
+    </div> <!-- /assessment-card -->
+    {% endif %}
+
     {% endwith %}
   </div> <!-- /col -->
 </div> <!-- /row -->
