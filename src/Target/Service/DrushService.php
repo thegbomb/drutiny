@@ -4,6 +4,7 @@ namespace Drutiny\Target\Service;
 
 use Drutiny\Target\Service\ExecutionInterface;
 use Drutiny\Target\Service\RemoteService;
+use JsonException;
 
 class DrushService {
 
@@ -77,7 +78,7 @@ class DrushService {
       }
       // Compress.
       $initCode = str_replace(PHP_EOL, '', $initCode);
-      $wrapper = strtr('$f=function(){@code}; echo json_encode($f(), JSON_PARTIAL_OUTPUT_ON_ERROR);', [
+      $wrapper = strtr('$f=function(){@code}; echo "__DSTART".json_encode($f(), JSON_PARTIAL_OUTPUT_ON_ERROR)."__DEND";', [
         '@code' => $initCode.$code
       ]);
       $wrapper = base64_encode($wrapper);
@@ -93,7 +94,23 @@ class DrushService {
         '@options' => implode(' ', $options),
       ]);
       return $this->execService->run($command, function ($output) {
-        return json_decode($output, true);
+        // Drush may spit out garbage around the json output, so we put markers`
+        // in the output so we can clearly see where the json response should be.
+        $start = strpos($output, "__DSTART") + strlen("__DSTART");
+        $end = strpos($output, "__DEND");
+
+        $length = $end - $start;
+
+        // Disgard all other output;
+        $json = substr($output, $start, $length);
+        try {
+          return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        }
+        catch (JsonException $e) {
+          drutiny()->get('logger')->error("Failed to parse json output starting with: ".reset($lines).".");
+          drutiny()->get('logger')->info($json);
+          throw $e;
+        }
       });
   }
 
