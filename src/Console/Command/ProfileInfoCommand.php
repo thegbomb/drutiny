@@ -59,7 +59,7 @@ class ProfileInfoCommand extends Command
 
 
         $render->title($profile->title);
-        $render->block($profile->description);
+        $render->block($profile->description ?? '');
 
         $render->section('Usage');
         $render->block('drutiny profile:run ' . $profile->name . ' <target>');
