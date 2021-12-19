@@ -122,7 +122,7 @@ class AuditResponse implements ExportableInterface
         }
         $policy_type = $this->policy->type;
         if ($policy_type == 'data') {
-            return 'notice';
+            return 'data';
         }
         if (!$this->isSuccessful()) {
           return 'failure';
