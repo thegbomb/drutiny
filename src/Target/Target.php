@@ -13,7 +13,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Basic function of a Target.
  */
-abstract class Target implements \ArrayAccess
+abstract class Target implements \ArrayAccess, ExecutionInterface
 {
 
   /* @var PropertyAccess */
@@ -69,6 +69,14 @@ abstract class Target implements \ArrayAccess
   public function setExecService(ExecutionInterface $service)
   {
     return $this->setProperty('service.exec', $service);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function run(string $cmd, callable $preProcess, int $ttl)
+  {
+    return $this->getService('exec')->run($cmd, $preProcess, $ttl);
   }
 
   /**
