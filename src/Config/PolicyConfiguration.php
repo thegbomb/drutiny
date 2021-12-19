@@ -126,7 +126,7 @@ class PolicyConfiguration implements ConfigurationInterface
                     ->scalarNode('html-class')->end()
                     ->integerNode('table-index')->end()
                     ->enumNode('type')
-                      ->values(['bar', 'line', 'pie', 'doughnut'])
+                      ->values(['bar', 'horizontalBar', 'line', 'pie', 'doughnut'])
                       ->defaultValue('bar')
                       ->end()
                     ->booleanNode('hide-table')->defaultValue(false)->end()
