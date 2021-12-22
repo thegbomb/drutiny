@@ -139,7 +139,6 @@ abstract class Plugin {
         $helper = new QuestionHelper();
         do {
             $value = $helper->ask($this->input, $this->output, $question);
-            var_dump($field['validation']);
             if (!$field['validation']($value)) {
                 $this->output->writeln('<error>Input failed validation. Please try again.</error>');
                 continue;
