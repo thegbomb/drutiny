@@ -16,6 +16,8 @@ use Symfony\Component\DependencyInjection\Loader\GlobFileLoader;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
+use Psr\EventDispatcher\StoppableEventInterface;
+use Symfony\Component\EventDispatcher\GenericEvent;
 use Drutiny\DependencyInjection\TwigLoaderPass;
 
 class Kernel
@@ -159,5 +161,15 @@ class Kernel
         ]);
 
         return new DelegatingLoader($resolver);
+    }
+
+    /**
+     * Use the EventDispatcher to dispatch an event.
+     */
+    public function dispatchEvent($subject = null, array $arguments = [])
+    {
+        return $this->getContainer()
+          ->get('event_dispatcher')
+          ->dispatch(new GenericEvent($subject, $arguments), $subject);
     }
 }

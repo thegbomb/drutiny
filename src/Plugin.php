@@ -125,7 +125,9 @@ abstract class Plugin {
               break;
 
            case static::FIELD_CONFIRMATION_QUESTION:
-              $question = new ConfirmationQuestion($ask, $default_value ?? $field['default']);
+              $default_value = $default_value ?? $field['default'];
+              $default_value = is_bool($default_value) ? $default_value : false;
+              $question = new ConfirmationQuestion("$ask (y/n)?", $default_value ?? $field['default']);
               break;
 
            case static::FIELD_DEFAULT_QUESTION:
@@ -137,6 +139,7 @@ abstract class Plugin {
         $helper = new QuestionHelper();
         do {
             $value = $helper->ask($this->input, $this->output, $question);
+            var_dump($field['validation']);
             if (!$field['validation']($value)) {
                 $this->output->writeln('<error>Input failed validation. Please try again.</error>');
                 continue;
@@ -177,6 +180,10 @@ abstract class Plugin {
             'ask' => $ask,
             'choices' => $choices,
         ];
+
+        if ($this->fields[$name]['ask'] == static::FIELD_CONFIRMATION_QUESTION) {
+          $this->fields[$name]['validation'] = $validation ?? 'is_bool';
+        }
         return $this;
     }
 

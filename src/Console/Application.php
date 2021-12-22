@@ -28,6 +28,7 @@ class Application extends BaseApplication
     {
         $this->kernel = $kernel;
         parent::__construct($kernel->getContainer()->getParameter('name'), $version);
+        $this->setDispatcher($kernel->getContainer()->get('event_dispatcher'));
     }
 
     /**
@@ -52,6 +53,11 @@ class Application extends BaseApplication
       if ($this->registrationErrors) {
           $this->renderRegistrationErrors($input, $output);
       }
+
+      $this->getKernel()->dispatchEvent('application.run', [
+        'input' => $input,
+        'output' => $output,
+      ]);
       return parent::doRun($input, $output);
     }
 
@@ -71,6 +77,12 @@ class Application extends BaseApplication
             $this->kernel->getContainer()->get('logger.logfile')->setLevel('DEBUG');
             break;
         }
+
+        $this->getKernel()->dispatchEvent('command.run', [
+          'command' => $command,
+          'input' => $input,
+          'output' => $output,
+        ]);
 
         if (!$command instanceof ListCommand) {
             if ($this->registrationErrors) {
@@ -150,7 +162,15 @@ class Application extends BaseApplication
         $container->findTags();
         foreach ($container->findTaggedServiceIds('command') as $id => $definition) {
             try {
-              $this->add($container->get($id));
+              $command = $container->get($id);
+              $event = $this->getKernel()->dispatchEvent('application.command.add', [
+                'command' => $command,
+                'action.add' => true,
+              ]);
+
+              if ($event['action.add']) {
+                $this->add($container->get($id));
+              }
             }
             catch (PluginRequiredException $e) {
               $this->kernel->getContainer()->get('logger')->warning("Cannot initiatize command $id as it requires a plugin that is not setup: " . $e->getMessage());
