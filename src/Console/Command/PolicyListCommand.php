@@ -78,6 +78,11 @@ class PolicyListCommand extends DrutinyBaseCommand
             $rows[] = $row;
         }
 
+        // Restrict visibility of policies to those in profile allow list.
+        if ($this->getContainer()->hasParameter('profile.allow_list')) {
+          $rows = array_filter($rows, fn($r) => $r['profile_util']);
+        }
+
         usort($rows, function ($a, $b) {
             $x = [strtolower($a['name']), strtolower($b['name'])];
             sort($x, SORT_STRING);
