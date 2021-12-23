@@ -80,7 +80,7 @@ class ProfileFactory
     public function getProfileList():array
     {
         $lang_code = $this->languageManager->getCurrentLanguage();
-        return $this->cache->get('profile.list'.$lang_code, function (ItemInterface $item) {
+        $list = $this->cache->get('profile.list'.$lang_code, function (ItemInterface $item) {
           // $item->expiresAfter(0);
             $list = [];
             $this->progress->setMaxSteps($this->progress->getMaxSteps() + count($this->getSources()));
@@ -93,6 +93,8 @@ class ProfileFactory
             }
             return $list;
         });
+        $allow_list = $this->container->hasParameter('profile.allow_list') ? $this->container->getParameter('profile.allow_list') : [];
+        return array_filter($list, fn($p) => empty($allow_list) || in_array($p, $allow_list), ARRAY_FILTER_USE_KEY);
     }
 
   /**
