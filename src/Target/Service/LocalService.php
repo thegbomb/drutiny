@@ -120,6 +120,10 @@ class LocalService implements ExecutionInterface {
       if ((is_object($value) && !method_exists($key, '__toString')) || is_array($value)) {
         continue;
       }
+      elseif (is_array($value)) {
+        continue;
+      }
+
       $var = strtoupper(str_replace('.', '_', $key));
       $env[$var] = is_object($value) ? (string) $value : $value;
     }
