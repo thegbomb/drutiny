@@ -23,8 +23,8 @@ class ModuleAnalysis extends AbstractAnalysis
             'type' => 'module'
           ])
           ->run(function ($output) {
-          return json_decode($output, true);
-        });
+            return $this->target->getService('drush')->decodeDirtyJson($output);
+          });
         $this->set('modules', $list);
     }
 }

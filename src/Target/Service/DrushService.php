@@ -10,6 +10,7 @@ class DrushService {
 
   protected string $alias;
   protected string $url;
+  protected string $bin;
 
   protected const LAUNCHERS = ['../vendor/drush/drush/drush', 'drush-launcher', 'drush.launcher', 'drush'];
   protected $supportedCommandMap = [
@@ -26,6 +27,11 @@ class DrushService {
   public function __construct(ExecutionInterface $service)
   {
     $this->execService = $service;
+    // Load and cache the remote bin path for Drush.
+    $cmd = 'which ' . implode(' || which ', static::LAUNCHERS);
+    $this->bin = $this->execService->run($cmd, function ($output) {
+      return trim($output);
+    });
   }
 
   public function setUrl(string $url): DrushService
@@ -37,6 +43,24 @@ class DrushService {
   public function isRemote()
   {
       return $this->execService instanceof RemoteService;
+  }
+
+  public static function decodeDirtyJson(string $output)
+  {
+    while (TRUE) {
+      $result = json_decode($output, TRUE, JSON_THROW_ON_ERROR);
+
+      if ($result === NULL) {
+         $cleaned = substr($output, strpos($output, '{'));
+
+         // Remove garbage from beginning of line and try again.
+         if ($cleaned != $output) {
+           $output = $cleaned;
+           continue;
+         }
+      }
+      return $result;
+    }
   }
 
   public function runtime(\Closure $func, ...$args)
@@ -90,7 +114,7 @@ class DrushService {
 
       $command = strtr('echo @code | base64 --decode | @launcher @options php-script -', [
         '@code' => $wrapper,
-        '@launcher' => $launcher = '$(which ' . implode(' || which ', static::LAUNCHERS) . ')',
+        '@launcher' => $this->bin,
         '@options' => implode(' ', $options),
       ]);
       return $this->execService->run($command, function ($output) {
@@ -154,10 +178,7 @@ class DrushService {
       $args[] = $opt.$delimiter.escapeshellarg($value);
     }
 
-    // Prepend the drush launcher to use.
-    $launcher = '$(which ' . implode(' || which ', static::LAUNCHERS) . ')';
-
-    array_unshift($args, $launcher, $this->supportedCommandMap[$cmd]);
+    array_unshift($args, $this->bin, $this->supportedCommandMap[$cmd]);
 
     $command = implode(' ', $args);
 

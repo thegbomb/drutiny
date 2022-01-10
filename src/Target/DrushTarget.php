@@ -54,8 +54,8 @@ class DrushTarget extends Target implements TargetInterface, TargetSourceInterfa
 
         try {
           $status = $service->status(['format' => 'json'])
-             ->run(function ($output) {
-               return json_decode($output, TRUE);
+             ->run(function ($output) use ($service) {
+               return $service->decodeDirtyJson($output);
              });
 
           foreach ($status as $key => $value) {
