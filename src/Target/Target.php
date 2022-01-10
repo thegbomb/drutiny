@@ -58,6 +58,14 @@ abstract class Target implements \ArrayAccess, ExecutionInterface
   /**
    * {@inheritdoc}
    */
+  public function hasEnvVar($name):bool
+  {
+    return $this['service.exec']->hasEnvVar($name);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getService($key)
   {
     return $this->getProperty('service.'.$key);

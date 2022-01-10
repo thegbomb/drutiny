@@ -130,6 +130,14 @@ class LocalService implements ExecutionInterface {
     return $env;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function hasEnvVar($name):bool
+  {
+    return in_array($name, array_keys($this->getEnvAll()));
+  }
+
   public function replacePlaceholders(string $commandline)
   {
       return preg_replace_callback('/\$([_a-zA-Z]++[_a-zA-Z0-9]*+)/', function ($matches) use ($commandline) {

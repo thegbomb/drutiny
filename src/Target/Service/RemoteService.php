@@ -42,6 +42,14 @@ class RemoteService implements ExecutionInterface {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function hasEnvVar($name):bool
+  {
+    return $this->local->hasEnvVar($name);
+  }
+
+  /**
    * Download a resource from a source location.
    */
   public function downloadFile($source, $location)

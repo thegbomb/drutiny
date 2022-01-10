@@ -102,7 +102,7 @@ class DrushService {
       }
       // Compress.
       $initCode = str_replace(PHP_EOL, '', $initCode);
-      $wrapper = strtr('$f=function(){@code}; echo "__DSTART".json_encode($f(), JSON_PARTIAL_OUTPUT_ON_ERROR)."__DEND";', [
+      $wrapper = strtr('function __d__(){@code}; echo "__DSTART".json_encode(__d__(), JSON_PARTIAL_OUTPUT_ON_ERROR)."__DEND";', [
         '@code' => $initCode.$code
       ]);
       $wrapper = base64_encode($wrapper);
@@ -150,8 +150,8 @@ class DrushService {
     // If the last argument is an array, it is an array of options.
     $options = is_array(end($args)) ? array_pop($args) : [];
 
-    // Ensure the root argument is set.
-    if (!isset($options['root']) && !isset($options['r'])) {
+    // Ensure the root argument is set unless drush.root is not available.
+    if (!isset($options['root']) && !isset($options['r']) && $this->execService->hasEnvVar('drush.root')) {
       $options['root'] = '$DRUSH_ROOT';
     }
 

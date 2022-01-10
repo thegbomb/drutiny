@@ -53,6 +53,9 @@ class DrushTarget extends Target implements TargetInterface, TargetSourceInterfa
         }
 
         try {
+          // Default Drush root.
+          //$this['drush.root'] = '.';
+
           $status = $service->status(['format' => 'json'])
              ->run(function ($output) use ($service) {
                return $service->decodeDirtyJson($output);

@@ -32,4 +32,12 @@ class DockerService implements ExecutionInterface {
 
     return $this->local->run($cmd, $preProcess, $ttl);
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function hasEnvVar($name):bool
+  {
+    return $this->local->hasEnvVar($name);
+  }
 }
