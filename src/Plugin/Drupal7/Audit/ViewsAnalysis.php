@@ -18,13 +18,14 @@ class ViewsAnalysis extends AbstractAnalysis {
     // lot of data being transfered.
     $views = $this->target->getService('drush')->runtime(function () {
       $data = [];
+      $f = function ($d) { return $d->display_title; };
       foreach (views_get_all_views() as $view) {
         $data[$view->name] = [
           'name' => $view->name,
           'human_name' => $view->human_name,
           'base_table' => $view->base_table,
           'export_module' => $view->export_module,
-          'display' => array_map(fn ($d) => $d->display_title, $view->display),
+          'display' => array_map($f, $view->display),
         ];
       }
       return $data;
