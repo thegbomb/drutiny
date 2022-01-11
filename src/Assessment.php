@@ -103,7 +103,10 @@ class Assessment implements ExportableInterface, AssessmentInterface
 
             $this->forkManager->run(function () use ($audit, $policy, $remediate) {
               return $audit->execute($policy, $remediate);
-            });
+            })
+            // This helps log the time it takes for this policy to run in debug
+            // mode.
+            ->setName($policy->name);
         }
         $returned = 0;
         foreach ($this->forkManager->receive() as $response) {
