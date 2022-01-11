@@ -230,6 +230,9 @@ services:
     target.ddev:
       class: Drutiny\Target\DdevTarget
 
+    target.lando:
+      class: Drutiny\Target\LandoTarget
+
     target.none:
       class: Drutiny\Target\NullTarget
 
