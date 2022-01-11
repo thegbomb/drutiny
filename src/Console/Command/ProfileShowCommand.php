@@ -32,6 +32,13 @@ class ProfileShowCommand extends DrutinyBaseCommand
             'b',
             InputOption::VALUE_NONE,
             'Render templates in backwards compatibility mode.'
+        )
+        ->addOption(
+            'format',
+            'f',
+            InputOption::VALUE_OPTIONAL,
+            'An output format. Default YAML. Support: yaml, json',
+            'yaml'
         );
         $this->configureLanguage();
     }
@@ -46,7 +53,7 @@ class ProfileShowCommand extends DrutinyBaseCommand
         $profile = $this->getProfileFactory()->loadProfileByName($input->getArgument('profile'));
         $export = $profile->export();
 
-        if (!$input->getOption('backward-compatibility')) {
+        if (!$input->getOption('backward-compatibility') && !is_string($export['format']['html']['content'])) {
             foreach ($export['format']['html']['content'] ?? [] as &$section) {
                 foreach (array_keys($section) as $attribute) {
                     $template = $this->prefixTemplate($section[$attribute]);
@@ -68,7 +75,16 @@ class ProfileShowCommand extends DrutinyBaseCommand
           $export['format']['html']['content'] = str_replace("\r", '', $export['format']['html']['content']);
         }
 
-        $output->write(Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+        switch ($input->getOption('format')) {
+          case 'json':
+            $format = json_encode($export, JSON_PRETTY_PRINT);
+            break;
+          default:
+            $format = Yaml::dump($export, 6, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+            break;
+        }
+
+        $output->write($format);
 
         return 0;
     }
