@@ -133,7 +133,9 @@ class Kernel
 
         // Load any available global configuration. This should really use
         // user_home_dir but since the container isn't compiled we can't.
-        $load(getenv('HOME').'/.drutiny');
+        if (file_exists(getenv('HOME').'/.drutiny')) {
+          $load(getenv('HOME').'/.drutiny');
+        }
 
         // If we're in a different working directory (e.g. executing from phar)
         // then there may be one last level of config we should inherit from.
