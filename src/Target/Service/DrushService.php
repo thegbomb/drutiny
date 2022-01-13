@@ -151,7 +151,7 @@ class DrushService {
     $options = is_array(end($args)) ? array_pop($args) : [];
 
     // Ensure the root argument is set unless drush.root is not available.
-    if (!isset($options['root']) && !isset($options['r']) && $this->execService->hasEnvVar('drush.root')) {
+    if (!isset($options['root']) && !isset($options['r']) && $this->execService->hasEnvVar('DRUSH_ROOT')) {
       $options['root'] = '$DRUSH_ROOT';
     }
 
