@@ -11,106 +11,83 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Yaml\Yaml;
-
-define('BUILD_DIRECTORY', getcwd() . '/.build');
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\SingleCommandApplication;
 
 require 'vendor/autoload.php';
 
-$console = new ConsoleLogger(new ConsoleOutput(ConsoleOutput::VERBOSITY_DEBUG));
+define('BUILD_DIRECTORY', getcwd() . '/.build');
 
-$fs = new Filesystem();
+(new SingleCommandApplication())
+    ->setName('Build Phar')
+    ->addArgument('version', InputArgument::OPTIONAL, 'A git branch or tag to build from.', 'HEAD')
+    ->addOption('name', null, InputOption::VALUE_OPTIONAL, 'The name of the app. Defaults to Drutiny', 'drutiny')
+    ->setCode(function (InputInterface $input, OutputInterface $output) {
+        // output arguments and options
+        $console = new ConsoleLogger($output);
 
-if ($fs->exists(BUILD_DIRECTORY)) {
-  $console->log('notice', 'Removing build directory: ' . BUILD_DIRECTORY);
-  $fs->remove(BUILD_DIRECTORY);
-}
+        $fs = new Filesystem();
 
-$console->log('info', 'Creating build directory: ' . BUILD_DIRECTORY);
-$fs->mkdir(BUILD_DIRECTORY);
+        if ($fs->exists(BUILD_DIRECTORY)) {
+          $console->log('notice', 'Removing build directory: ' . BUILD_DIRECTORY);
+          $fs->remove(BUILD_DIRECTORY);
+        }
 
-$files = ['composer.json', 'drutiny.yml'];
-foreach ($files as $filename) {
-  $console->log('info', 'Copying ' . $filename);
-  $fs->copy($filename, BUILD_DIRECTORY . '/' . $filename);
-}
-$fs->copy(dirname(__DIR__) . '/stub.php', BUILD_DIRECTORY . '/stub.php');
+        $console->log('info', 'Creating build directory: ' . BUILD_DIRECTORY);
+        $fs->mkdir(BUILD_DIRECTORY);
 
-$dirs = [
-  'src',
-  'vendor',
-  'twig',
-  'Policies',
-  'Profiles'
-];
+        $console->log('info', "Running git archive of ".$input->getArgument('version').": " . BUILD_DIRECTORY);
 
-foreach (array_filter($dirs, 'is_dir') as $dir) {
-  $console->log('info', 'Copying directory: ' . $dir);
-  $fs->mirror($dir, BUILD_DIRECTORY . '/' . $dir);
-}
+        exec("git archive HEAD | tar -x -C ".BUILD_DIRECTORY);
+        passthru("cd ".BUILD_DIRECTORY." && composer install --prefer-dist --no-dev");
+        exec("cd ".BUILD_DIRECTORY." && find . -type l ! -exec test -e {} \; -delete");
+        file_put_contents(BUILD_DIRECTORY."/VERSION", $input->getArgument('version'));
 
-// Remove any source control from the build.
-$repos = new Finder();
-// Find all files in the current directory.
-$repos->directories()
-  ->in(BUILD_DIRECTORY)
-  ->ignoreDotFiles(FALSE)
-  ->ignoreVCS(FALSE)
-  ->name('.git');
-$console->log('info', 'Removing source control repositories in ' . BUILD_DIRECTORY);
+        $docs = new Finder();
+        $docs
+          ->in(BUILD_DIRECTORY)
+          ->name('*.rst')
+          ->name('*.md');
 
-foreach ($repos as $repo) {
-  $console->log('info', 'Removing ' . $repo->getRealPath());
-}
+        foreach ($docs as $doc) {
+          $console->log('info', 'Removing ' . $doc->getRealPath());
+        }
 
-$fs->remove($repos);
+        $fs->remove($docs);
 
-$docs = new Finder();
-$docs
-  ->in(BUILD_DIRECTORY)
-  ->name('*.rst')
-  ->name('*.md');
+        $phar_file = strtr('name-version.phar', [
+          'name' => $input->getOption('name'),
+          'version' => $input->getArgument('version')
+        ]);
 
-foreach ($docs as $doc) {
-  $console->log('info', 'Removing ' . $doc->getRealPath());
-}
+        // Remove any old build.
+        if ($fs->exists($phar_file)) {
+          $console->log('warning', $phar_file . ' already exists. Removing..');
+          $fs->remove($phar_file);
+        }
 
-$fs->remove($docs);
+        $cwd = getcwd();
+        chdir(BUILD_DIRECTORY);
 
-// Determine the version of the phar by either argument (Provided by Travis CI)
-// of by pulling the current branch name (if not built by travis).
-if (isset($argv[1])) {
-  $version = $argv[1];
-}
-else {
-  $git_log = exec('git log --format="%D, %h" -1');
-  $git_log = str_replace('HEAD -> ', '', $git_log);
-  $version = current(array_filter(explode(', ', $git_log)));
-}
+        $console->log('info', 'Copying stub...');
+        copy(dirname(__DIR__)."/stub.php", "stub.php");
 
-$stage = '';
-if (isset($argv[2])) {
-  $stage = '-' . $argv[2];
-}
+        $console->log('info', 'Building phar...');
+        // Build Phar.
+        $phar = new Phar($cwd . '/' . $phar_file);
+        // Add all files in the project.
+        $phar->buildFromDirectory('.');
+        $phar->setStub("#!/usr/bin/env php \n" . $phar->createDefaultStub('stub.php'));
+        $phar->stopBuffering();
 
-$version .= $stage;
-$version .= '-php' . phpversion();
-$console->log('info', "Setting version as: $version.");
-file_put_contents(BUILD_DIRECTORY . '/VERSION', $version);
+        chdir($cwd);
 
-$phar_file = 'drutiny' . $version . '.phar';
+        $fs->chmod($phar_file, 0766);
+        $console->log('notice', 'Build complete: ' . $phar_file);
 
-// Remove any old build.
-if ($fs->exists($phar_file)) {
-  $console->log('warning', $phar_file . ' already exists. Removing..');
-  $fs->remove($phar_file);
-}
-
-$console->log('info', 'Building phar...');
-// Build Phar.
-$phar = new Phar($phar_file, 0, $phar_file);
-// Add all files in the project.
-$phar->buildFromDirectory(BUILD_DIRECTORY);
-$phar->setStub("#!/usr/bin/env php \n" . $phar->createDefaultStub('stub.php'));
-$phar->stopBuffering();
-$fs->chmod($phar_file, 0766);
-$console->log('notice', 'Build complete: ' . $phar_file);
+        return 0;
+    })
+    ->run();
