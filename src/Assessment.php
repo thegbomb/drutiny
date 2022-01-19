@@ -29,18 +29,16 @@ class Assessment implements ExportableInterface, AssessmentInterface
     protected int $severityCode = 1;
     protected LoggerInterface $logger;
     protected ContainerInterface $container;
-    protected ForkManager $forkManager;
     protected array $statsByResult = [];
     protected array $statsBySeverity = [];
     protected array $policyOrder = [];
     protected ProgressBar $progressBar;
     protected string $uuid;
 
-    public function __construct(LoggerInterface $logger, ContainerInterface $container, ForkManager $forkManager, ProgressBar $progressBar)
+    public function __construct(LoggerInterface $logger, ContainerInterface $container, ProgressBar $progressBar)
     {
         $this->logger = $logger;
         $this->container = $container;
-        $this->forkManager = $forkManager;
         $this->progressBar = $progressBar;
 
         $data = random_bytes(16);
@@ -74,6 +72,9 @@ class Assessment implements ExportableInterface, AssessmentInterface
         $start = $start ?: new \DateTime('-1 day');
         $end   = $end ?: new \DateTime();
 
+        // Get a new instance of forkManager for the assessment.
+        $forkManager = $this->container->get('async');
+
         // Record the reporting period in the assessment so we can pull it
         // later when rendering the report.
         $this->setReportingPeriod($start, $end);
@@ -101,7 +102,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
             }
             $audit->getTarget()->setUri($this->uri);
 
-            $this->forkManager->run(function () use ($audit, $policy, $remediate) {
+            $forkManager->run(function () use ($audit, $policy, $remediate) {
               return $audit->execute($policy, $remediate);
             })
             // This helps log the time it takes for this policy to run in debug
@@ -109,7 +110,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
             ->setName($policy->name);
         }
         $returned = 0;
-        foreach ($this->forkManager->receive() as $response) {
+        foreach ($forkManager->receive() as $response) {
             $returned++;
             $this->progressBar->advance();
             $this->progressBar->setMessage('Audit response of ' . $response->getPolicy()->name . ' recieved.');
