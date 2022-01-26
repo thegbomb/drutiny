@@ -52,7 +52,7 @@ class PolicyFactory
             $policy->source = $definition['source'];
             return $policy;
         } catch (\InvalidArgumentException $e) {
-            $this->container->get('logger')->warning($e->getMessage());
+            $this->logger->warning($e->getMessage());
             throw new UnavailablePolicyException("$name requires {$list[$name]['class']} but is not available in this environment.");
         }
     }
@@ -81,13 +81,13 @@ class PolicyFactory
         foreach ($this->getSources() as $source) {
             try {
                 $items = $source->getList($this->languageManager);
-                $this->container->get('logger')->notice($source->getName() . " has " . count($items) . " polices.");
+                $this->logger->notice($source->getName() . " has " . count($items) . " polices.");
                 foreach ($items as $name => $item) {
                     $item['source'] = $source->getName();
                     $policy_list[$name] = $item;
                 }
             } catch (\Exception $e) {
-                $this->container->get('logger')->error(strtr("Failed to load policies from source: @name: @error", [
+                $this->logger->error(strtr("Failed to load policies from source: @name: @error", [
                 '@name' => $source->getName(),
                 '@error' => $e->getMessage(),
                 ]));
@@ -101,7 +101,7 @@ class PolicyFactory
 
         $available_list = array_filter($policy_list, function ($listedPolicy) {
             if (!class_exists($listedPolicy['class'])) {
-                $this->logger->warning('Failed to find class:  ' . $listedPolicy['class']);
+                $this->logger->debug('Failed to find class:  ' . $listedPolicy['class']);
                 return false;
             }
             return true;
