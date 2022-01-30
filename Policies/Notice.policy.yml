@@ -13,4 +13,5 @@ success: This is success text. It is used as the display of information.
 failure: policy failed. This means there is a problem with the Drutiny framework.
 type: data
 parameters:
-  expression: true
+  syntax: twig
+  expression: NOTICE
