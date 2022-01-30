@@ -24,6 +24,7 @@ parameters:
   twig.debug: true
   twig.strict: false
   async.forks: 7
+  async.timeout: 3600
   language_default: en
   progress_bar.template: |
     %%message%%
@@ -75,6 +76,7 @@ services:
         class: Async\ForkManager
         calls:
           - [setMaxForks, ['%async.forks%']]
+          - [setWaitTimeout, ['%async.timeout%']]
 
     Async\ForkManager:
       alias: 'async'
