@@ -25,10 +25,6 @@ class FormatFactory
             $formatter->setOptions($options);
             return $formatter;
         }
-
-        if (!isset($formats[$format])) {
-            throw new \InvalidArgumentException("Reporting format '$format' is not supported.");
-        }
-        return new $formats[$format]($options);
+        throw new \InvalidArgumentException("Reporting format '$format' is not supported.");
     }
 }
