@@ -25,9 +25,12 @@ class ExpressionLanguageTest extends KernelTestCase {
       $language = $this->container->get('expression_language');
       $this->assertInstanceOf(ExpressionLanguage::class, $language);
 
-      $this->assertEquals($language->evaluate('policy("Test:PassDependant")'), 'success');
+      $this->assertEquals($language->evaluate('policy("Test:Pass")'), 'success');
 
-      $params = ['version' => '1.2.4'];
+      $params = [
+        'version' => '1.2.4',
+        'target' => $this->target
+      ];
       $this->assertEquals($language->evaluate('semver_gt("1.2.3", version)', $params), false);
       $this->assertEquals($language->evaluate('semver_gt("4.2.3", version)', $params), true);
 
@@ -35,8 +38,5 @@ class ExpressionLanguageTest extends KernelTestCase {
       $this->assertEquals($language->evaluate('semver_gte("4.2.3", version)', $params), true);
       $this->assertEquals($language->evaluate('semver_gte("1.2", "1.2")'), true);
       $this->assertEquals($language->evaluate('semver_gte("1.2", "1.2.0")'), false);
-
-      $version = $this->target->getProperty('php_version');
-      $this->assertEquals($language->evaluate('target("php_version")'), $version);
   }
 }
