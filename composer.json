@@ -38,7 +38,7 @@
         "league/html-to-markdown": "^4.9",
         "symfony/event-dispatcher": "^5.0",
         "symfony/property-access": "^5.0",
-        "fiasco/async": "dev-master"
+        "fiasco/async": "^1.0-beta3"
     },
     "conflict": {
       "drutiny/http": "*",
