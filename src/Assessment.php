@@ -27,6 +27,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
     protected array $results = [];
     protected bool $successful = true;
     protected int $severityCode = 1;
+    protected int $errorCode;
     protected LoggerInterface $logger;
     protected ContainerInterface $container;
     protected array $statsByResult = [];
@@ -109,30 +110,31 @@ class Assessment implements ExportableInterface, AssessmentInterface
             // mode.
             ->setName($policy->name);
         }
-        $returned = 0;
-        foreach ($forkManager->receive() as $response) {
-            $returned++;
+
+        try {
+          $returned = $forkManager->onReceive(function (AuditResponse $response) {
             $this->progressBar->advance();
             $this->progressBar->setMessage('Audit response of ' . $response->getPolicy()->name . ' recieved.');
 
-            // Attempt remediation.
-            if ($remediate && !$response->isSuccessful()) {
-                $this->logger->info("\xE2\x9A\xA0 Remediating " . $response->getPolicy()->title);
-                $this->setPolicyResult($sandbox->remediate());
-            }
-            // Omit irrelevant AuditResponses.
-            elseif (!$response->isIrrelevant()) {
-                $this->setPolicyResult($response);
-            }
-            else {
-              $this->logger->info("Omitting policy result from assessment: ".$response->getPolicy()->name);
-            }
-
             $this->logger->info(sprintf('Policy "%s" assessment on %s completed: %s.', $response->getPolicy()->title, $this->uri(), $response->getType()));
+
+            // Attempt remediation.
+            if ($response->isIrrelevant()) {
+                $this->logger->info("Omitting policy result from assessment: ".$response->getPolicy()->name);
+                return;
+            }
+            $this->setPolicyResult($response);
+          });
+        }
+        catch (ForkException $e) {
+          $this->logger->error($e->getMessage());
+          $this->successful = false;
+          $this->errorCode = $e->getCode();
+          $returned = $this->forkManager->getPayloadCount();
         }
 
         $total = count($policies);
-        $this->logger->debug("Assessment returned $returned/$total from the fork manager.");
+        $this->logger->info("Assessment returned $returned/$total from the fork manager.");
 
         return $this;
     }
@@ -207,6 +209,11 @@ class Assessment implements ExportableInterface, AssessmentInterface
         }, $this->policyOrder));
     }
 
+    public function getErrorCode()
+    {
+      return $this->errorCode ?? false;
+    }
+
     /**
      * Get the uri of Assessment object.
      *
@@ -239,6 +246,8 @@ class Assessment implements ExportableInterface, AssessmentInterface
         'uuid' => $this->uuid,
         'results' => $this->results,
         'policyOrder' => $this->policyOrder,
+        'successful' => $this->successful,
+        'errorCode' => $this->errorCode ?? false,
       ];
     }
 
@@ -252,5 +261,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
       $this->container = drutiny();
       $this->logger = drutiny()->get('logger');
       $this->async = drutiny()->get('async');
+      $this->errorCode = $export['errorCode'];
+      $this->successful = $export['successful'];
     }
 }
