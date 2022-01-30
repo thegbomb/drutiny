@@ -27,8 +27,7 @@ class Terminal extends Markdown
 
     public function write():iterable
     {
-        $output = new ConsoleOutput();
-        $output->write($this->buffer->fetch());
+        $this->container->get('output')->write($this->buffer->fetch());
         yield 'terminal';
     }
 }
