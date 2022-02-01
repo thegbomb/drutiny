@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 /**
  *
  */
-class TargetMetadataCommand extends Command
+class TargetMetadataCommand extends DrutinyBaseCommand
 {
 
   /**
@@ -43,11 +43,17 @@ class TargetMetadataCommand extends Command
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $progress = $this->getProgressBar(2);
+        $progress->start();
+        $progress->setMessage("Loading target..");
+
         $target = $this->getApplication()
           ->getKernel()
           ->getContainer()
           ->get('target.factory')
           ->create($input->getArgument('target'));
+
+        $progress->advance();
 
         if ($uri = $input->getOption('uri')) {
           $target->setUri($uri);
@@ -65,6 +71,8 @@ class TargetMetadataCommand extends Command
           }
           $rows[] = [$key, $value];
         }
+
+        $progress->finish();
         $io->table(['Property', 'Value'], $rows);
 
         return 0;
