@@ -65,9 +65,9 @@ class ProfileInfoCommand extends Command
         $render->block('drutiny profile:run ' . $profile->name . ' <target>');
 
         $render->section('Policies');
-        $headers = ['Title', 'Name', 'Source'];
+        $headers = ['Title', 'Name', 'Class', 'Source'];
         $render->table($headers, array_map(function ($policy) {
-          return [$policy->title, $policy->name, $policy->source];
+          return [$policy->title, $policy->name, $policy->class, $policy->source];
         }, $policies));
 
         return 0;
