@@ -57,7 +57,7 @@ To place a report in a predefined folder, speific the folder name with the `-o`
 drutiny profile:run -f json -o reports/ <profile:name> <target>
 ```
 
-## Setting reporting periods.
+## Setting reporting periods
 
 Some policies report on data examined across a time period. For these policies
 and underlying audit classes, they require a reporting period range. By default,
@@ -85,4 +85,21 @@ exclude policy options.
 
 ```
 drutiny profile:run --include-policy=<policy:name> --exclude-policy=<policy:name> <profile:name> <target> -f csv
+```
+
+## Setting default reports directory
+
+You can use the `--report-dir` (`-o`) option to specify where any report formats
+should be written to.
+
+```
+drutiny profile:run <profile:name> <target> -f html -o <path-to-reports-dir>
+```
+
+Alternatively you can also set an environment variable called `DRUTINY_REPORT_DIR`
+and Drutiny will default to this location
+
+```
+export DRUTINY_REPORT_DIR=$HOME/Reports
+drutiny profile:run <profile:name> <target> -f html # Places HTML report in $DRUTINY_REPORT_DIR
 ```

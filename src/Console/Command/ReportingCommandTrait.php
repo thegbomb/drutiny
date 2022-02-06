@@ -33,7 +33,7 @@ trait ReportingCommandTrait
             'o',
             InputOption::VALUE_OPTIONAL,
             'For file based formats, use this option to write report to a file directory. Drutiny will automate a filepath if the option is omitted',
-            getenv('PWD')
+            getenv('DRUTINY_REPORT_DIR') ?: getenv('PWD')
         )
         ->addOption(
             'reporting-period-start',
