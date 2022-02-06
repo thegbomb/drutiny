@@ -44,6 +44,7 @@ class Helper {
       return $twig->render($template, [
         'audit_response' => $response,
         'assessment' => $assessment,
+        'target' => $assessment->getTarget(),
       ]);
   }
 

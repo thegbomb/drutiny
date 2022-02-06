@@ -35,6 +35,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
     protected array $policyOrder = [];
     protected ProgressBar $progressBar;
     protected string $uuid;
+    protected TargetInterface $target;
 
     public function __construct(LoggerInterface $logger, ContainerInterface $container, ProgressBar $progressBar)
     {
@@ -70,6 +71,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
      */
     public function assessTarget(TargetInterface $target, array $policies, \DateTime $start = null, \DateTime $end = null, $remediate = false)
     {
+        $this->target = $target;
         $start = $start ?: new \DateTime('-1 day');
         $end   = $end ?: new \DateTime();
 
@@ -232,6 +234,11 @@ class Assessment implements ExportableInterface, AssessmentInterface
     public function getStatsBySeverity()
     {
       return $this->statsBySeverity;
+    }
+
+    public function getTarget():TargetInterface
+    {
+      return $this->target;
     }
 
     /**
