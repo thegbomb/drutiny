@@ -83,7 +83,21 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         $progress->start();
         $this->initLanguage($input);
 
-        $profile = $this->getContainer()->get('profile.factory')->loadProfileByName('empty');
+        $name = $input->getArgument('policy');
+
+        $profile = $this->getContainer()->get('profile.factory')->create([
+          'title' => 'Policy audit: ' . $name,
+          'name' => '_policy_audit',
+          'uuid' => '_policy_audit',
+          'format' => [
+            'terminal' => [
+              'content' => "
+              {% block audit %}
+                {{ policy_result(assessment.getPolicyResult('$name'), assessment) }}
+              {% endblock %}"
+            ]
+          ]
+        ]);
 
         // Setup any parameters for the check.
         $parameters = [];
@@ -92,8 +106,6 @@ class PolicyAuditCommand extends DrutinyBaseCommand
             // Using Yaml::parse to ensure datatype is correct.
             $parameters[$key] = Yaml::parse($value);
         }
-
-        $name = $input->getArgument('policy');
 
         $profile->addPolicies([$name => [
           'name' => $name,
@@ -130,10 +142,10 @@ class PolicyAuditCommand extends DrutinyBaseCommand
             $format->setNamespace($this->getReportNamespace($input, $uri));
             $format->render($profile, $assessment);
             foreach ($format->write() as $location) {
-              $output->write("Policy Audit written to $location.");
+              $output->writeln("Policy Audit written to $location.");
             }
         }
-        $output->write("Policy Audit Complete.");
+        $output->writeln("Policy Audit Complete.");
 
         //
         // $format = $input->getOption('format');
