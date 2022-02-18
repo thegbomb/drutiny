@@ -6,25 +6,24 @@ use Drutiny\Policy;
 use Drutiny\Policy\Dependency;
 use Drutiny\LanguageManager;
 use Symfony\Component\Yaml\Yaml;
-use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Finder\Finder;
 
 class LocalFs implements PolicySourceInterface
 {
-    protected $cache;
     protected $finder;
 
-    public function __construct(CacheInterface $cache, Finder $finder, ContainerInterface $container)
+    public function __construct(Finder $finder, ContainerInterface $container)
     {
         // Ensure the policy directory is available.
-        $fs = $container->getParameter('policy.library.fs');
-        is_dir($fs) || mkdir($fs, 0744, true);
+        $fs = (array) $container->getParameter('policy.library.fs');
+        $fs[] = DRUTINY_LIB;
 
-        $this->cache = $cache;
+        $fs = array_filter($fs, fn($p) => is_dir($p) || mkdir($p, 0744, true));
+
         $this->finder = $finder
           ->files()
-          ->in([$container->getParameter('policy.library.fs'), DRUTINY_LIB])
+          ->in($fs)
           ->name('*.policy.yml');
     }
 
@@ -42,21 +41,19 @@ class LocalFs implements PolicySourceInterface
     public function getList(LanguageManager $languageManager)
     {
         $lang_code = $languageManager->getCurrentLanguage();
-        //return $this->cache->get('localfs.policies.'.$lang_code, function ($item) use ($languageManager) {
-            $list = [];
-            foreach ($this->finder as $file) {
-                $policy = Yaml::parse($file->getContents());
-                $policy['uuid'] = md5($file->getPathname());
-                $policy['filepath'] = $file->getPathname();
-                $policy['language'] = $policy['language'] ?? $languageManager->getDefaultLanguage();
+        $list = [];
+        foreach ($this->finder as $file) {
+            $policy = Yaml::parse($file->getContents());
+            $policy['uuid'] = md5($file->getPathname());
+            $policy['filepath'] = $file->getPathname();
+            $policy['language'] = $policy['language'] ?? $languageManager->getDefaultLanguage();
 
-                if ($policy['language'] != $languageManager->getCurrentLanguage()) {
-                    continue;
-                }
-                $list[$policy['name']] = $policy;
+            if ($policy['language'] != $languageManager->getCurrentLanguage()) {
+                continue;
             }
-            return $list;
-        //});
+            $list[$policy['name']] = $policy;
+        }
+        return $list;
     }
 
   /**
