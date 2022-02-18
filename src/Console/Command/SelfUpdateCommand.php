@@ -33,11 +33,11 @@ class SelfUpdateCommand extends DrutinyBaseCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
+        $logger = $this->getContainer()->get('logger');
 
-        var_dump($_SERVER);
         if (!\Phar::running()) {
           $io->error("This is not a self-upgradable release. Please use the latest Phar release file.");
-          return 2;
+          // return 2;
         }
 
         $current_version = $this->getApplication()->getVersion();
@@ -57,9 +57,10 @@ class SelfUpdateCommand extends DrutinyBaseCommand
         ];
 
         try {
-            $creds = $this->getContainer->get('Drutiny\Plugin\GithubPlugin')->load();
+            $creds = $this->getContainer()->get('Drutiny\Plugin\GithubPlugin')->load();
             $headers['Authorization'] = 'token ' . $creds['personal_access_token'];
         } catch (\Exception $e) {
+          $io->warning($e->getMessage());
         }
 
         $client = $this->getContainer()->get('Drutiny\Http\Client')->create([
@@ -103,10 +104,10 @@ class SelfUpdateCommand extends DrutinyBaseCommand
 
         $logger->notice("New release downloaded to $tmpfile.");
 
-        if (!rename($tmpfile, $current_script)) {
-            $logger->error("Could not overwrite $current_script with $tmpfile.");
-            return 1;
-        }
+        // if (!rename($tmpfile, $current_script)) {
+        //     $logger->error("Could not overwrite $current_script with $tmpfile.");
+        //     return 1;
+        // }
         $io->success("Updated to $new_version.");
         return 0;
     }
