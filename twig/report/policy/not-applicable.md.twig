@@ -3,5 +3,13 @@
 {% with audit_response.tokens %}
 {{ include(template_from_string(audit_response.policy.description, "description field on data.md.twig")) }}
 
-{{ include(template_from_string(audit_response.policy.success, "success field on data.md.twig")) }}
+This policy is not applicable to the provided target.
+
+{% if exception %}
+```
+  #### {{exception_type|raw}}
+
+  {{exception|raw}}
+```
+{% endif %}
 {% endwith %}

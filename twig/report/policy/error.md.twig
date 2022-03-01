@@ -6,6 +6,6 @@ This policy was unable to determine the state of {{ audit_response.policy.title 
 
 {% if audit_response.tokens.exception is defined %}
 ```
-{{ audit_response.tokens.exception }}
+{{ audit_response.tokens.exception|raw }}
 ```
 {% endif %}
