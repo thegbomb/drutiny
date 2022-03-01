@@ -23,6 +23,7 @@ trait ProfileConfigurationTrait
               ->end()
             ->scalarNode('description')
               ->info('A description why the profile is valuable to use.')
+              ->isRequired()
               ->defaultValue('')
               ->end()
             ->scalarNode('language')
