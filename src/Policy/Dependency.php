@@ -122,7 +122,8 @@ class Dependency
     public function execute(AuditInterface $audit)
     {
         try {
-          $return = $audit->evaluate($audit->interpolate($this->expression), $this->syntax, [
+          $expression = $audit->interpolate($this->expression);
+          $return = $audit->evaluate($expression, $this->syntax, [
             'dependency' => $this
           ]);
           if ($return === 1 || $return === true) {
@@ -131,7 +132,12 @@ class Dependency
         } catch (\Exception $e) {
             $audit->getLogger()->warning($this->syntax . ': ' . $e->getMessage());
         }
-        $audit->getLogger()->debug(__CLASS__ . ": Expression FAILED. ");
+        $audit->getLogger()->debug('Expression FAILED.', [
+          'class' => get_class($this),
+          'expression' => $expression,
+          'return' => print_r($return, 1),
+          'syntax' => $this->syntax
+        ]);
 
         // Execute the on fail behaviour.
         throw new DependencyException($this);
