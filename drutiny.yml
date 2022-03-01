@@ -226,6 +226,9 @@ services:
       class: Drutiny\Target\DrushTarget
       synthetic: true
 
+    target.git:
+      class: Drutiny\Target\VCS\GitTarget
+
     target.drush:
       class: Drutiny\Target\DrushTarget
 
