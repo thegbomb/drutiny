@@ -272,6 +272,7 @@ services:
         - [addFilter, ['@twig.filters.yaml_dump']]
         - [addFunction, ['@twig.functions.policy_result']]
         - [addFunction, ['@twig.functions.semver_satisfies']]
+        - [AddFunction, ['@twig.functions.explode']]
         - [addTest, ['@twig.test.is_numeric']]
         - [addTest, ['@twig.test.keyed']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
@@ -312,6 +313,12 @@ services:
         - semver_satisfies
         - ['Composer\Semver\Semver', 'satisfies']
         - is_safe: [html]
+
+    twig.functions.explode:
+      class: Twig\TwigFunction
+      arguments:
+        - explode
+        - explode
 
     twig.filters.array_sum:
       class: Twig\TwigFilter
