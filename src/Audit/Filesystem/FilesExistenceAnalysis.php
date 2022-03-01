@@ -5,6 +5,8 @@ namespace Drutiny\Audit\Filesystem;
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
 use Drutiny\Audit\AbstractAnalysis;
+use Drutiny\Target\DrushTargetInterface;
+use Drutiny\Target\FilesystemInterface;
 
 /**
  * Checks for existence of requested file/directory on specified path.
@@ -17,7 +19,7 @@ class FilesExistenceAnalysis extends AbstractAnalysis {
       'directories',
       static::PARAMETER_OPTIONAL,
       'List of absolute filepath to directory to scan',
-      ['%root']
+      [$this->target->getDirectory()]
     );
     $this->addParameter(
       'filenames',
@@ -61,25 +63,38 @@ class FilesExistenceAnalysis extends AbstractAnalysis {
     );
   }
 
-/**
- * @inheritdoc
- */
+  /**
+   * @inheritdoc
+   */
+  protected function validate():bool
+  {
+    return $this->target instanceof FilesystemInterface;
+  }
+
+  /**
+   * @inheritdoc
+   */
   public function gather(Sandbox $sandbox) {
-    $directories = $this->getParameter('directories', ['%root']);
-    $stat = $this->target['drush']->export();
+    $directories = $this->getParameter('directories');
 
-    // Backwards compatibility. %paths is no longer present since Drush 8.
-    if (!isset($stat['%paths'])) {
-      foreach ($stat as $key => $value) {
-        $stat['%paths']['%'.$key] = $value;
+    if ($this->target instanceof DrushTargetInterface) {
+      $stat = $this->target['drush']->export();
+
+      // Backwards compatibility. %paths is no longer present since Drush 8.
+      if (!isset($stat['%paths'])) {
+        foreach ($stat as $key => $value) {
+          $stat['%paths']['%'.$key] = $value;
+        }
       }
+
+      $processed_directories = [];
+      foreach ($directories as $directory) {
+        $processed_directories[] = strtr($directory, $stat['%paths']);
+      }
+      $directories = $processed_directories;
     }
 
-    $processed_directories = [];
-    foreach ($directories as $directory) {
-      $processed_directories[] = strtr($directory, $stat['%paths']);
-    }
-    $command = ['find', implode(' ', $processed_directories)];
+    $command = ['find', implode(' ', $directories)];
 
     // Add maxdepth to command if applicable.
     $maxdepth = $this->getParameter('maxdepth', NULL);
@@ -142,13 +157,16 @@ class FilesExistenceAnalysis extends AbstractAnalysis {
     }
 
     foreach ($this->getParameter('exclude', []) as $filepath) {
-      $filepath = strtr($filepath, $stat['%paths']);
+      $filepath = $this->interpolate($filepath);
+      if ($this->target instanceof DrushTargetInterface) {
+        $filepath = strtr($filepath, $stat['%paths']);
+      }
       $command[] = "! -path '$filepath'";
     }
 
     $command = implode(' ', $command) . ' || exit 0';
     $this->logger->info('[' . __CLASS__ . '] ' . $command);
-    
+
     $matches = $this->target->getService('exec')->run($command, function ($output) {
       return array_filter(explode(PHP_EOL, $output));
     });
