@@ -78,22 +78,35 @@ abstract class Audit implements AuditInterface
     }
 
     /**
-     * @param Sandbox $sandbox
+     * Validate the contexts of the audit and target,
+     */
+    protected function validate():bool
+    {
+        return true;
+    }
+
+    /**
+     * @param Policy $policy
+     * @param bool $remediate (@deprecated)
      *
-     * @return
+     * @return AuditResponse
      *
      * @throws \Drutiny\Audit\AuditValidationException
      */
-    final public function execute(Policy $policy, $remediate = false)
+    final public function execute(Policy $policy, $remediate = false):AuditResponse
     {
         if ($this->deprecated) {
           $this->logger->warning(sprintf("Policy '%s' is using '%s' which is a deprecated class. This may fail in the future.", $policy->name, get_class($this)));
         }
         $this->policy = $policy;
         $response = new AuditResponse($policy);
-        $this->logger->info('Auditing '.$policy->name);
+        $this->logger->info('Auditing '.$policy->name.' with '.get_class($this));
         $outcome = AuditInterface::ERROR;
         try {
+            if (!$this->validate()) {
+              throw new AuditValidationException("Target of type ".get_class($this->target)." is not suitable for audit class ".get_class($this). " with policy: ".$policy->name);
+            }
+
             $dependencies = $policy->getDepends();
             $this->progressBar->setMaxSteps(count($dependencies) + $this->progressBar->getMaxSteps());
             // Ensure policy dependencies are met.
@@ -148,6 +161,9 @@ abstract class Audit implements AuditInterface
             $outcome = AuditInterface::ERROR;
             $this->set('exception_type', get_class($e));
             $this->logger->warning($e->getMessage());
+            $this->logger->warning($e->getTraceAsString());
+            $this->logger->warning($policy->name . ': ' . get_class($this));
+            $this->logger->warning(print_r($policy->getAllParameters(), 1));
 
             $helper = AuditUpgrade::fromAudit($this);
             $helper->addParameterFromException($e);
@@ -174,17 +190,43 @@ abstract class Audit implements AuditInterface
     }
 
     /**
+     * Use a new Audit instance to audit policy.
+     *
+     * @param string $policy_name
+     *    The name of the policy to audit.
+     */
+    public function withPolicy(string $policy_name):AuditResponse
+    {
+      $this->logger->debug("->withPolicy($policy_name)");
+      $policy = $this->container
+        ->get('policy.factory')
+        ->loadPolicyByName($policy_name);
+      return $this->container->get($policy->class)->execute($policy);
+    }
+
+    /**
      * Evaluate an expression using the Symfony ExpressionLanguage engine.
      */
     public function evaluate(string $expression, $language = 'expression_language', array $contexts = [])
     {
-        $contexts = array_merge($contexts, $this->getContexts());
-        switch ($language) {
-          case 'twig':
-            return $this->evaluateTwigSyntax($expression, $contexts);
-          case 'expression_language':
-          default:
-            return $this->expressionLanguage->evaluate($expression, $contexts);
+        try {
+          $contexts = array_merge($contexts, $this->getContexts());
+          switch ($language) {
+            case 'twig':
+              return $this->evaluateTwigSyntax($expression, $contexts);
+            case 'expression_language':
+            default:
+              return $this->expressionLanguage->evaluate($expression, $contexts);
+          }
+        }
+        catch (\Exception $e) {
+          $this->logger->error("Evaluation failure.", [
+            'syntax' => $language,
+            'expression' => $expression,
+            'exception' => get_class($e),
+            'message' => $e->getMessage(),
+          ]);
+          throw $e;
         }
     }
 
@@ -246,7 +288,7 @@ abstract class Audit implements AuditInterface
           $contexts[$key] = $value;
         }
 
-        $context['audit'] = $this;
+        $contexts['audit'] = $this;
 
         return $contexts;
     }
