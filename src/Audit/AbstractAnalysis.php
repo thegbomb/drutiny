@@ -4,25 +4,11 @@ namespace Drutiny\Audit;
 
 use Drutiny\Audit;
 use Drutiny\Sandbox\Sandbox;
-use Drutiny\Annotation\Param;
 use Symfony\Component\Yaml\Yaml;
 use Twig\Error\RuntimeError;
 
 /**
  * Audit gathered data.
- *
- * @Param(
- *  name = "expression",
- *  type = "string",
- *  default = "true",
- *  description = "The expression language to evaludate. See https://symfony.com/doc/current/components/expression_language/syntax.html"
- * )
- * @Param(
- *  name = "not_applicable",
- *  type = "string",
- *  default = "false",
- *  description = "The expression language to evaludate if the analysis is not applicable. See https://symfony.com/doc/current/components/expression_language/syntax.html"
- * )
  */
 class AbstractAnalysis extends Audit
 {
