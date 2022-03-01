@@ -54,7 +54,7 @@ class PolicyStorage implements PolicySourceInterface
           yield $this->load($definition);
         }
         catch (UnavailablePolicyException $e) {
-          $this->logger->error($e->getMessage());
+          $this->logger->warning($e->getMessage());
         }
       }
     }
