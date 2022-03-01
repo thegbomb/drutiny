@@ -50,20 +50,35 @@ class LocalService implements ExecutionInterface {
       $process = Process::fromShellCommandline($cmd, null, $this->getEnvAll());
       $process->setTimeout(600);
       try {
+        if (is_callable($outputProcessor)) {
+          $reflect = new \ReflectionFunction($outputProcessor);
+          $params = $reflect->getParameters();
+          if (!empty($params) && $params[0]->getClass()) {
+            // This allows the output processor to evaluate the result of the
+            // process inclusive of its exit code.
+            $process->run();
+
+            // A process evaluating output processor must throw an exception
+            // to prevent caching of the result. This means a non-zero exit
+            // response can be cached.
+            return $outputProcessor($process);
+          }
+        }
+
+        // mustRun means an non-zero exit code will throw an exception.
         $process->mustRun();
+        $output = $process->getOutput();
+        $this->logger->debug($output);
+
+        if (isset($outputProcessor)) {
+          $output = $outputProcessor($output);
+        }
+        return $output;
       }
       catch (ProcessFailedException $e) {
         $this->logger->error($e->getMessage());
         throw $e;
       }
-
-      $output = $process->getOutput();
-      $this->logger->debug($output);
-
-      if (isset($outputProcessor)) {
-        $output = $outputProcessor($output);
-      }
-      return $output;
     });
   }
 

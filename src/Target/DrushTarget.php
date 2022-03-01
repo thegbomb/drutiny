@@ -8,8 +8,13 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 /**
  * Target for parsing Drush aliases.
  */
-class DrushTarget extends Target implements TargetInterface, TargetSourceInterface
+class DrushTarget extends Target implements
+  TargetInterface, TargetSourceInterface,
+  DrushTargetInterface, FilesystemInterface
 {
+
+  protected bool $hasBuilt = false;
+
   /**
    * {@inheritdoc}
    */
@@ -46,6 +51,7 @@ class DrushTarget extends Target implements TargetInterface, TargetSourceInterfa
     }
 
     public function buildAttributes() {
+        $this->hasBuilt = true;
         $service = new DrushService($this['service.exec']);
 
         if ($url = $this->getUri()) {
@@ -96,6 +102,17 @@ class DrushTarget extends Target implements TargetInterface, TargetSourceInterfa
       parent::setUri($uri);
       // Rebuild the drush attributes.
       return $this->buildAttributes();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getDirectory():string
+    {
+      if (!$this->hasBuilt) {
+        $this->buildAttributes();
+      }
+      return $this['drush.root'];
     }
 
     /**
