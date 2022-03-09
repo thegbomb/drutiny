@@ -9,6 +9,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 
 class ProfileFactory
 {
@@ -49,7 +50,13 @@ class ProfileFactory
          }
          $profile->{$key} = $value;
        }
-       return $profile->build();
+       try {
+         return $profile->build();
+       }
+       catch (InvalidConfigurationException $e) {
+        $this->container->get('logger')->error("Failed to build profile '{$values['name']}'", $values);
+        throw $e;
+       }
      }
 
     /**
