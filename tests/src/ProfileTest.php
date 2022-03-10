@@ -23,6 +23,7 @@ class ProfileTest extends KernelTestCase {
     $profile->name = 'test_profile';
     $profile->title = 'Test Profile';
     $profile->uuid = 'unique uuid';
+    $profile->description = 'Adding a required description field.';
     $profile->addPolicies(['Test:Pass'])
             ->addPolicies([
               'Test:Fail' => [
@@ -49,6 +50,7 @@ class ProfileTest extends KernelTestCase {
     $profile->name = 'test_profile';
     $profile->title = 'Test Profile';
     $profile->uuid = 'unique uuid';
+    $profile->description = 'Adding a required description field.';
     $profile->addPolicies(['Test:Pass'])
             ->addPolicies([
               'Test:Fail' => [

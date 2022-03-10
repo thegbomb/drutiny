@@ -89,6 +89,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
           'title' => 'Policy audit: ' . $name,
           'name' => '_policy_audit',
           'uuid' => '_policy_audit',
+          'description' => 'Wrapper profile for policy:audit',
           'format' => [
             'terminal' => [
               'content' => "

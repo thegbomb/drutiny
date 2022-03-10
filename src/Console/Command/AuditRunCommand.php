@@ -120,7 +120,8 @@ class AuditRunCommand extends DrutinyBaseCommand
         $profile = $container->get('profile.factory')->create([
           'title' => 'Audit:Run',
           'name' => 'audit_run',
-          'uuid' => 'audit_run'
+          'uuid' => 'audit_run',
+          'description' => 'Wrapper profile for audit:run'
         ]);
 
         foreach ($this->getFormats($input, $profile) as $format) {
