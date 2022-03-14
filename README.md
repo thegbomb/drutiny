@@ -1,8 +1,8 @@
 # Drutiny - automated site auditing
 
-<img src="https://github.com/drutiny/drutiny/raw/3.0.x/assets/logo.png" alt="Drutiny logo" align="right"/>
+<img src="https://github.com/drutiny/drutiny/raw/3.2.x/assets/logo.png" alt="Drutiny logo" align="right"/>
 
-[![Build Status](https://travis-ci.org/drutiny/drutiny.svg?branch=3.0.x)](https://travis-ci.org/drutiny/drutiny)
+[![Build Status](https://travis-ci.org/drutiny/drutiny.svg?branch=3.2.x)](https://travis-ci.org/drutiny/drutiny)
 [![Latest Stable Version](https://poser.pugx.org/drutiny/drutiny/v/stable)](https://packagist.org/packages/drutiny/drutiny)
 [![Total Downloads](https://poser.pugx.org/drutiny/drutiny/downloads)](https://packagist.org/packages/drutiny/drutiny)
 [![Latest Unstable Version](https://poser.pugx.org/drutiny/drutiny/v/unstable)](https://packagist.org/packages/drutiny/drutiny)
@@ -13,19 +13,22 @@ A generic Drupal site auditing and optional remediation tool.
 
 ## Installation
 
+This repository is a baseline frame and not recommended to install by itself
+unless you're planning on building your own auditing tool based on top of Drutiny.
 
 You can install Drutiny into your project with [composer](https://getcomposer.org).
-Drutiny is a require-dev type dependency.
 
 ```
-composer require --dev drutiny/drutiny 2.3.*@dev
+composer require drutiny/drutiny ^3.2.0
 ```
 
+Drutiny has native target support for Git and [Drush](http://docs.drush.org/en/master/).
+If you wish to use these types of targets, you must install the underlying software.
 
-[Drush](http://docs.drush.org/en/master/) is also required. It's not specifically marked as a dependency as the version of Drush to use will depend on the site you're auditing.
+For drush, we recommend using drush 8 to access global aliases.
 
 ```
-composer global require drush/drush:dev-master
+composer global require drush/drush:8
 ```
 
 
@@ -36,8 +39,6 @@ Drutiny is a command line tool that can be called from the composer vendor bin d
 ```
 ./vendor/bin/drutiny
 ```
-If you're running Drutiny as a standalone tool, substitute `./bin/drutiny`.
-
 
 ### Finding policies available to run
 
@@ -56,12 +57,6 @@ Additional Drutiny policies, audits, profiles and commands can be installed with
 
 ```
 $ composer search drutiny
-```
-
-For Drupal 8 sites, `drutiny/plugin-drupal-8` would be a good plugin to add.
-
-```
-$ composer require drutiny/plugin-drupal-8 2.x-dev
 ```
 
 ### Running an Audit
@@ -87,7 +82,7 @@ Audits are self-contained classes that are simple to read and understand. Polici
 A site audit is running a collection of checks that make up a profile. This allows you to audit against a specific standard, policy or best practice. Drutiny comes with some base profiles which you can find using `profile:list`. You can run a profile with `profile:run` in a simlar format to `policy:audit`.
 
 ```
-./vendor/bin/drutiny profile:run --remediate d8 @drupalvm.dev
+./vendor/bin/drutiny profile:run d8 @drupalvm.dev
 ```
 
 Parameters can not be passed in at runtime for profiles but are instead predefined by the profile itself.

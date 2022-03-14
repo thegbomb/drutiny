@@ -10,7 +10,7 @@ if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
 list($major, $minor, ) = explode('.', phpversion());
 
 // Identify PHP versions lower than PHP 7.4.
-if ($major < 7 || ($major > 7 && $minor < 4)) {
+if ($major < 7 || ($major == 7 && $minor < 4)) {
   echo "ERROR: Application requires PHP 7.4 or later. Currently running: ".phpversion()."\n";
   exit;
 }
