@@ -3,6 +3,7 @@ sudo: required
 dist: focal
 php:
 - '7.4'
+- '8.0'
 before_script:
 - sudo rm -f /etc/localtime
 - sudo ln -s /usr/share/zoneinfo/UTC /etc/localtime
@@ -13,7 +14,7 @@ install:
 - composer info -i
 script:
 - export PATH="$PATH:$PWD/vendor/bin:$HOME/.config/composer/vendor/bin"
-- "./vendor/bin/phpunit"
+- "./vendor/bin/phpunit tests"
 - "./bin/drutiny policy:list"
 - "./bin/drutiny profile:run test @none"
 - "./bin/drutiny profile:run test @none --uri=site1.test --uri=site2.test -f html
@@ -27,7 +28,7 @@ deploy:
   script: ./docs/deploy.sh
   skip_cleanup: true
   on:
-    branch: 3.0.x
+    branch: 3.2.x
     php: 7.4
 - provider: releases
   api_key:
