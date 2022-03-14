@@ -103,6 +103,13 @@ In particular, if you use the `-vvv` argument, then you will see all the drush c
 
 You can find more documentation in the [docs](https://drutiny.github.io/drutiny) folder.
 
+## Checking PHP compatibility
+
+```
+./vendor/bin/phpcs --config-set installed_paths vendor/phpcompatibility/php-compatibility
+./vendor/bin/phpcs -p src --standard=PHPCompatibility --runtime-set testVersion $PHP_VERSION
+```
+
 
 # Credits
 
