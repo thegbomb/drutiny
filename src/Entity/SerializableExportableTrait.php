@@ -9,7 +9,7 @@ trait SerializableExportableTrait {
     return serialize($this->export());
   }
 
-  public function unserialize(string $serialized)
+  public function unserialize($serialized)
   {
     $this->import(unserialize($serialized));
   }

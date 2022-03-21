@@ -2,6 +2,7 @@
 
 namespace Drutiny\Console\Command;
 
+use Async\Process;
 use Drutiny\Assessment;
 use Drutiny\AssessmentManager;
 use Drutiny\Report\FilesystemFormatInterface;
@@ -202,20 +203,26 @@ class ProfileRunCommand extends DrutinyBaseCommand
                 continue;
             }
 
-            $forkManager->run(function () use ($target, $policies, $input, $uri, $formats, $profile, $console) {
+            $forkManager->fork()
+            ->run(function (Process $fork) use ($target, $policies, $input, $uri, $profile) {
               $this->getLogger()->info("Evaluating $uri.");
+              $fork->setTitle($uri);
               $assessment = $this->getContainer()->get('assessment')->setUri($uri);
               $assessment->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd(), $input->getOption('remediate'));
-
-              // Write the report to the provided formats.
+              return $assessment;
+            })
+            // Write the report to the provided formats.
+            ->onSuccess(function (Assessment $a, Process $f) use ($formats, $profile, $input, $console) {
               foreach ($formats as $format) {
-                  $format->setNamespace($this->getReportNamespace($input, $uri));
-                  $format->render($profile, $assessment);
+                  $format->setNamespace($this->getReportNamespace($input, $f->getTitle()));
+                  $format->render($profile, $a);
                   foreach ($format->write() as $written_location) {
                     $console->success("Writen $written_location");
                   }
               }
-              return $assessment->export();
+            })
+            ->onError(function ($e, Process $fork) {
+              $this->logger->error("Assessment of ".$fork->getTitle()." failed: " . ((string) $e));
             });
         }
         $progress->advance();
@@ -224,10 +231,8 @@ class ProfileRunCommand extends DrutinyBaseCommand
         $results = [];
         $assessment_manager = new AssessmentManager();
 
-        foreach ($forkManager->receive() as $export) {
+        foreach ($forkManager->getForkResults() as $assessment) {
             $progress->advance();
-            $assessment = $this->getContainer()->get('assessment');
-            $assessment->import($export);
             $assessment_manager->addAssessment($assessment);
             $exit_codes[] = $assessment->getSeverityCode();
         }

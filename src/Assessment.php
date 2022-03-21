@@ -2,7 +2,8 @@
 
 namespace Drutiny;
 
-use Async\ForkManager;
+use Async\Process;
+use Async\Exception\ChildExceptionDetected;
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
 use Drutiny\Entity\ExportableInterface;
@@ -13,7 +14,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Console\Helper\ProgressBar;
 
-class Assessment implements ExportableInterface, AssessmentInterface
+class Assessment implements ExportableInterface, AssessmentInterface, \Serializable
 {
     use ReportingPeriodTrait;
     use SerializableExportableTrait {
@@ -75,7 +76,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
         $start = $start ?: new \DateTime('-1 day');
         $end   = $end ?: new \DateTime();
 
-        // Get a new instance of forkManager for the assessment.
+        // Get a forkManager for the assessment.
         $forkManager = $this->container->get('async');
 
         // Record the reporting period in the assessment so we can pull it
@@ -105,35 +106,34 @@ class Assessment implements ExportableInterface, AssessmentInterface
             }
             $audit->getTarget()->setUri($this->uri);
 
-            $forkManager->run(function () use ($audit, $policy, $remediate) {
+            $forkManager->fork()
+            ->run(function (Process $fork) use ($audit, $policy, $remediate) {
+              $fork->setTitle($policy->name);
               return $audit->execute($policy, $remediate);
             })
-            // This helps log the time it takes for this policy to run in debug
-            // mode.
-            ->setName($policy->name);
+            ->onSuccess(function (AuditResponse $response, Process $fork) {
+              $this->progressBar->advance();
+              $this->progressBar->setMessage('Audit response of ' . $response->getPolicy()->name . ' recieved.');
+              $this->logger->info(sprintf('Policy "%s" assessment on %s completed: %s.', $response->getPolicy()->title, $this->uri(), $response->getType()));
+
+              // Attempt remediation.
+              if ($response->isIrrelevant()) {
+                  $this->logger->info("Omitting policy result from assessment: ".$response->getPolicy()->name);
+                  return;
+              }
+              $this->setPolicyResult($response);
+            })
+            ->onError(function (ChildExceptionDetected $e, Process $fork) {
+              $err_msg = (string) $e;
+              $this->progressBar->advance();
+              $this->progressBar->setMessage('Audit response of ' . $fork->getTitle() . ' failed to complete.');
+              $this->logger->error($fork->getTitle().': '.$err_msg);
+              $this->successful = false;
+              $this->errorCode = $e->code;
+            });
         }
 
-        try {
-          $returned = $forkManager->onReceive(function (AuditResponse $response) {
-            $this->progressBar->advance();
-            $this->progressBar->setMessage('Audit response of ' . $response->getPolicy()->name . ' recieved.');
-
-            $this->logger->info(sprintf('Policy "%s" assessment on %s completed: %s.', $response->getPolicy()->title, $this->uri(), $response->getType()));
-
-            // Attempt remediation.
-            if ($response->isIrrelevant()) {
-                $this->logger->info("Omitting policy result from assessment: ".$response->getPolicy()->name);
-                return;
-            }
-            $this->setPolicyResult($response);
-          });
-        }
-        catch (ForkException $e) {
-          $this->logger->error($e->getMessage());
-          $this->successful = false;
-          $this->errorCode = $e->getCode();
-          $returned = $this->forkManager->getPayloadCount();
-        }
+        $returned = count($forkManager->getForkResults());
 
         $total = count($policies);
         $this->logger->info("Assessment returned $returned/$total from the fork manager.");
@@ -247,8 +247,6 @@ class Assessment implements ExportableInterface, AssessmentInterface
     public function export()
     {
       return [
-        // 'statsBySeverity' => $this->statsBySeverity,
-        // 'statsBySeverity' => $this->statsBySeverity,
         'uri' => $this->uri,
         'uuid' => $this->uuid,
         'results' => $this->results,
@@ -268,6 +266,7 @@ class Assessment implements ExportableInterface, AssessmentInterface
       $this->container = drutiny();
       $this->logger = drutiny()->get('logger');
       $this->async = drutiny()->get('async');
+      $this->target = drutiny()->get('target');
       $this->errorCode = $export['errorCode'];
       $this->successful = $export['successful'];
     }
