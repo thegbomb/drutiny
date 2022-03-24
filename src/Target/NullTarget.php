@@ -21,7 +21,7 @@ class NullTarget extends Target implements TargetInterface
    */
   public function parse(string $data, ?string $uri = NULL):TargetInterface
   {
-      $this->setUri($uri);
+      $this->setUri($uri ?? 'http://example.com');
       return $this;
   }
 }
