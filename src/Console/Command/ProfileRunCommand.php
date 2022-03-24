@@ -47,12 +47,6 @@ class ProfileRunCommand extends DrutinyBaseCommand
             'The target to run the policy collection against.'
         )
         ->addOption(
-            'remediate',
-            'r',
-            InputOption::VALUE_NONE,
-            'Allow failed policy aduits to remediate themselves if available.'
-        )
-        ->addOption(
             'uri',
             'l',
             InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
@@ -145,18 +139,6 @@ class ProfileRunCommand extends DrutinyBaseCommand
         // in strange ways.
         $profile->excluded_policies = $input->getOption('exclude-policy') ?? [];
 
-        try {
-          // Setup the target.
-          $target = $this->getTargetFactory()->create($input->getArgument('target'));
-        }
-        catch (InvalidTargetException $e) {
-          $console->error("Invalid target: " . $input->getArgument('target') . ': ' . $e->getMessage());
-          $this->getLogger()->debug($e->getTraceAsString());
-          return self::EXIT_INVALID_TARGET;
-        }
-
-        $this->getLogger()->debug("Target " . $input->getArgument('target') . ' loaded.');
-
         // Get the URLs.
         $uris = $input->getOption('uri');
 
@@ -190,25 +172,22 @@ class ProfileRunCommand extends DrutinyBaseCommand
         }
         $progress->advance();
 
-        $uris = empty($uris) ? [$target->getUri()] : $uris;
+        $uris = empty($uris) ? [null] : $uris;
 
         $forkManager = $this->getForkManager();
 
         foreach ($uris as $uri) {
-            try {
-                $target->setUri($uri);
-            }
-            catch (\Drutiny\Target\InvalidTargetException $e) {
-                $this->getLogger()->warning("Target cannot be evaluated: " . $e->getMessage());
-                continue;
-            }
-
             $forkManager->fork()
-            ->run(function (Process $fork) use ($target, $policies, $input, $uri, $profile) {
-              $this->getLogger()->info("Evaluating $uri.");
+            ->run(function (Process $fork) use ($policies, $input, $uri, $profile) {
+              $fork->setTitle($input->getArgument('target'));
+              $target = $this->getTargetFactory()->create($input->getArgument('target'), $uri);
+
+              $uri = $target->getUri();
               $fork->setTitle($uri);
+
+              $this->getLogger()->info("Evaluating $uri.");
               $assessment = $this->getContainer()->get('assessment')->setUri($uri);
-              $assessment->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd(), $input->getOption('remediate'));
+              $assessment->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd());
               return $assessment;
             })
             // Write the report to the provided formats.
@@ -222,7 +201,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
               }
             })
             ->onError(function ($e, Process $fork) {
-              $this->logger->error("Assessment of ".$fork->getTitle()." failed: " . ((string) $e));
+              $this->getLogger()->error("Assessment of ".$fork->getTitle()." failed: " . ((string) $e));
             });
         }
         $progress->advance();

@@ -43,21 +43,18 @@ class TargetMetadataCommand extends DrutinyBaseCommand
    */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $progress = $this->getProgressBar(2);
+        $progress = $this->getProgressBar(3);
         $progress->start();
         $progress->setMessage("Loading target..");
+        $progress->advance();
 
         $target = $this->getApplication()
           ->getKernel()
           ->getContainer()
           ->get('target.factory')
-          ->create($input->getArgument('target'));
+          ->create($input->getArgument('target'), $input->getOption('uri'));
 
         $progress->advance();
-
-        if ($uri = $input->getOption('uri')) {
-          $target->setUri($uri);
-        }
 
         $io = new SymfonyStyle($input, $output);
 

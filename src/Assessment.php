@@ -68,9 +68,8 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
      * @param array $policies each item should be a Drutiny\Policy object.
      * @param DateTime $start The start date of the reporting period. Defaults to -1 day.
      * @param DateTime $end The end date of the reporting period. Defaults to now.
-     * @param bool $remediate If an Drutiny\Audit supports remediation and the policy failes, remediate the policy. Defaults to FALSE.
      */
-    public function assessTarget(TargetInterface $target, array $policies, \DateTime $start = null, \DateTime $end = null, $remediate = false)
+    public function assessTarget(TargetInterface $target, array $policies, \DateTime $start = null, \DateTime $end = null)
     {
         $this->target = $target;
         $start = $start ?: new \DateTime('-1 day');
@@ -107,9 +106,9 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
             $audit->getTarget()->setUri($this->uri);
 
             $forkManager->fork()
-            ->run(function (Process $fork) use ($audit, $policy, $remediate) {
+            ->run(function (Process $fork) use ($audit, $policy) {
               $fork->setTitle($policy->name);
-              return $audit->execute($policy, $remediate);
+              return $audit->execute($policy);
             })
             ->onSuccess(function (AuditResponse $response, Process $fork) {
               $this->progressBar->advance();
@@ -253,6 +252,7 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
         'policyOrder' => $this->policyOrder,
         'successful' => $this->successful,
         'errorCode' => $this->errorCode ?? false,
+        'targetReference' => $this->target->getTargetName()
       ];
     }
 
@@ -266,7 +266,9 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
       $this->container = drutiny();
       $this->logger = drutiny()->get('logger');
       $this->async = drutiny()->get('async');
-      $this->target = drutiny()->get('target');
+      $this->target = drutiny()
+             ->get('target.factory')
+             ->create($export['targetReference'], $export['uri']);
       $this->errorCode = $export['errorCode'];
       $this->successful = $export['successful'];
     }
