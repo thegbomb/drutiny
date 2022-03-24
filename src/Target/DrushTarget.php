@@ -27,7 +27,7 @@ class DrushTarget extends Target implements
    * @inheritdoc
    * Implements Target::parse().
    */
-    public function parse($alias):TargetInterface
+    public function parse(string $alias, ?string $uri = NULL):TargetInterface
     {
 
         $this['drush.alias'] = $alias;
@@ -42,8 +42,11 @@ class DrushTarget extends Target implements
         $this['drush']->add($drush_properties);
 
         // Provide a default URI if none already provided.
-        if (isset($drush_properties['uri']) && !$this->hasProperty('uri')) {
-          $this->setUri($drush_properties['uri']);
+        if ($uri) {
+          parent::setUri($uri);
+        }
+        elseif (isset($drush_properties['uri']) && !$this->hasProperty('uri')) {
+          parent::setUri($drush_properties['uri']);
         }
 
         $this->buildAttributes();

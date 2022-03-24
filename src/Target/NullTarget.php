@@ -19,8 +19,9 @@ class NullTarget extends Target implements TargetInterface
    * @inheritdoc
    * Implements Target::parse().
    */
-  public function parse($alias):TargetInterface
+  public function parse(string $data, ?string $uri = NULL):TargetInterface
   {
+      $this->setUri($uri);
       return $this;
   }
 }

@@ -19,9 +19,9 @@ abstract class Target implements \ArrayAccess, ExecutionInterface
   /* @var PropertyAccess */
   protected $propertyAccessor;
   protected $properties;
-  protected $local;
-  protected $logger;
+  protected LoggerInterface $logger;
   protected $dispatcher;
+  private string $targetName;
 
   public function __construct(ExecutionInterface $local, LoggerInterface $logger, EventDispatchedDataBag $databag)
   {
@@ -36,6 +36,17 @@ abstract class Target implements \ArrayAccess, ExecutionInterface
 
     $this['service.local'] = $local;
     $this['service.exec'] = $local;
+  }
+
+  final public function setTargetName(string $name):TargetInterface
+  {
+    $this->targetName = $name;
+    return $this;
+  }
+
+  final public function getTargetName():string
+  {
+    return $this->targetName;
   }
 
   /**
@@ -236,5 +247,5 @@ abstract class Target implements \ArrayAccess, ExecutionInterface
         return $this->hasProperty($offset) ? $this->getProperty($offset) : null;
     }
 
-    abstract public function parse($data):TargetInterface;
+    abstract public function parse(string $data, ?string $uri = null):TargetInterface;
 }

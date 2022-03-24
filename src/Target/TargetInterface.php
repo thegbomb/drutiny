@@ -12,7 +12,7 @@ interface TargetInterface
    * Parse the target data passed in.
    * @param $data string to parse.
    */
-    public function parse($data):TargetInterface;
+    public function parse(string $data, ?string $uri = null):TargetInterface;
 
     /**
      * Get a serviced object.
@@ -23,4 +23,14 @@ interface TargetInterface
      * Return the target identifier.
      */
     public function getId():string;
+
+    /**
+     * Set target reference.
+     */
+    public function setTargetName(string $name):TargetInterface;
+
+    /**
+     * Get target reference name.
+     */
+    public function getTargetName():string;
 }

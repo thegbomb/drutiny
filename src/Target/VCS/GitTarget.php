@@ -13,7 +13,7 @@ class GitTarget extends Target implements FilesystemInterface, GitInterface {
     /**
      * {@inheritdoc}
      */
-    public function parse($data):TargetInterface
+    public function parse(string $data, ?string $uri = NULL):TargetInterface
     {
       $data = is_dir($data) ? realpath($data) : $data;
       $this->setLocation($data);

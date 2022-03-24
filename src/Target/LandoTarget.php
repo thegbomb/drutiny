@@ -16,14 +16,14 @@ class LandoTarget extends DrushTarget implements TargetInterface, TargetSourceIn
    */
   public function getId():string
   {
-    return $this['ddev.name'];
+    return $this['lando.name'];
   }
 
   /**
    * @inheritdoc
    * Implements Target::parse().
    */
-    public function parse($alias):TargetInterface
+    public function parse(string $alias, ?string $uri = NULL):TargetInterface
     {
 
         $this['lando.name'] = $alias;

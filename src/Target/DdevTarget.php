@@ -23,7 +23,7 @@ class DdevTarget extends DrushTarget implements TargetInterface, TargetSourceInt
    * @inheritdoc
    * Implements Target::parse().
    */
-    public function parse($alias):TargetInterface
+    public function parse(string $alias, ?string $uri = NULL):TargetInterface
     {
 
         $this['ddev.name'] = $alias;
