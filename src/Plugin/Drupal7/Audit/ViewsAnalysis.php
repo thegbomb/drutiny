@@ -19,7 +19,8 @@ class ViewsAnalysis extends AbstractAnalysis {
     $views = $this->target->getService('drush')->runtime(function () {
       $data = [];
       $f = function ($d) { return $d->display_title; };
-      foreach (views_get_all_views() as $view) {
+      $views = function_exists('views_get_all_views') ? views_get_all_views() : [];
+      foreach ($views as $view) {
         $data[$view->name] = [
           'name' => $view->name,
           'human_name' => $view->human_name,
