@@ -21,7 +21,6 @@ class AuditResponse implements ExportableInterface
 
     protected Policy $policy;
     protected $state = Audit::NOT_APPLICABLE;
-    protected $remediated = false;
     protected $tokens = [];
 
   /**
@@ -138,7 +137,7 @@ class AuditResponse implements ExportableInterface
      */
     public function isSuccessful():bool
     {
-        return $this->state === Audit::SUCCESS || $this->remediated || $this->isNotice() || $this->state === Audit::WARNING;
+        return $this->state === Audit::SUCCESS || $this->isNotice() || $this->state === Audit::WARNING;
     }
 
     public function isFailure():bool
@@ -160,14 +159,6 @@ class AuditResponse implements ExportableInterface
     public function hasWarning():bool
     {
         return $this->state === Audit::WARNING || $this->state === Audit::WARNING_FAIL;
-    }
-
-    public function isRemediated($set = null):bool
-    {
-        if (isset($set)) {
-            $this->remediated = $set;
-        }
-        return $this->remediated;
     }
 
     public function hasError():bool
@@ -213,7 +204,6 @@ class AuditResponse implements ExportableInterface
         'exception' => $this->getExceptionMessage(),
         'tokens' => $this->tokens,
         'state' => $this->state,
-        'remediated' => $this->remediated,
       ];
     }
 
@@ -224,7 +214,6 @@ class AuditResponse implements ExportableInterface
     {
 
       // $this->state = $export['state'];
-      // $this->remediated = $export['remediated'];
       // $this->tokens = $export['tokens'];
       $this->policy = drutiny()->get('policy.factory')->loadPolicyByName($export['policy']);
       unset($export['policy']);

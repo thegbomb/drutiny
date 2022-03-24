@@ -87,7 +87,7 @@ Audits are self-contained classes that are simple to read and understand. Polici
 A site audit is running a collection of checks that make up a profile. This allows you to audit against a specific standard, policy or best practice. Drutiny comes with some base profiles which you can find using `profile:list`. You can run a profile with `profile:run` in a simlar format to `policy:audit`.
 
 ```
-./vendor/bin/drutiny profile:run --remediate d8 @drupalvm.dev
+./vendor/bin/drutiny profile:run d8 @drupalvm.dev
 ```
 
 Parameters can not be passed in at runtime for profiles but are instead predefined by the profile itself.

@@ -64,19 +64,4 @@ class NoAdministrators extends Audit {
 
     return empty($rows);
   }
-
-  // /**
-  //  * @inheritDoc
-  //  *
-  //  * @see https://drushcommands.com/drush-8x/user/user-remove-role/
-  //  */
-  // public function remediate() {
-  //   $success = TRUE;
-  //   foreach ($this->adminRolesNames as $role_name) {
-  //     $res = $this->context->drush->userRemoveRole("'{$role_name}'", '--uid=' . implode(',', $this->adminUids));
-  //     $success = $success && $res->isSuccessful();
-  //   }
-  //   return $success;
-  // }
-
 }
