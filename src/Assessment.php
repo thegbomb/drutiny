@@ -87,6 +87,7 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
         });
 
         $this->progressBar->setMaxSteps($this->progressBar->getMaxSteps() + count($policies));
+        $this->forkManager->setAsync(count($policies) > 1);
 
         $promises = [];
         foreach ($policies as $policy) {

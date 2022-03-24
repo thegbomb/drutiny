@@ -175,6 +175,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
         $uris = empty($uris) ? [null] : $uris;
 
         $forkManager = $this->getForkManager();
+        $forkManager->setAsync(count($uris) > 1);
 
         foreach ($uris as $uri) {
             $forkManager->create()

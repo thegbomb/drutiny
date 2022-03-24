@@ -49,12 +49,6 @@ class AuditRunCommand extends DrutinyBaseCommand
             []
         )
         ->addOption(
-            'remediate',
-            'r',
-            InputOption::VALUE_NONE,
-            'Allow failed checks to remediate themselves if available.'
-        )
-        ->addOption(
             'uri',
             'l',
             InputOption::VALUE_OPTIONAL,
@@ -115,7 +109,7 @@ class AuditRunCommand extends DrutinyBaseCommand
         }
 
         $assessment = $container->get('Drutiny\Assessment')->setUri($uri);
-        $assessment->assessTarget($target, [$policy], $this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input), $input->getOption('remediate'));
+        $assessment->assessTarget($target, [$policy], $this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input));
 
         $profile = $container->get('profile.factory')->create([
           'title' => 'Audit:Run',

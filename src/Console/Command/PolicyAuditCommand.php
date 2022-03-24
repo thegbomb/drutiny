@@ -50,12 +50,6 @@ class PolicyAuditCommand extends DrutinyBaseCommand
             []
         )
         ->addOption(
-            'remediate',
-            'r',
-            InputOption::VALUE_NONE,
-            'Allow failed checks to remediate themselves if available.'
-        )
-        ->addOption(
             'uri',
             'l',
             InputOption::VALUE_OPTIONAL,
@@ -114,7 +108,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         ]]);
 
         // Setup the target.
-        $target = $this->getTargetFactory()->create($input->getArgument('target'));
+        $target = $this->getTargetFactory()->create($input->getArgument('target'), $input->getOption('uri'));
 
         // Get the URLs.
         if ($uri = $input->getOption('uri')) {
@@ -134,7 +128,7 @@ class PolicyAuditCommand extends DrutinyBaseCommand
         $progress->setMessage("Assessing target...");
         $assessment = $this->getContainer()->get('assessment')
         ->setUri($uri)
-        ->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd(), $input->getOption('remediate'));
+        ->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd());
 
         $progress->finish();
         $progress->clear();
