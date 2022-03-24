@@ -74,9 +74,9 @@ services:
     async:
         shared: false
         class: Async\ForkManager
-        # calls:
-        #   - [setMaxForks, ['%async.forks%']]
-        #   - [setWaitTimeout, ['%async.timeout%']]
+        calls:
+           - [setMaxForks, ['%async.forks%']]
+           - [setWaitTimeout, ['%async.timeout%']]
 
     Async\ForkManager:
       alias: 'async'
