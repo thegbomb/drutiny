@@ -73,7 +73,7 @@ services:
 
     async:
         shared: false
-        class: Async\Process
+        class: Async\ForkManager
         # calls:
         #   - [setMaxForks, ['%async.forks%']]
         #   - [setWaitTimeout, ['%async.timeout%']]
