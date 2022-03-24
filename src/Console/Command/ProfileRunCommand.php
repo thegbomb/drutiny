@@ -2,7 +2,7 @@
 
 namespace Drutiny\Console\Command;
 
-use Async\Process;
+use Async\ForkInterface;
 use Drutiny\Assessment;
 use Drutiny\AssessmentManager;
 use Drutiny\Report\FilesystemFormatInterface;
@@ -177,13 +177,13 @@ class ProfileRunCommand extends DrutinyBaseCommand
         $forkManager = $this->getForkManager();
 
         foreach ($uris as $uri) {
-            $forkManager->fork()
-            ->run(function (Process $fork) use ($policies, $input, $uri, $profile) {
-              $fork->setTitle($input->getArgument('target'));
+            $forkManager->create()
+            ->setLabel($input->getArgument('target'))
+            ->run(function (ForkInterface $fork) use ($policies, $input, $uri, $profile) {
               $target = $this->getTargetFactory()->create($input->getArgument('target'), $uri);
 
               $uri = $target->getUri();
-              $fork->setTitle($uri);
+              $fork->setLabel($uri);
 
               $this->getLogger()->info("Evaluating $uri.");
               $assessment = $this->getContainer()->get('assessment')->setUri($uri);
@@ -191,17 +191,17 @@ class ProfileRunCommand extends DrutinyBaseCommand
               return $assessment;
             })
             // Write the report to the provided formats.
-            ->onSuccess(function (Assessment $a, Process $f) use ($formats, $profile, $input, $console) {
+            ->onSuccess(function (Assessment $a, ForkInterface $f) use ($formats, $profile, $input, $console) {
               foreach ($formats as $format) {
-                  $format->setNamespace($this->getReportNamespace($input, $f->getTitle()));
+                  $format->setNamespace($this->getReportNamespace($input, $f->getLabel()));
                   $format->render($profile, $a);
                   foreach ($format->write() as $written_location) {
                     $console->success("Writen $written_location");
                   }
               }
             })
-            ->onError(function ($e, Process $fork) {
-              $this->getLogger()->error("Assessment of ".$fork->getTitle()." failed: " . ((string) $e));
+            ->onError(function (\Exception $e, ForkInterface $fork) {
+              $this->getLogger()->error("Assessment of ".$fork->getLabel()." failed: " . $e->getMessage());
             });
         }
         $progress->advance();

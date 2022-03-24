@@ -2,7 +2,8 @@
 
 namespace Drutiny;
 
-use Async\Process;
+use Async\ForkManager;
+use Async\ForkInterface;
 use Async\Exception\ChildExceptionDetected;
 use Drutiny\AuditResponse\AuditResponse;
 use Drutiny\AuditResponse\NoAuditResponseFoundException;
@@ -37,12 +38,14 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
     protected ProgressBar $progressBar;
     protected string $uuid;
     protected TargetInterface $target;
+    protected ForkManager $forkManager;
 
-    public function __construct(LoggerInterface $logger, ContainerInterface $container, ProgressBar $progressBar)
+    public function __construct(LoggerInterface $logger, ContainerInterface $container, ProgressBar $progressBar, ForkManager $forkManager)
     {
         $this->logger = $logger;
         $this->container = $container;
         $this->progressBar = $progressBar;
+        $this->forkManager = $forkManager;
 
         $data = random_bytes(16);
         $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
@@ -75,9 +78,6 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
         $start = $start ?: new \DateTime('-1 day');
         $end   = $end ?: new \DateTime();
 
-        // Get a forkManager for the assessment.
-        $forkManager = $this->container->get('async');
-
         // Record the reporting period in the assessment so we can pull it
         // later when rendering the report.
         $this->setReportingPeriod($start, $end);
@@ -105,12 +105,12 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
             }
             $audit->getTarget()->setUri($this->uri);
 
-            $forkManager->fork()
-            ->run(function (Process $fork) use ($audit, $policy) {
-              $fork->setTitle($policy->name);
+            $this->forkManager->create()
+            ->setLabel($policy->name)
+            ->run(function (ForkInterface $fork) use ($audit, $policy) {
               return $audit->execute($policy);
             })
-            ->onSuccess(function (AuditResponse $response, Process $fork) {
+            ->onSuccess(function (AuditResponse $response, ForkInterface $fork) {
               $this->progressBar->advance();
               $this->progressBar->setMessage('Audit response of ' . $response->getPolicy()->name . ' recieved.');
               $this->logger->info(sprintf('Policy "%s" assessment on %s completed: %s.', $response->getPolicy()->title, $this->uri(), $response->getType()));
@@ -122,17 +122,17 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
               }
               $this->setPolicyResult($response);
             })
-            ->onError(function (ChildExceptionDetected $e, Process $fork) {
-              $err_msg = (string) $e;
+            ->onError(function (\Exception $e, ForkInterface $fork) {
+              $err_msg = $e->getMessage();
               $this->progressBar->advance();
-              $this->progressBar->setMessage('Audit response of ' . $fork->getTitle() . ' failed to complete.');
-              $this->logger->error($fork->getTitle().': '.$err_msg);
+              $this->progressBar->setMessage('Audit response of ' . $fork->getLabel() . ' failed to complete.');
+              $this->logger->error($fork->getLabel().': '.$err_msg);
               $this->successful = false;
               $this->errorCode = $e->code;
             });
         }
 
-        $returned = count($forkManager->getForkResults());
+        $returned = count($this->forkManager->getForkResults());
 
         $total = count($policies);
         $this->logger->info("Assessment returned $returned/$total from the fork manager.");

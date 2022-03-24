@@ -6,7 +6,7 @@ use Drutiny\PolicyFactory;
 use Drutiny\ProfileFactory;
 use Drutiny\Target\TargetFactory;
 use Drutiny\LanguageManager;
-use Async\Process;
+use Async\ForkManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -68,7 +68,7 @@ abstract class DrutinyBaseCommand extends Command
     /**
      * Get utility for managing forks.
      */
-    protected function getForkManager():Process
+    protected function getForkManager():ForkManager
     {
         return $this->getContainer()->get('async');
     }
