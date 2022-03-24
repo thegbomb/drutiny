@@ -39,7 +39,7 @@
         "league/html-to-markdown": "^4.9",
         "symfony/event-dispatcher": "^5.0",
         "symfony/property-access": "^5.0",
-        "fiasco/async": "^2.0-alpha1"
+        "fiasco/async": "^2.0-alpha2"
     },
     "conflict": {
       "drutiny/http": "*",
