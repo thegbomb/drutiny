@@ -28,7 +28,7 @@ class StatusCommand extends Command
   /**
    * @inheritdoc
    */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output):int
     {
         $style = new SymfonyStyle($input, $output);
 
@@ -39,7 +39,7 @@ class StatusCommand extends Command
         $rows[] = [
         'PHP version',
         phpversion(),
-        'Drutiny requires PHP 7.3 or later.'
+        'Drutiny requires PHP 7.4 or later.'
         ];
 
       // PHP Memory Limit
@@ -49,11 +49,7 @@ class StatusCommand extends Command
         'Drutiny recommends no memory limit (-1)'
         ];
 
-        $rows[] = [
-        'BCMath PHP Extension',
-        function_exists('bcadd') ? 'Enabled' : 'Disabled',
-        'Must be enabled'
-        ];
         $style->table($headers, $rows);
+        return 0;
     }
 }

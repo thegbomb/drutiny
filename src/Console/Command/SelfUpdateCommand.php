@@ -37,7 +37,7 @@ class SelfUpdateCommand extends DrutinyBaseCommand
 
         if (!\Phar::running()) {
           $io->error("This is not a self-upgradable release. Please use the latest Phar release file.");
-          // return 2;
+          return 2;
         }
 
         $current_version = $this->getApplication()->getVersion();

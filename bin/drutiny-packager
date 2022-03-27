@@ -1,0 +1,104 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * @file
+ * Build a phar of this repository.
+ */
+
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\SingleCommandApplication;
+
+require 'vendor/autoload.php';
+
+define('BUILD_DIRECTORY', getcwd() . '/.build');
+
+(new SingleCommandApplication())
+    ->setName('Build Phar')
+    ->addArgument('version', InputArgument::OPTIONAL, 'A git branch or tag to build from.', false)
+    ->addOption('package-file', 'f', InputOption::VALUE_OPTIONAL, 'Location of the package file', 'package.yml')
+    ->setCode(function (InputInterface $input, OutputInterface $output) {
+        // output arguments and options
+        $output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+        $console = new ConsoleLogger($output);
+
+        $package_yaml = $input->getOption('package-file');
+        if (!file_exists($package_yaml)) {
+          $console->log('error', 'Drutiny package file not found: '.$package_yaml);
+          return 1;
+        }
+
+        $package = Yaml::parseFile($package_yaml);
+        $version = $input->getArgument('version') ?: $package['version'];
+
+        $fs = new Filesystem();
+
+        if ($fs->exists(BUILD_DIRECTORY)) {
+          $console->log('notice', 'Removing build directory: ' . BUILD_DIRECTORY);
+          $fs->remove(BUILD_DIRECTORY);
+        }
+
+        $console->log('info', 'Creating build directory: ' . BUILD_DIRECTORY);
+        $fs->mkdir(BUILD_DIRECTORY);
+
+        $console->log('info', "Running git archive of $version: " . BUILD_DIRECTORY);
+
+        exec("git archive HEAD | tar -x -C ".BUILD_DIRECTORY);
+        passthru("cd ".BUILD_DIRECTORY." && composer install --prefer-dist --no-dev");
+        exec("cd ".BUILD_DIRECTORY." && find . -type l ! -exec test -e {} \; -delete");
+        file_put_contents(BUILD_DIRECTORY."/VERSION", $version);
+
+        $docs = new Finder();
+        $docs
+          ->in(BUILD_DIRECTORY)
+          ->name('*.rst')
+          ->name('*.md');
+
+        foreach ($docs as $doc) {
+          $console->log('info', 'Removing ' . $doc->getRealPath());
+        }
+
+        $fs->remove($docs);
+
+        $phar_file = strtr('name-versionsuffix.phar', [
+          'name' => $package['package'],
+          'version' => $version,
+          'suffix' => '-php'.phpversion(),
+        ]);
+
+        // Remove any old build.
+        if ($fs->exists($phar_file)) {
+          $console->log('warning', $phar_file . ' already exists. Removing..');
+          $fs->remove($phar_file);
+        }
+
+        $cwd = getcwd();
+        chdir(BUILD_DIRECTORY);
+
+        $console->log('info', 'Copying stub...');
+        copy(dirname(__DIR__)."/stub.php", "stub.php");
+
+        $console->log('info', 'Building phar...');
+        // Build Phar.
+        $phar = new Phar($cwd . '/' . $phar_file);
+        // Add all files in the project.
+        $phar->buildFromDirectory('.');
+        $phar->setStub("#!/usr/bin/env php \n" . $phar->createDefaultStub('stub.php'));
+        $phar->stopBuffering();
+
+        chdir($cwd);
+
+        $fs->chmod($phar_file, 0766);
+        $console->log('notice', 'Build complete: ' . $phar_file);
+
+        return 0;
+    })
+    ->run();
