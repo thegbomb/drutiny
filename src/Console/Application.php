@@ -76,6 +76,9 @@ class Application extends BaseApplication
           case OutputInterface::VERBOSITY_DEBUG:
             $this->kernel->getContainer()->get('logger.logfile')->setLevel('DEBUG');
             break;
+          default:
+            $this->kernel->getContainer()->get('logger.logfile')->setLevel('WARNING');
+            break;
         }
 
         $this->getKernel()->dispatchEvent('command.run', [
