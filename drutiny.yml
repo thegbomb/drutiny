@@ -16,6 +16,7 @@ parameters:
   log.name: drutiny
   log.filepath: '%log.directory%/%log.name%.log'
   log.level: WARNING
+  log.format: "[%%datetime%%][pid:%%extra.process_id%% %%extra.memory_usage%%] %%channel%%.%%level_name%%: %%message%%\n"
   log.max_files: 3
   twig.templates:
     - '%drutiny_core_dir%/twig'
@@ -181,6 +182,7 @@ services:
       calls:
         - [pushProcessor, ['@Monolog\Processor\MemoryUsageProcessor']]
         - [pushProcessor, ['@Monolog\Processor\ProcessIdProcessor']]
+        - [pushProcessor, ['@Monolog\Processor\PsrLogMessageProcessor']]
         - [pushHandler, ['@logger.logfile']]
         - [pushHandler, ['@Drutiny\Console\Helper\MonologProgressBarHandler']]
 
@@ -195,10 +197,11 @@ services:
 
     Monolog\Processor\ProcessIdProcessor:
     Monolog\Processor\MemoryUsageProcessor:
+    Monolog\Processor\PsrLogMessageProcessor:
 
     Monolog\Formatter\LineFormatter:
       arguments:
-        - null
+        - '%log.format%'
         - null
         - true
 
