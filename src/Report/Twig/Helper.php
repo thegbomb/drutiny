@@ -40,7 +40,7 @@ class Helper {
       $globals = $twig->getGlobals();
       $template = 'report/policy/'.$response->getType().'.'.$globals['ext'].'.twig';
       $globals['logger']->info("Rendering audit response for ".$response->getPolicy()->name.' with '.$template);
-      $globals['logger']->info('Keys: ' . implode(', ', array_keys($response->getTokens())));
+      $globals['logger']->debug('Keys: ' . implode(', ', array_keys($response->getTokens())));
       return $twig->render($template, [
         'audit_response' => $response,
         'assessment' => $assessment,

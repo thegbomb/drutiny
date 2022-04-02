@@ -84,11 +84,11 @@ class PolicyStorage implements PolicySourceInterface
     public function getList(LanguageManager $languageManager)
     {
       if (file_exists($this->getListFilename())) {
-        $this->logger->notice("Loading policies from " . $this->getListFilename());
+        $this->logger->debug("Loading policies from " . $this->getListFilename());
         return json_decode(file_get_contents($this->getListFilename()), true);
       }
       $contents = $this->source->getList($this->languageManager);
-      $this->logger->notice("Writting policies to " . $this->getListFilename());
+      $this->logger->debug("Writting policies to " . $this->getListFilename());
       file_put_contents($this->getListFilename(), json_encode($contents));
       return $contents;
     }
