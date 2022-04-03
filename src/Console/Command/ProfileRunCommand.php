@@ -227,7 +227,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
         $progress->advance();
 
         foreach ($forkManager->waitWithUpdates(600) as $remaining) {
-          $progress->setMessage(sprintf("%d/%d assessments remaining.", $remaining - count($uris), count($uris)));
+          $progress->setMessage(sprintf("%d/%d assessments remaining.", count($uris) - $remaining, count($uris)));
           $progress->display();
         }
 

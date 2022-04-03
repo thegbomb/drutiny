@@ -135,6 +135,11 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
             });
         }
 
+        foreach ($this->forkManager->waitWithUpdates(400) as $remaining) {
+          $this->progressBar->setMessage(sprintf("%d/%d policy audits remaining for %s.",  count($policies) - $remaining, count($policies), $this->uri));
+          $this->progressBar->display();
+        }
+
         $returned = count($this->forkManager->getForkResults());
 
         $total = count($policies);
