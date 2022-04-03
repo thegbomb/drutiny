@@ -135,7 +135,7 @@ class Dependency
         $audit->getLogger()->debug('Expression FAILED.', [
           'class' => get_class($this),
           'expression' => $expression,
-          'return' => print_r($return, 1),
+          'return' => print_r($return ?? 'EXCEPTION_THROWN', 1),
           'syntax' => $this->syntax
         ]);
 
