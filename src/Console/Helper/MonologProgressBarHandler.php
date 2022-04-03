@@ -43,14 +43,10 @@ Class MonologProgressBarHandler extends AbstractProcessingHandler {
   protected function write(array $record): void
   {
       $message = substr($record['formatted'], 0, min($this->terminal->getWidth(), strlen($record['formatted'])));
+      $this->progressBar->setMessage($message);
 
-      if ($record['level'] >=  Logger::ERROR) {
-        $this->progressBar->clear();
-        $this->output->writeln(sprintf('<error>%s</error>', $message));
-        $this->output->writeln('');
-      }
-      else {
-        $this->progressBar->setMessage($message);
+      if ($record['level'] >=  Logger::NOTICE) {
+        $this->progressBar->display();
       }
   }
 }
