@@ -4,6 +4,8 @@ namespace Drutiny\Console\Command;
 
 use Async\ForkInterface;
 use Drutiny\Assessment;
+use Drutiny\Profile;
+use Drutiny\Policy;
 use Drutiny\AssessmentManager;
 use Drutiny\Report\FilesystemFormatInterface;
 use Drutiny\Target\InvalidTargetException;
@@ -13,6 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 
 /**
@@ -93,35 +96,22 @@ class ProfileRunCommand extends DrutinyBaseCommand
         $this->configureLanguage();
     }
 
-  /**
-   * {@inheritdoc}
-   */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    /**
+     * Prepare profile from input options.
+     */
+    protected function prepareProfile(InputInterface $input, ProgressBar $progress):Profile
     {
-        $progress = $this->getProgressBar(6);
-        $progress->start();
-        $progress->setMessage("Loading profile..");
-
-        $this->initLanguage($input);
-
-        $console = new SymfonyStyle($input, $output);
-
         $profile = $this->getProfileFactory()
           ->loadProfileByName($input->getArgument('profile'))
           ->setReportPerSite(true);
-
-        $progress->advance();
-        $progress->setMessage("Loading policy definitions..");
 
         // Override the title of the profile with the specified value.
         if ($title = $input->getOption('title')) {
             $profile->title = $title;
         }
 
-        // Setup the reporting formats. These are intiated before the auditing
-        // incase there is a failure in establishing the format.
-        $progress->setMessage("Loading formats..");
-        $formats = $this->getFormats($input, $profile);
+        $progress->advance();
+        $progress->setMessage("Loading policy definitions..");
 
         // Allow command line to add policies to the profile.
         $included_policies = $input->getOption('include-policy');
@@ -131,14 +121,22 @@ class ProfileRunCommand extends DrutinyBaseCommand
               $policy_name => ['name' => $policy_name]
             ]);
         }
-        $progress->advance();
-        $progress->setMessage("Loading targets..");
 
         // Allow command line omission of policies highlighted in the profile.
         // WARNING: This may remove policy dependants which may make polices behave
         // in strange ways.
         $profile->excluded_policies = $input->getOption('exclude-policy') ?? [];
 
+        $profile->setReportingPeriod($this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input));
+
+        return $profile;
+    }
+
+    /**
+     * Load URIs from input options.
+     */
+    protected function loadUris(InputInterface $input):array
+    {
         // Get the URLs.
         $uris = $input->getOption('uri');
 
@@ -147,54 +145,75 @@ class ProfileRunCommand extends DrutinyBaseCommand
             $this->getLogger()->debug("Loading domains from $source.");
             $domains = array_merge($this->getDomainSource()->getDomains($source, $options), $domains);
         }
-        $progress->advance();
-        $progress->setMessage("Loading policies..");
 
         if (!empty($domains)) {
           // Merge domains in with the $uris argument.
           // Omit the "default" key that is present by default.
             $uris = array_merge($domains, ($uris === ['default']) ? [] : $uris);
         }
+        return empty($uris) ? [null] : $uris;
+    }
 
-        $results = [];
+  /**
+   * {@inheritdoc}
+   */
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $this->initLanguage($input);
 
-        $profile->setReportingPeriod($this->getReportingPeriodStart($input), $this->getReportingPeriodEnd($input));
+        $progress = $this->getProgressBar(6);
+        $progress->start();
 
+        $progress->setMessage("Loading profile..");
+        $profile = $this->prepareProfile($input, $progress);
+
+        $progress->advance();
+
+        $uris = $this->loadUris($input);
         $definitions = $profile->getAllPolicyDefinitions();
-        $max_steps = $progress->getMaxSteps() + count($definitions) + count($uris);
-        $progress->setMaxSteps($max_steps);
 
-        $policies = [];
+        // Reset the progress step tracker.
+        $progress->setMaxSteps($progress->getMaxSteps() + count($definitions) + count($uris));
+
+        // Preload policies so they're faster to load later.
         foreach ($profile->getAllPolicyDefinitions() as $policyDefinition) {
             $this->getLogger()->debug("Loading policy from definition: " . $policyDefinition->name);
-            $policies[] = $policyDefinition->getPolicy($this->getPolicyFactory());
+            $policyDefinition->getPolicy($this->getPolicyFactory());
             $progress->advance();
         }
         $progress->advance();
 
-        $uris = empty($uris) ? [null] : $uris;
-
         $forkManager = $this->getForkManager();
         $forkManager->setAsync(count($uris) > 1);
 
+        $console = new SymfonyStyle($input, $output);
+        $target = $input->getArgument('target');
+
         foreach ($uris as $uri) {
-            $forkManager->create()
-            ->setLabel($input->getArgument('target'))
-            ->run(function (ForkInterface $fork) use ($policies, $input, $uri, $profile) {
-              $target = $this->getTargetFactory()->create($input->getArgument('target'), $uri);
-
-              $uri = $target->getUri();
-              $fork->setLabel($uri);
-
-              $this->getLogger()->info("Evaluating $uri.");
-              $assessment = $this->getContainer()->get('assessment')->setUri($uri);
-              $assessment->assessTarget($target, $policies, $profile->getReportingPeriodStart(), $profile->getReportingPeriodEnd());
-              return $assessment;
+          $forkManager->create()
+            ->setLabel(sprintf("Assessment of '%s': %s", $target, $uri))
+            ->run(function (ForkInterface $fork) use ($target, $uri, $profile):Assessment
+              {
+              $this->getLogger()->notice($fork->getLabel());
+              return $this->getContainer()
+                ->get('assessment')
+                ->setUri($uri ?? '')
+                ->assessTarget(
+                // Instance of TargetInterface.
+                $this->getTargetFactory()->create($target, $uri),
+                // Array of Policy objects.
+                array_map(
+                  fn($p):Policy => $p->getPolicy($this->getPolicyFactory()),
+                  $profile->getAllPolicyDefinitions()
+                ),
+                $profile->getReportingPeriodStart(),
+                $profile->getReportingPeriodEnd()
+              );
             })
             // Write the report to the provided formats.
-            ->onSuccess(function (Assessment $a, ForkInterface $f) use ($formats, $profile, $input, $console) {
-              foreach ($formats as $format) {
-                  $format->setNamespace($this->getReportNamespace($input, $f->getLabel()));
+            ->onSuccess(function (Assessment $a, ForkInterface $f) use ($profile, $input, $console, $target) {
+              foreach ($this->getFormats($input, $profile) as $format) {
+                  $format->setNamespace($this->getReportNamespace($input, $a->uri()));
                   $format->render($profile, $a);
                   foreach ($format->write() as $written_location) {
                     $console->success("Writen $written_location");
@@ -202,13 +221,17 @@ class ProfileRunCommand extends DrutinyBaseCommand
               }
             })
             ->onError(function (\Exception $e, ForkInterface $fork) {
-              $this->getLogger()->error("Assessment of ".$fork->getLabel()." failed: " . $e->getMessage());
+              $this->getLogger()->error($fork->getLabel()." failed: " . $e->getMessage());
             });
         }
         $progress->advance();
 
+        foreach ($forkManager->waitWithUpdates(600) as $remaining) {
+          $progress->setMessage(sprintf("%d/%d assessments remaining.", $remaining - count($uris), count($uris)));
+          $progress->display();
+        }
+
         $exit_codes = [0];
-        $results = [];
         $assessment_manager = new AssessmentManager();
 
         foreach ($forkManager->getForkResults() as $assessment) {
