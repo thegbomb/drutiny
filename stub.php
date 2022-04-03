@@ -37,7 +37,13 @@ if (empty($versions) && !Phar::running() && file_exists(DRUTINY_LIB . '/.git') &
 // Fallback option.
 $versions[] = 'dev';
 
+$suffix = '';
+if (file_exists(DRUTINY_LIB.'/BUILD_DATETIME')) {
+  $date = unserialize(file_get_contents(DRUTINY_LIB.'/BUILD_DATETIME'));
+  $suffix = $date->format(' (Y-m-d H:i:s T)');
+}
+
 $kernel = new Kernel('production');
 
-$application = new Application($kernel, reset($versions));
+$application = new Application($kernel, reset($versions).$suffix);
 $application->run();
