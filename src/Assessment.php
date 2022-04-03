@@ -75,6 +75,8 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
     public function assessTarget(TargetInterface $target, array $policies, \DateTime $start = null, \DateTime $end = null)
     {
         $this->target = $target;
+        $this->uri = $target->getUri();
+
         $start = $start ?: new \DateTime('-1 day');
         $end   = $end ?: new \DateTime();
 
@@ -104,7 +106,7 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
             if ($target !== $audit->getTarget()) {
               throw new \Exception("Audit target not the same as assessment target.");
             }
-            $audit->getTarget()->setUri($this->uri);
+            // $audit->getTarget()->setUri($this->uri);
 
             $this->forkManager->create()
             ->setLabel($policy->name)
