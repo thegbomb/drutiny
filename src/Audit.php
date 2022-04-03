@@ -246,7 +246,7 @@ abstract class Audit implements AuditInterface
           }
         }
         catch (\Exception $e) {
-          $this->logger->error("Evaluation failure.", [
+          $this->logger->error("Evaluation failure {syntax}: {expression}: {message}", [
             'syntax' => $language,
             'expression' => $expression,
             'exception' => get_class($e),
