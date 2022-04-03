@@ -145,22 +145,44 @@ abstract class Audit implements AuditInterface
         } catch (DependencyException $e) {
             $outcome = AuditInterface::ERROR;
             $outcome = $e->getDependency()->getFailBehaviour();
-            $this->set('exception', $e->getMessage());
+            $message = $e->getMessage();
+            $this->set('exception', $message);
             $this->set('exception_type', get_class($e));
+            $this->logger->warning("'{policy}' {class} ({uri}): $message", [
+              'class' => get_class($this),
+              'uri' => $this->target->getUri(),
+              'policy' => $policy->name
+            ]);
         } catch (AuditValidationException $e) {
             $outcome = AuditInterface::NOT_APPLICABLE;
-            $this->set('exception', $e->getMessage());
+            $message = $e->getMessage();
+            $this->set('exception', $message);
             $this->set('exception_type', get_class($e));
-            $this->logger->warning($e->getMessage());
+            $this->logger->warning("'{policy}' {class} ({uri}): $message", [
+              'class' => get_class($this),
+              'uri' => $this->target->getUri(),
+              'policy' => $policy->name
+            ]);
         } catch (NoSuchPropertyException $e) {
             $outcome = AuditInterface::NOT_APPLICABLE;
-            $this->set('exception', $e->getMessage());
+            $message = $e->getMessage();
+            $this->set('exception', $message);
             $this->set('exception_type', get_class($e));
-            $this->logger->warning($e->getMessage());
+            $this->logger->warning("'{policy}' {class} ({uri}): $message", [
+              'class' => get_class($this),
+              'uri' => $this->target->getUri(),
+              'policy' => $policy->name
+            ]);
         } catch (InvalidArgumentException $e) {
             $outcome = AuditInterface::ERROR;
             $this->set('exception_type', get_class($e));
-            $this->logger->warning($e->getMessage());
+            $message = $e->getMessage();
+            $this->set('exception', $message);
+            $this->logger->warning("'{policy}' {class} ({uri}): $message", [
+              'class' => get_class($this),
+              'uri' => $this->target->getUri(),
+              'policy' => $policy->name
+            ]);
             $this->logger->warning($e->getTraceAsString());
             $this->logger->warning($policy->name . ': ' . get_class($this));
             $this->logger->warning(print_r($policy->getAllParameters(), 1));
@@ -176,7 +198,11 @@ abstract class Audit implements AuditInterface
             }
             $this->set('exception', $message);
             $this->set('exception_type', get_class($e));
-            $this->logger->error($message);
+            $this->logger->error("'{policy}' {class} ({uri}): $message", [
+              'class' => get_class($this),
+              'uri' => $this->target->getUri(),
+              'policy' => $policy->name
+            ]);
         } finally {
             // Log the parameters output.
             $tokens = $this->dataBag->export();
