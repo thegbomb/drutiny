@@ -58,10 +58,10 @@ trait Drutiny2xBackwardCompatibilityTrait {
           break;
       }
     }
-    $this->logger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getService("drush"). Called by: ' . $audit);
+    $this->audit->getLogger()->warning(__METHOD__.' is a deprecated method. Please use $sandbox->getTarget()->getService("drush"). Called by: ' . $audit);
     //return $this->getTarget()->getService('drush');
 
-    return new class ($this->getTarget(), $opts) {
+    return new class ($this->audit->getTarget(), $opts) {
       protected $target;
       protected $opts;
       public function __construct($target, $opts)
