@@ -24,6 +24,9 @@ class PolicyFactory
     public function __construct(ContainerInterface $container, LoggerInterface $logger, LanguageManager $languageManager, ProgressBar $progress)
     {
         $this->setContainer($container);
+        if (method_exists($logger, 'withName')) {
+          $logger = $logger->withName('policy.factory');
+        }
         $this->logger = $logger;
         $this->languageManager = $languageManager;
         $this->progress = $progress;

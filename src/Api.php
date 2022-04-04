@@ -15,6 +15,9 @@ class Api
     public function __construct(Client $http_factory, LoggerInterface $logger)
     {
         $this->httpFactory = $http_factory;
+        if (method_exists($logger, 'withName')) {
+          $logger = $logger->withName('http');
+        }
         $this->logger = $logger;
     }
 

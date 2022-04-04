@@ -25,6 +25,9 @@ abstract class Target implements \ArrayAccess, ExecutionInterface
 
   public function __construct(ExecutionInterface $local, LoggerInterface $logger, EventDispatchedDataBag $databag)
   {
+    if (method_exists($logger, 'withName')) {
+      $logger = $logger->withName('target');
+    }
     $this->logger = $logger;
     $this->propertyAccessor = PropertyAccess::createPropertyAccessorBuilder()
       ->enableExceptionOnInvalidIndex()

@@ -51,6 +51,9 @@ abstract class Audit implements AuditInterface
       ) {
         $this->container = $container;
         $this->target = $target;
+        if (method_exists($logger, 'withName')) {
+          $logger = $logger->withName('audit');
+        }
         $this->logger = $logger;
         $this->definition = new InputDefinition();
         $this->expressionLanguage = $expressionLanguage;

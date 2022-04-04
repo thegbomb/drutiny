@@ -24,6 +24,9 @@ class LocalService implements ExecutionInterface {
   public function __construct(CacheInterface $cache, LoggerInterface $logger, ContainerInterface $container)
   {
     $this->cache = $cache;
+    if (method_exists($logger, 'withName')) {
+      $logger = $logger->withName('process');
+    }
     $this->logger = $logger;
     $this->setContainer($container);
   }

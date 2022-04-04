@@ -42,6 +42,9 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
 
     public function __construct(LoggerInterface $logger, ContainerInterface $container, ProgressBar $progressBar, ForkManager $forkManager)
     {
+        if (method_exists($logger, 'withName')) {
+          $logger = $logger->withName('assessment');
+        }
         $this->logger = $logger;
         $this->container = $container;
         $this->progressBar = $progressBar;

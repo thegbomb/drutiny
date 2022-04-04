@@ -22,6 +22,9 @@ class EventDispatchedDataBag extends DataBag
     public function __construct(EventDispatcher $eventDispatcher, LoggerInterface $logger)
     {
         $this->eventDispatcher = $eventDispatcher;
+        if (method_exists($logger, 'withName')) {
+          $logger = $logger->withName('databag');
+        }
         $this->logger = $logger;
     }
 
