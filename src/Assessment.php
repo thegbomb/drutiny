@@ -128,7 +128,7 @@ class Assessment implements ExportableInterface, AssessmentInterface, \Serializa
               }
               $this->setPolicyResult($response);
             })
-            ->onError(function (\Exception $e, ForkInterface $fork) {
+            ->onError(function (ChildExceptionDetected $e, ForkInterface $fork) {
               $err_msg = $e->getMessage();
               $this->progressBar->advance();
               $this->progressBar->setMessage('Audit response of ' . $fork->getLabel() . ' failed to complete.');
