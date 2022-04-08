@@ -35,16 +35,17 @@ class CacheClearCommand extends Command
         $this
         ->setName('cache:clear')
         ->setDescription('Clear the Drutiny cache')
-        ->addArgument(
-          'cache',
-          InputArgument::OPTIONAL,
-          'A cache reference to purge (e.g. twig).'
-          )
         ->addOption(
           'cid',
           null,
           InputOption::VALUE_OPTIONAL,
           'The cache ID to purge from cache.'
+          )
+          ->addOption(
+            'twig-only',
+            't',
+            InputOption::VALUE_NONE,
+            'Purge the '
           )
         ;
     }
@@ -55,43 +56,38 @@ class CacheClearCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        if ($cid = $input->getOption('cid')) {
-          $this->cache->delete($cid);
-          $io->success('Cache item cleared: ' . $cid);
+
+        $adaptors = [
+          $this->container->get('cache'),
+          $this->container->get('cache.global'),
+        ];
+
+        if ($input->getOption('twig-only')) {
+          $adaptors = [];
+        }
+
+        $cid = $input->getOption('cid');
+
+        foreach ($adaptors as $adaptor) {
+          empty($cid) ? $adaptor->clear() : $adaptor->delete($cid);
+        }
+
+        $dir = $this->container->getParameter('twig.cache');
+
+        if (!file_exists($dir)) {
+          $io->info('Cache is already cleared: ' . $dir);
           return 0;
         }
-        $fs['cache.directory'] = $this->container->getParameter('cache.directory');
-        $fs['twig.cache'] = $this->container->getParameter('twig.cache');
-
-        $cid = $input->getArgument('cache');
-
-        switch ($cid) {
-            case 'twig':
-              $fs = [$fs['twig.cache']];
-            case  NULL:
-              break;
-            default:
-              $this->cache->delete($cid);
-              $io->success('Cache item cleared: ' . $cid);
-              break;
+        if (!is_writable($dir)) {
+          $io->error(sprintf('Cannot clear cache: %s is not writable.', $dir));
+          return 0;
         }
-
-        foreach ($fs as $dir) {
-          if (!file_exists($dir)) {
-            $io->error('Cache is already cleared: ' . $dir);
-            continue;
-          }
-          if (!is_writable($dir)) {
-            $io->error(sprintf('Cannot clear cache: %s is not writable.', $dir));
-            continue;
-          }
-          exec(sprintf('rm -rf %s', $dir), $output, $status);
-          if ($status === 0) {
-            $io->success('Cache is cleared: ' . $dir);
-            continue;
-          }
-          $io->error(sprintf('Cannot clear cache from %s. An error occured.', $dir));
+        exec(sprintf('rm -rf %s', $dir), $output, $status);
+        if ($status === 0) {
+          $io->success('Cache is cleared: ' . $dir);
+          return 0;
         }
+        $io->error(sprintf('Cannot clear cache from %s. An error occured.', $dir));
         return 0;
     }
 }
