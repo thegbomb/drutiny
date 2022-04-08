@@ -3,6 +3,7 @@
 namespace Drutiny\Console\Command;
 
 use Async\ForkInterface;
+use Async\Exception\ChildExceptionDetected;
 use Drutiny\Assessment;
 use Drutiny\Profile;
 use Drutiny\Policy;
@@ -220,7 +221,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
                   }
               }
             })
-            ->onError(function (\Exception $e, ForkInterface $fork) {
+            ->onError(function (ChildExceptionDetected $e, ForkInterface $fork) {
               $this->getLogger()->error($fork->getLabel()." failed: " . $e->getMessage());
             });
         }
