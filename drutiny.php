@@ -8,3 +8,6 @@ $messages = [
   'Wubba Lubba Dub Dub! 🎉',
 ];
 $container->setParameter('progress_bar.loading_message', $messages[array_rand($messages)]);
+
+// Unique identify used for things like localized caching.
+$container->setParameter('instance_id', hash('md5', __FILE__));

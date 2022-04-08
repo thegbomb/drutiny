@@ -9,6 +9,7 @@ parameters:
   policy.library.fs: '%drutiny_config_dir%/policy'
   cache.directory: '%drutiny_config_dir%/cache'
   cache.ttl: 3600
+  cache.namespace: 'drutiny-%instance_id%'
   config.local: '%drutiny_config_dir%/config.yml'
   config.credentials: '%drutiny_config_dir%/.credentials.yml'
   config.old_path: '%drutiny_config_dir%/.drutiny_creds.yml'
@@ -97,12 +98,19 @@ services:
 
     cache.filesystem:
         class: Symfony\Component\Cache\Adapter\FilesystemAdapter
-        arguments: [drutiny, '%cache.ttl%', '%cache.directory%']
+        arguments: ['%cache.namespace%', '%cache.ttl%', '%cache.directory%']
         calls:
           - [setLogger, ['@logger']]
           - [prune]
     cache:
       alias: cache.filesystem
+
+    cache.global:
+      class: Symfony\Component\Cache\Adapter\FilesystemAdapter
+      arguments: [drutiny, '%cache.ttl%', '%cache.directory%']
+      calls:
+        - [setLogger, ['@logger']]
+        - [prune]
 
     yaml:
       class: Symfony\Component\Yaml\Yaml
