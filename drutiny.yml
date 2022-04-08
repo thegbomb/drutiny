@@ -246,6 +246,9 @@ services:
     target.ddev:
       class: Drutiny\Target\DdevTarget
 
+    target.docksal:
+      class: Drutiny\Target\DocksalTarget
+
     target.lando:
       class: Drutiny\Target\LandoTarget
 
