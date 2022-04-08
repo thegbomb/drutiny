@@ -37,11 +37,11 @@ class DocksalTarget extends DrushTarget implements TargetInterface, TargetSource
 
         $config_command = sprintf('cd %s && fin config yml', $targets[$alias]);
 
-        $this['docksal.config'] = $this['service.local']->run($config_command, function ($output) {
+        $this['docksal.config'] = $this['service.exec']->get('local')->run($config_command, function ($output) {
           return Yaml::parse($output);
         });
 
-        $containers = $this['service.local']->run("docker container ls --format '{{json .}}' | grep _cli", function ($output) {
+        $containers = $this['service.exec']->get('local')->run("docker container ls --format '{{json .}}' | grep _cli", function ($output) {
           $containers = [];
           foreach (array_filter(explode(PHP_EOL, $output), 'trim') as $line) {
             $container = json_decode($line, true);
@@ -61,7 +61,7 @@ class DocksalTarget extends DrushTarget implements TargetInterface, TargetSource
 
         $this['service.docker'] = new DockerService($this['service.local']);
         $this['service.docker']->setContainer($container['Names']);
-        $this['service.exec'] = $this['service.docker'];
+        $this['service.exec']->addHandler($this['service.docker'], 'docker');
 
         $this['drush.root'] = '/var/www';
 
@@ -89,7 +89,7 @@ class DocksalTarget extends DrushTarget implements TargetInterface, TargetSource
 
     protected function findTargets()
     {
-      return $this['service.local']->run('fin alias list', function ($output) {
+      return $this['service.exec']->get('local')->run('fin alias list', function ($output) {
         $lines = array_filter(array_map('trim', explode(PHP_EOL, $output)));
         // Remove headers
         array_shift($lines);

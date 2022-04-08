@@ -33,7 +33,7 @@ class DrushTarget extends Target implements
         $this['drush.alias'] = $alias;
 
         $status_cmd = 'drush site:alias $DRUSH_ALIAS --format=json';
-        $drush_properties = $this['service.local']->run($status_cmd, function ($output) use ($alias) {
+        $drush_properties = $this['service.exec']->get('local')->run($status_cmd, function ($output) use ($alias) {
           $json = json_decode($output, true);
           $index = substr($alias, 1);
           return $json[$index] ?? array_shift($json);
@@ -123,7 +123,7 @@ class DrushTarget extends Target implements
      */
     public function getAvailableTargets():array
     {
-      $aliases = $this['service.local']->run('drush site-alias --format=json', function ($output) {
+      $aliases = $this['service.exec']->get('local')->run('drush site-alias --format=json', function ($output) {
         return json_decode($output, true);
       });
       $valid = array_filter(array_keys($aliases), function ($a) {

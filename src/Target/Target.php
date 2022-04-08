@@ -23,7 +23,7 @@ abstract class Target implements \ArrayAccess, ExecutionInterface
   protected $dispatcher;
   private string $targetName;
 
-  public function __construct(ExecutionInterface $local, LoggerInterface $logger, EventDispatchedDataBag $databag)
+  public function __construct(ExecutionInterface $service, LoggerInterface $logger, EventDispatchedDataBag $databag)
   {
     if (method_exists($logger, 'withName')) {
       $logger = $logger->withName('target');
@@ -35,10 +35,10 @@ abstract class Target implements \ArrayAccess, ExecutionInterface
 
     $this->properties = $databag->setObject($this);
 
-    $local->setTarget($this);
+    $service->setTarget($this);
 
-    $this['service.local'] = $local;
-    $this['service.exec'] = $local;
+    $this['service.local'] = $service->get('local');
+    $this['service.exec'] = $service;
   }
 
   final public function setTargetName(string $name):TargetInterface

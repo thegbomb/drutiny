@@ -76,9 +76,9 @@ class RemoteDrushBridge implements EventSubscriberInterface {
         return;
       }
 
-      $remoteService = new RemoteService($target['service.local']);
+      $remoteService = new RemoteService($target['service.exec']->get('local'));
       $remoteService->setConfig('User', $user);
       $remoteService->setConfig('Host', $host);
-      $target['service.exec'] = $remoteService;
+      $target['service.exec']->addHandler($remoteService, 'drush');
   }
 }

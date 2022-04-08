@@ -29,7 +29,7 @@ class DdevTarget extends DrushTarget implements TargetInterface, TargetSourceInt
         $this['ddev.name'] = $alias;
 
         $status_cmd = sprintf('ddev describe %s -j', $alias);
-        $ddev = $this['service.local']->run($status_cmd, function ($output) {
+        $ddev = $this['service.exec']->get('local')->run($status_cmd, function ($output) {
           $json = json_decode($output, true);
           return $json['raw'];
         });
@@ -41,7 +41,7 @@ class DdevTarget extends DrushTarget implements TargetInterface, TargetSourceInt
         $this['ddev'] = $ddev;
         $this['service.docker'] = new DockerService($this['service.local']);
         $this['service.docker']->setContainer($ddev['services']['web']['full_name']);
-        $this['service.exec'] = $this['service.docker'];
+        $this['service.exec']->addHandler($this['service.docker'], 'docker');
 
         $this['drush.root'] = '/var/www/html';
 
@@ -55,7 +55,7 @@ class DdevTarget extends DrushTarget implements TargetInterface, TargetSourceInt
      */
     public function getAvailableTargets():array
     {
-      $aliases = $this['service.local']->run('ddev list -A -j', function ($output) {
+      $aliases = $this['service.exec']->get('local')->run('ddev list -A -j', function ($output) {
         $json = json_decode($output, true);
         return array_combine(array_column($json['raw'], 'name'), $json['raw']);
       });

@@ -28,7 +28,7 @@ class LandoTarget extends DrushTarget implements TargetInterface, TargetSourceIn
 
         $this['lando.name'] = $alias;
 
-        $lando = $this['service.local']->run('lando list --format=json', function ($output) {
+        $lando = $this['service.exec']->get('local')->run('lando list --format=json', function ($output) {
           return json_decode($output, true);
         });
 
@@ -43,12 +43,12 @@ class LandoTarget extends DrushTarget implements TargetInterface, TargetSourceIn
         $this['lando.app'] = array_shift($apps);
         $this['service.docker'] = new DockerService($this['service.local']);
         $this['service.docker']->setContainer($this['lando.app']['name']);
-        $this['service.exec'] = $this['service.docker'];
+        $this['service.exec']->addHandler($this['service.docker'], 'docker');
 
         $this['drush.root'] = '/app';
 
         $dir = dirname($this['lando.app']['src'][0]);
-        $edge = $this['service.local']->run(sprintf('cd %s && lando info --format=json -s edge', $dir), function ($output) {
+        $edge = $this['service.exec']->get('local')->run(sprintf('cd %s && lando info --format=json -s edge', $dir), function ($output) {
           return json_decode($output, true);
         });
 
@@ -64,7 +64,7 @@ class LandoTarget extends DrushTarget implements TargetInterface, TargetSourceIn
      */
     public function getAvailableTargets():array
     {
-      $lando = $this['service.local']->run('lando list --format=json', function ($output) {
+      $lando = $this['service.exec']->get('local')->run('lando list --format=json', function ($output) {
         return json_decode($output, true);
       });
 
@@ -75,7 +75,7 @@ class LandoTarget extends DrushTarget implements TargetInterface, TargetSourceIn
       $targets = [];
       foreach ($apps as $app) {
         $dir = dirname($app['src'][0]);
-        $edge = $this['service.local']->run(sprintf('cd %s && lando info --format=json -s edge', $dir), function ($output) {
+        $edge = $this['service.exec']->get('local')->run(sprintf('cd %s && lando info --format=json -s edge', $dir), function ($output) {
           return json_decode($output, true);
         });
 

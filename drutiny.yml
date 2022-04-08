@@ -283,7 +283,7 @@ services:
         - [addFilter, ['@twig.filters.yaml_dump']]
         - [addFunction, ['@twig.functions.policy_result']]
         - [addFunction, ['@twig.functions.semver_satisfies']]
-        - [AddFunction, ['@twig.functions.explode']]
+        - [addFunction, ['@twig.functions.explode']]
         - [addTest, ['@twig.test.is_numeric']]
         - [addTest, ['@twig.test.keyed']]
         - [addRuntimeLoader, ['@Drutiny\Report\TwigExtraMarkdownRuntimeLoader']]
@@ -409,7 +409,10 @@ services:
           - src/{functions.php}
 
     Drutiny\Target\Service\ExecutionInterface:
-      alias: 'Drutiny\Target\Service\LocalService'
+      alias: 'Drutiny\Target\Service\ExecutionService'
+
+    Drutiny\Target\Service\ExecutionServiceException:
+      autowire: false
 
     Drutiny\Entity\DataBag:
       shared: false
