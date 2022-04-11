@@ -11,6 +11,9 @@ class ExecutionServiceException extends \Exception {
     foreach ($exceptions as $index => $e) {
       $message[] = sprintf("- %s: %s", $index, $e->getMessage());
     }
+    if ($method == 'run') {
+      $message[] = 'command: '.$args[0];
+    }
     parent::__construct(implode("\n", $message));
   }
 }
