@@ -402,7 +402,6 @@ services:
           - src/Console/{Application.php}
           - src/Config/Config.*
           - src/Report/Backport/*
-          - src/Console/{LogFileLogger.php}
           - src/Event/*
           - src/Upgrade/*
           - src/*/*{Exception.php}
