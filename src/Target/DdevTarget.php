@@ -30,12 +30,15 @@ class DdevTarget extends DrushTarget implements TargetInterface, TargetSourceInt
 
         $status_cmd = sprintf('ddev describe %s -j', $alias);
         $ddev = $this['service.exec']->get('local')->run($status_cmd, function ($output) {
-          $json = json_decode($output, true);
+          $json = json_decode(trim($output), true);
           return $json['raw'];
         });
 
         if (empty($ddev)) {
           throw new InvalidTargetException("DDEV site '$alias' either doesn't exist or is not currently active.");
+        }
+        if ($ddev['status'] == 'stopped') {
+          throw new InvalidTargetException("DDEV site '$alias' is currently stopped. Please start this service and try again.");
         }
 
         $this['ddev'] = $ddev;
@@ -46,7 +49,7 @@ class DdevTarget extends DrushTarget implements TargetInterface, TargetSourceInt
         $this['drush.root'] = '/var/www/html';
 
         // Provide a default URI if none already provided.
-        $this->setUri($ddev['primary_url']);
+        $this->setUri($uri ?? $ddev['primary_url']);
         return $this;
     }
 

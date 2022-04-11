@@ -48,14 +48,19 @@ class LandoTarget extends DrushTarget implements TargetInterface, TargetSourceIn
         $this['drush.root'] = '/app';
 
         $dir = dirname($this['lando.app']['src'][0]);
-        $edge = $this['service.exec']->get('local')->run(sprintf('cd %s && lando info --format=json -s edge', $dir), function ($output) {
+        $info = $this['service.exec']->get('local')->run(sprintf('cd %s && lando info --format=json', $dir), function ($output) {
           return json_decode($output, true);
         });
 
-        $this['lando.edge'] = $edge[0];
+        $urls = [$uri];
+        foreach ($info as $service) {
+          $this['lando.'.$service['service']] = $service;
+          $urls += $service['urls'] ?? [];
+        }
 
+        $urls = array_filter($urls);
         // Provide a default URI if none already provided.
-        $this->setUri($edge[0]['urls'][1] ?? $edge[0]['urls'][0]);
+        $this->setUri(array_shift($urls));
         return $this;
     }
 
