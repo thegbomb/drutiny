@@ -184,20 +184,18 @@ class DrushService {
 
     // Return an object ready to run the command. This allows the caller
     // of this command to be able to specify the preprocess function easily.
-    return new _helper($command, $this->execService);
-  }
-}
-
-class _helper {
-  protected $cmd;
-  protected $service;
-  public function __construct($cmd, ExecutionInterface $service)
-  {
-    $this->cmd = $cmd;
-    $this->service = $service;
-  }
-  public function run(callable $outputProcessor = NULL)
-  {
-    return $this->service->run($this->cmd, $outputProcessor);
+    return (new class($command, $this->execService) {
+      protected $cmd;
+      protected $service;
+      public function __construct($cmd, ExecutionInterface $service)
+      {
+        $this->cmd = $cmd;
+        $this->service = $service;
+      }
+      public function run(callable $outputProcessor = NULL)
+      {
+        return $this->service->run($this->cmd, $outputProcessor);
+      }
+    });
   }
 }
