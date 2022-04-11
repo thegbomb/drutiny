@@ -2,9 +2,6 @@
 
 namespace Drutiny\Target\Service;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drutiny\Target\Service\LocalService;
-
 class ExecutionService implements ExecutionInterface {
   protected array $serviceHandlers = [];
   protected array $badHandlers = [];
@@ -29,7 +26,6 @@ class ExecutionService implements ExecutionInterface {
         if (!method_exists($handler, $method)) {
           throw new \Exception(sprintf("Method '%s' doesn't exist on %s", $method, get_class($handler)));
         }
-
         return call_user_func_array([$handler, $method], $args);
       }
       catch (\Exception $e) {
@@ -62,6 +58,11 @@ class ExecutionService implements ExecutionInterface {
   public function get(string $name):ExecutionInterface
   {
     return $this->serviceHandlers[$name];
+  }
+
+  public function has(string $name):bool
+  {
+    return isset($this->serviceHandlers[$name]);
   }
 
   /**
