@@ -45,14 +45,6 @@ class RemoteDrushBridge implements EventSubscriberInterface {
   public static function loadRemoteService(DataBagEvent $event)
   {
       $target = $event->getDatabag()->getObject();
-
-      // Do nothing if a RemoteService is already loaded.
-      // This allow extended classes to set a different RemoteService
-      // as long as it extends the RemoteService class.
-      if ($target['service.exec'] instanceof RemoteService) {
-        return;
-      }
-
       $value = $event->getValue();
       try {
           switch ($event->getPropertyPath()) {
