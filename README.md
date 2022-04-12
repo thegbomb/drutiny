@@ -2,7 +2,7 @@
 
 <img src="https://github.com/drutiny/drutiny/raw/3.2.x/assets/logo.png" alt="Drutiny logo" align="right"/>
 
-[![Build Status](https://travis-ci.org/drutiny/drutiny.svg?branch=3.2.x)](https://travis-ci.org/drutiny/drutiny)
+[![CI](https://github.com/drutiny/drutiny/actions/workflows/ci.yml/badge.svg?branch=3.4.x&event=push)](https://github.com/drutiny/drutiny/actions/workflows/ci.yml)
 [![Latest Stable Version](https://poser.pugx.org/drutiny/drutiny/v/stable)](https://packagist.org/packages/drutiny/drutiny)
 [![Total Downloads](https://poser.pugx.org/drutiny/drutiny/downloads)](https://packagist.org/packages/drutiny/drutiny)
 [![Latest Unstable Version](https://poser.pugx.org/drutiny/drutiny/v/unstable)](https://packagist.org/packages/drutiny/drutiny)
