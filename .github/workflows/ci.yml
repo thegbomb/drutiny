@@ -13,6 +13,7 @@ jobs:
       with:
         php-version: 7.4
         extensions: curl, json, pcntl
+        ini-values: phar.readonly=0
     - uses: php-actions/composer@v6
       with:
         php_version: 7.4
