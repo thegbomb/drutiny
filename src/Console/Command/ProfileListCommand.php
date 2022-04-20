@@ -3,6 +3,7 @@
 namespace Drutiny\Console\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -21,7 +22,13 @@ class ProfileListCommand extends DrutinyBaseCommand
     {
         $this
         ->setName('profile:list')
-        ->setDescription('Show all profiles available.');
+        ->setDescription('Show all profiles available.')
+        ->addOption(
+            'source',
+            's',
+            InputOption::VALUE_OPTIONAL,
+            'Filter by source'
+        );
         $this->configureLanguage();
     }
 
@@ -36,6 +43,15 @@ class ProfileListCommand extends DrutinyBaseCommand
         $progress->start(1);
         $progress->setMessage("Pulling profiles from profile sources...");
         $profiles = $this->getProfileFactory()->getProfileList();
+
+        if ($source_filter = $input->getOption('source')) {
+            $progress->setMessage("Filtering profiles by source: $source_filter");
+            $profiles = array_filter($profiles, function ($profile) use ($source_filter) {
+                if ($source_filter == $profile['source']) return true;
+                if ($source_filter == preg_replace('/\<.+\>/U', '', $profile['source'])) return true;
+                return false;
+            });
+        }
 
       // Build array of table rows.
         $rows = array_map(function ($profile) {
