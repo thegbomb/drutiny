@@ -221,8 +221,9 @@ class ProfileRunCommand extends DrutinyBaseCommand
                   }
               }
             })
-            ->onError(function (ChildExceptionDetected $e, ForkInterface $fork) {
+            ->onError(function (ChildExceptionDetected $e, ForkInterface $fork) use ($console) {
               $this->getLogger()->error($fork->getLabel()." failed: " . $e->getMessage());
+              $console->error($fork->getLabel()." failed: " . $e->getMessage());
             });
         }
         $progress->advance();
@@ -240,6 +241,7 @@ class ProfileRunCommand extends DrutinyBaseCommand
             $assessment_manager->addAssessment($assessment);
             $exit_codes[] = $assessment->getSeverityCode();
         }
+
         $progress->finish();
         $progress->clear();
 
