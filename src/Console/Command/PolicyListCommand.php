@@ -70,7 +70,7 @@ class PolicyListCommand extends DrutinyBaseCommand
             $row = array(
             'description' => '<options=bold>' . wordwrap($listedPolicy['title'], 50) . '</>',
             'name' => $listedPolicy['name'],
-            'source' => $listedPolicy['source'],
+            'source' => implode(', ', $listedPolicy['sources']),
             'profile_util' => count(array_filter($profiles, function ($profile) use ($listedPolicy) {
                 return in_array($listedPolicy['name'], array_keys($profile->policies));
               })),

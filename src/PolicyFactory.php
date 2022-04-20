@@ -87,6 +87,11 @@ class PolicyFactory
                 $this->logger->notice($source->getName() . " has " . count($items) . " polices.");
                 foreach ($items as $name => $item) {
                     $item['source'] = $source->getName();
+
+                    if (isset($policy_list[$name])) {
+                      $item['sources'] = $policy_list[$name]['sources'] ?? [];
+                    }
+                    $item['sources'][] = $item['source'];
                     $policy_list[$name] = $item;
                 }
             } catch (\Exception $e) {
