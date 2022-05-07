@@ -16,7 +16,7 @@
       "ext-pcntl": "*"
     },
     "require": {
-        "composer/semver": "^1.4.2",
+        "composer/semver": "^3.0",
         "erusev/parsedown": "^1.6.3",
         "fiasco/async": "^3.0",
         "fiasco/symfony-console-style-markdown": "^1.2",
